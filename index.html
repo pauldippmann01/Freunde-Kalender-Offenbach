@@ -364,14 +364,11 @@ form {
   const CAL_END_MONTH = 11; // Dezember
 
   // State
-  let currentYear = CAL_START_YEAR;
-  let currentMonth = CAL_START_MONTH; // 0-basierend
+  let currentYear;
+  let currentMonth;
   let isYearlyView = false;
 
   // Buchungen und Blockierungen werden in localStorage gespeichert
-  // Format Buchung: {id, name, persons, breakfast, arrivalTime, departureTime, startDate (YYYY-MM-DD), endDate (YYYY-MM-DD)}
-  // Blockierungen: Array von {startDate, endDate}
-
   const STORAGE_BOOKINGS = "offenbach_bookings";
   const STORAGE_BLOCKS = "offenbach_blocks";
 
@@ -393,21 +390,6 @@ form {
   function formatDate(d) {
     return d.toISOString().slice(0,10);
   }
-  function parseDate(str) {
-    return new Date(str + "T00:00:00");
-  }
-  function datesBetween(start, end) {
-    const arr = [];
-    let d = new Date(start);
-    while(d <= end) {
-      arr.push(formatDate(d));
-      d.setDate(d.getDate()+1);
-    }
-    return arr;
-  }
-  function isDateInRange(dateStr, startStr, endStr) {
-    return dateStr >= startStr && dateStr <= endStr;
-  }
   function checkOverlap(startA, endA, startB, endB) {
     return !(endA < startB || startA > endB);
   }
@@ -428,7 +410,6 @@ form {
     Object.values(sections).forEach(sec => sec.style.display = "none");
     sections[name].style.display = "block";
 
-    // Navigation "Zur Startseite" Button
     const btnToStart = document.getElementById("btn-to-start");
     if(name !== "start") {
       btnToStart.style.display = "inline-block";
@@ -437,14 +418,13 @@ form {
     }
   }
 
-  // Navigation Buttons
   document.getElementById("btn-show-friend-login").onclick = () => {
-    clearError();
+    document.getElementById("error-msg").textContent = "";
     document.getElementById("friend-password").value = "";
     showSection("friendLogin");
   };
   document.getElementById("btn-show-admin-login").onclick = () => {
-    clearError();
+    document.getElementById("error-msg").textContent = "";
     document.getElementById("admin-password").value = "";
     showSection("adminLogin");
   };
@@ -458,25 +438,10 @@ form {
     showSection("start");
   };
 
-  // Error message helpers
-  function showError(msg) {
-    const e1 = document.getElementById("error-msg");
-    if(e1) {
-      e1.textContent = msg;
-    }
-  }
-  function clearError() {
-    const e1 = document.getElementById("error-msg");
-    if(e1) {
-      e1.textContent = "";
-    }
-  }
-
   // --------------
   // Freund Login
   // --------------
   document.getElementById("friend-login-btn").onclick = () => {
-    clearError();
     const pw = document.getElementById("friend-password").value;
     if(pw === FRIEND_PASSWORD) {
       showSection("friendArea");
@@ -484,7 +449,7 @@ form {
       renderCalendar(currentYear, currentMonth);
       isYearlyView = false;
     } else {
-      showError("Falsches Passwort!");
+      document.getElementById("error-msg").textContent = "Falsches Passwort!";
     }
   };
 
@@ -492,14 +457,13 @@ form {
   // Admin Login
   // --------------
   document.getElementById("admin-login-btn").onclick = () => {
-    clearError();
     const pw = document.getElementById("admin-password").value;
     if(pw === ADMIN_PASSWORD) {
       showSection("adminArea");
       renderAdminBookings();
-      clearError();
+      document.getElementById("error-msg").textContent = "";
     } else {
-      showError("Falsches Admin-Passwort!");
+      document.getElementById("error-msg").textContent = "Falsches Admin-Passwort!";
     }
   };
 
@@ -532,7 +496,6 @@ form {
       newMonth = 0;
       newYear++;
     }
-    // Grenzen beachten
     if(newYear < CAL_START_YEAR || (newYear === CAL_START_YEAR && newMonth < CAL_START_MONTH)) return;
     if(newYear > CAL_END_YEAR || (newYear === CAL_END_YEAR && newMonth > CAL_END_MONTH)) return;
 
@@ -546,35 +509,28 @@ form {
 
     const firstDay = new Date(year, month, 1);
     const lastDay = new Date(year, month+1, 0);
-    const startWeekday = firstDay.getDay(); // Sonntag=0 ... Samstag=6
+    const startWeekday = firstDay.getDay();
     const daysInMonth = lastDay.getDate();
 
-    // Wochentage (Montag bis Sonntag mit Sonntag ganz rechts)
     const weekdays = ["Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag","Sonntag"];
 
-    // Alle Buchungen und Blocks
     const bookings = loadBookings();
     const blocks = loadBlocks();
 
-    // Kalenderaufbau: Tabelle
     let html = "<thead><tr>";
     weekdays.forEach(day => {
       html += `<th>${day}</th>`;
     });
     html += "</tr></thead><tbody><tr>";
 
-    // Start: Montag = 1, Sonntag = 0 (letzter Tag)
-    // Wir wollen Montag als erste Spalte (index 0)
     let startDayIndex = startWeekday === 0 ? 6 : startWeekday - 1;
 
-    // Leerzellen vor Monatsanfang
     for(let i=0; i<startDayIndex; i++) {
       html += `<td class="inactive"></td>`;
     }
 
     for(let day=1; day<=daysInMonth; day++) {
       const dateStr = formatDate(new Date(year, month, day));
-      // Check block & booking status
       let classes = "";
       if(blocks.some(b => checkOverlap(dateStr, dateStr, b.startDate, b.endDate))) {
         classes = "blocked";
@@ -582,19 +538,14 @@ form {
         classes = "booked";
       }
 
-      // Sonntag rechts (letzte Spalte)
-      // Sonntag ist letzter Tag
-      // Wenn (startDayIndex + day -1) % 7 === 6 dann ist Sonntag
       let cellContent = day;
       html += `<td class="${classes}" data-date="${dateStr}">${cellContent}</td>`;
 
-      // Neue Zeile am Ende der Woche (Sonntag)
       if((startDayIndex + day) % 7 === 0) {
         html += "</tr><tr>";
       }
     }
 
-    // Leerzellen am Ende
     let cellsInLastRow = (startDayIndex + daysInMonth) % 7;
     if(cellsInLastRow !== 0) {
       for(let i=cellsInLastRow; i<7; i++) {
@@ -620,12 +571,14 @@ form {
       cell.style.cursor = "pointer";
       cell.onclick = () => {
         const date = cell.getAttribute("data-date");
+        if(cell.classList.contains('booked') || cell.classList.contains('blocked')) {
+            return;
+        }
+
         if(!selectedStartDate || (selectedStartDate && selectedEndDate)) {
-          // Neue Auswahl
           selectedStartDate = date;
           selectedEndDate = null;
         } else {
-          // zweites Datum auswählen
           if(date < selectedStartDate) {
             selectedEndDate = selectedStartDate;
             selectedStartDate = date;
@@ -689,11 +642,8 @@ form {
     resetBookingForm();
   };
 
-  // Formulareingabe validieren & speichern
   bookingForm.onsubmit = (e) => {
     e.preventDefault();
-
-    // Werte lesen
     const name = bookNameInput.value.trim();
     const persons = parseInt(bookPersonsInput.value);
     const breakfast = bookBreakfastInput.value;
@@ -721,11 +671,9 @@ form {
       return;
     }
 
-    // Buchungen & Blocks laden
     const bookings = loadBookings();
     const blocks = loadBlocks();
 
-    // Überprüfung auf Überschneidungen mit bestehenden Buchungen oder Blocks
     for(let b of bookings) {
       if(checkOverlap(startDate, endDate, b.startDate, b.endDate)) {
         bookingError.textContent = `Der Zeitraum überschneidet sich mit einer bestehenden Buchung (${b.name}: ${b.startDate} - ${b.endDate}).`;
@@ -739,7 +687,6 @@ form {
       }
     }
 
-    // Neue Buchung speichern
     const newBooking = {
       id: "b" + Date.now(),
       name,
@@ -766,7 +713,6 @@ form {
 
   document.getElementById("switch-calendar-view").onclick = () => {
     isYearlyView = true;
-    currentYear = new Date().getFullYear();
     showSection("yearlyCalendar");
     renderYearlyCalendar(currentYear);
   };
@@ -795,7 +741,6 @@ form {
     const bookings = loadBookings();
     const blocks = loadBlocks();
 
-    // Monate als kleine Kalender nebeneinander
     const monthNames = [
       "Januar","Februar","März","April","Mai","Juni",
       "Juli","August","September","Oktober","November","Dezember"
@@ -810,7 +755,6 @@ form {
       monthHtml += `<thead><tr><th colspan="7">${monthNames[m]}</th></tr>`;
       monthHtml += `<tr><th>M</th><th>D</th><th>M</th><th>D</th><th>F</th><th>S</th><th>S</th></tr></thead><tbody><tr>`;
 
-      // Start Tag Index für Montag=0, Sonntag=6
       const startWeekday = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
       for(let i=0; i<startWeekday; i++) {
         monthHtml += `<td></td>`;
@@ -846,7 +790,6 @@ form {
 
     let html = `<table><thead><tr><th>Typ</th><th>Name</th><th>Personen</th><th>Frühstück</th><th>Anreise</th><th>Abreise</th><th>Startdatum</th><th>Enddatum</th><th>Aktion</th></tr></thead><tbody>`;
 
-    // Buchungen
     bookings.forEach(bk => {
       html += `<tr>
         <td>Buchung</td>
@@ -861,7 +804,6 @@ form {
       </tr>`;
     });
 
-    // Blockierungen
     blocks.forEach((bl, idx) => {
       html += `<tr>
         <td>Blockiert</td>
@@ -876,7 +818,6 @@ form {
 
     adminBookingsList.innerHTML = html;
 
-    // Delete Buttons Events
     document.querySelectorAll(".btn-delete-booking").forEach(btn => {
       btn.onclick = () => {
         if(confirm("Buchung wirklich löschen?")) {
@@ -915,37 +856,36 @@ form {
   // -------------------
   const blockStartInput = document.getElementById("block-start-date");
   const blockEndInput = document.getElementById("block-end-date");
+  const blockError = document.getElementById("block-error");
   
   document.getElementById("block-days-form").onsubmit = (e) => {
     e.preventDefault();
-    const blockError = document.getElementById("block-error");
-    if(blockError) blockError.textContent = "";
+    blockError.textContent = "";
 
     const startDate = blockStartInput.value;
     const endDate = blockEndInput.value;
 
     if(!startDate || !endDate) {
-      if(blockError) blockError.textContent = "Bitte Start- und Enddatum angeben.";
+      blockError.textContent = "Bitte Start- und Enddatum angeben.";
       return;
     }
     if(endDate < startDate) {
-      if(blockError) blockError.textContent = "Enddatum darf nicht vor Startdatum liegen.";
+      blockError.textContent = "Enddatum darf nicht vor Startdatum liegen.";
       return;
     }
 
-    // Prüfen auf Überschneidungen mit bestehenden Buchungen oder Blocks
     const bookings = loadBookings();
     const blocks = loadBlocks();
 
     for(let b of bookings) {
       if(checkOverlap(startDate, endDate, b.startDate, b.endDate)) {
-        if(blockError) blockError.textContent = `Der Zeitraum überschneidet sich mit einer bestehenden Buchung (${b.name}: ${b.startDate} - ${b.endDate}).`;
+        blockError.textContent = `Der Zeitraum überschneidet sich mit einer bestehenden Buchung (${b.name}: ${b.startDate} - ${b.endDate}).`;
         return;
       }
     }
     for(let b of blocks) {
       if(checkOverlap(startDate, endDate, b.startDate, b.endDate)) {
-        if(blockError) blockError.textContent = `Der Zeitraum überschneidet sich mit einem bereits blockierten Zeitraum (${b.startDate} - ${b.endDate}).`;
+        blockError.textContent = `Der Zeitraum überschneidet sich mit einem bereits blockierten Zeitraum (${b.startDate} - ${b.endDate}).`;
         return;
       }
     }
@@ -958,7 +898,6 @@ form {
     renderCalendar(currentYear, currentMonth);
   };
   
-  // Funktion zum Freigeben von Tagen
   function unblockDays(startDate, endDate) {
     let blocks = loadBlocks();
     const originalLength = blocks.length;
@@ -970,10 +909,7 @@ form {
     return true;
   }
   
-  // Event-Listener für den "Tage freigeben" Button
   document.getElementById("btn-unblock-days").onclick = () => {
-    const blockStartInput = document.getElementById("block-start-date");
-    const blockEndInput = document.getElementById("block-end-date");
     const startDate = blockStartInput.value;
     const endDate = blockEndInput.value;
 
@@ -988,4 +924,73 @@ form {
         alert("Tage erfolgreich freigegeben!");
         document.getElementById("block-days-form").reset();
         renderAdminBookings();
-        renderCalendar(currentYear,
+        renderCalendar(currentYear, currentMonth);
+      } else {
+        alert("Keine Blockierung im ausgewählten Zeitraum gefunden.");
+      }
+    }
+  };
+
+  // CSV-Export-Funktion
+  function exportBookingsToCsv() {
+    const bookings = loadBookings();
+    if (bookings.length === 0) {
+      alert("Keine Buchungen zum Exportieren vorhanden.");
+      return;
+    }
+
+    const csvRows = [];
+    const headers = ["Name", "Personen", "Frühstück", "Anreisezeit", "Abreisezeit", "Startdatum", "Enddatum"];
+    csvRows.push(headers.join(';')); 
+
+    for (const booking of bookings) {
+      const row = [
+        booking.name,
+        booking.persons,
+        booking.breakfast,
+        booking.arrivalTime || "",
+        booking.departureTime || "",
+        booking.startDate,
+        booking.endDate
+      ];
+      csvRows.push(row.join(';'));
+    }
+
+    const csvString = csvRows.join('\n');
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `Freunde_Buchungen_${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+  }
+  
+  document.getElementById("btn-export-csv").onclick = exportBookingsToCsv;
+
+  // Initialanzeige
+  function initialize() {
+    const today = new Date();
+    currentYear = today.getFullYear();
+    currentMonth = today.getMonth();
+
+    if (currentYear < CAL_START_YEAR) {
+        currentYear = CAL_START_YEAR;
+        currentMonth = CAL_START_MONTH;
+    } else if (currentYear === CAL_START_YEAR && currentMonth < CAL_START_MONTH) {
+        currentMonth = CAL_START_MONTH;
+    }
+
+    if (currentYear > CAL_END_YEAR) {
+        currentYear = CAL_END_YEAR;
+        currentMonth = CAL_END_MONTH;
+    } else if (currentYear === CAL_END_YEAR && currentMonth > CAL_END_MONTH) {
+        currentMonth = CAL_END_MONTH;
+    }
+    
+    showSection("start");
+    renderCalendar(currentYear, currentMonth);
+  }
+
+  initialize();
+})();</script>
+</body>
+</html>
