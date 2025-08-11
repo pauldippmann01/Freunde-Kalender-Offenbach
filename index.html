@@ -3,723 +3,744 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Freunde Übernachtungs-Kalender</title>
+<title>Freunde-Bereich Offenbach</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Segoe+UI&display=swap');
   body {
-    margin: 0; font-family: 'Segoe UI', sans-serif;
-    background: url('https://upload.wikimedia.org/wikipedia/commons/5/58/Offenbach_mitten_in_der_Stadt.jpg') no-repeat center center/cover;
-    min-height: 100vh; color: white;
-    display: flex; flex-direction: column;
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: url('https://upload.wikimedia.org/wikipedia/commons/7/75/Offenbach_am_Main_2013_01.JPG') no-repeat center center/cover;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
   }
-  header {
-    background: rgba(0,0,0,0.6);
-    padding: 1em; text-align: center; font-weight: bold; font-size: 1.5em;
+  #login-box, #content, #admin-section {
+    background: rgba(0,0,0,0.5);
+    padding: 20px 30px;
+    border-radius: 15px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.7);
+    max-width: 600px;
+    width: 100%;
   }
-  #login-box, #friend-area, #admin-area {
-    background: rgba(0,0,0,0.6);
-    max-width: 900px; margin: 1em auto; padding: 1em; border-radius: 12px;
+  h1,h2,h3 {
+    margin-top: 0;
+    text-align: center;
   }
-  input, select, button {
-    font-size: 1em; margin: 0.3em 0;
-    padding: 0.4em 0.6em; border-radius: 6px; border: none;
+  input, select {
+    width: 100%;
+    padding: 8px;
+    margin: 6px 0 12px 0;
+    border-radius: 6px;
+    border: none;
+    font-size: 1rem;
   }
   button {
-    background-color: #4CAF50; color: white; cursor: pointer;
-    transition: background-color 0.3s ease;
-  }
-  button:hover { background-color: #3e8e41; }
-  .error { color: #ff6b6b; font-weight: bold; }
-  .success { color: #a6e22e; font-weight: bold; }
-  nav {
-    text-align: center; margin: 1em 0;
-  }
-  nav button {
-    margin: 0 0.5em;
-  }
-  table.calendar {
-    width: 100%; border-collapse: collapse; margin-top: 1em; background: rgba(255,255,255,0.15);
+    background: #4CAF50;
     color: white;
-    border-radius: 12px;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-weight: bold;
+    cursor: pointer;
+    width: 100%;
+    font-size: 1.1rem;
+    margin-top: 10px;
   }
-  table.calendar th, table.calendar td {
-    border: 1px solid rgba(255,255,255,0.3);
+  button:hover {
+    background: #45a049;
+  }
+  #error, #booking-msg, #admin-msg, #admin-error {
     text-align: center;
-    padding: 0.5em;
+    font-weight: bold;
+    margin: 10px 0;
+  }
+  #error, #admin-error {
+    color: #ff6b6b;
+  }
+  #booking-msg, #admin-msg {
+    color: #a3ffa3;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+    color: white;
+  }
+  th, td {
+    padding: 8px;
+    border: 1px solid #ddd;
+    text-align: center;
+  }
+  th {
+    background: #333;
+  }
+  .calendar {
+    margin: 20px auto;
+    max-width: 100%;
+  }
+  .calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .calendar-nav button {
+    background: #444;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+    border-radius: 6px;
+    font-weight: bold;
+  }
+  .calendar-nav button:hover {
+    background: #666;
+  }
+  .days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+  }
+  .day {
+    padding: 10px 6px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 6px;
     cursor: pointer;
     user-select: none;
   }
-  table.calendar th {
-    background: rgba(0,0,0,0.5);
-  }
-  table.calendar td.empty {
-    background: transparent;
+  .day.disabled {
+    background: rgba(255,255,255,0.02);
+    color: #aaa;
     cursor: default;
   }
-  table.calendar td.booked {
-    background: #d9534fcc;
-    cursor: default;
+  .day.blocked {
+    background: #ff4c4c;
+    color: white;
+    cursor: not-allowed;
   }
-  table.calendar td.blocked {
-    background: #6c757dcc;
-    cursor: default;
+  .day.booked {
+    background: #4caf5080;
+    color: white;
+    cursor: not-allowed;
   }
-  table.calendar td.selected-start {
-    background: #5bc0decc;
+  .day.selected {
+    border: 2px solid #00ff00;
+    background: #228822;
+    color: white;
   }
-  table.calendar td.selected-end {
-    background: #5bc0decc;
+  .mode-switch {
+    margin: 15px 0;
+    text-align: center;
   }
-  table.calendar td.selected-range {
-    background: #5bc0de88;
+  .mode-switch button {
+    width: auto;
+    margin: 0 5px;
   }
-  #booking-form label {
-    display: block;
-    margin-top: 0.5em;
-  }
-  #booking-form input[type="text"],
-  #booking-form input[type="number"],
-  #booking-form input[type="time"],
-  #booking-form select {
-    width: 100%;
-  }
-  #booking-msg {
-    margin-top: 0.7em;
-  }
-  #admin-area {
-    display: none;
-  }
-  #admin-login {
-    max-width: 300px;
-    margin: 0 auto;
-  }
-  #admin-login input {
-    width: 100%;
-  }
-  #bookings-list {
-    max-height: 300px;
+  /* Scroll for bookings table */
+  #bookings-table-wrapper {
+    max-height: 200px;
     overflow-y: auto;
-    margin-top: 1em;
-    background: rgba(255,255,255,0.1);
-    border-radius: 10px;
-    padding: 0.5em;
   }
-  #bookings-list table {
-    width: 100%;
-    border-collapse: collapse;
+  /* Admin section inputs */
+  #admin-block-day {
+    width: calc(100% - 140px);
+    display: inline-block;
   }
-  #bookings-list th, #bookings-list td {
-    border: 1px solid rgba(255,255,255,0.3);
-    padding: 0.3em 0.5em;
-    text-align: center;
-    color: white;
-  }
-  #block-day-section {
-    margin-top: 1em;
-    background: rgba(255,255,255,0.1);
-    padding: 1em;
-    border-radius: 10px;
-    color: white;
-  }
-  #admin-msg {
-    margin-top: 0.5em;
-    font-weight: bold;
-  }
-  footer {
-    text-align: center;
-    margin: 1em 0;
-    color: #ddd;
-    font-size: 0.8em;
+  #admin-block-day + button {
+    width: 65px;
+    margin-left: 5px;
   }
 </style>
 </head>
 <body>
 
-<header>Freunde Übernachtungs-Kalender - Offenbach</header>
-
 <div id="login-box">
   <h2>Willkommen, Freund ✨</h2>
-  <p>Bitte Passwort eingeben, um Zugang zu bekommen:</p>
-  <input type="password" id="password" placeholder="Passwort" autocomplete="off" />
-  <br />
-  <button id="login-btn">Einloggen</button>
-  <p id="login-error" class="error"></p>
+  <button id="friend-login-btn">Einloggen (Freunde)</button>
+  <hr style="margin: 20px 0; border-color: #888;" />
+  <h3>Admin Login</h3>
+  <input type="password" id="admin-password" placeholder="Admin Passwort" />
+  <button id="admin-login-btn">Einloggen (Admin)</button>
+  <p id="error"></p>
 </div>
 
-<div id="main-content" style="display:none; max-width: 900px; margin: auto;">
-  <nav>
-    <button id="btn-friend-area">Freunde-Bereich</button>
-    <button id="btn-admin-area">Admin-Bereich</button>
-    <button id="btn-logout">Logout</button>
-  </nav>
+<div id="content" style="display:none;">
+  <h1>🎉 Hallo Freunde!</h1>
 
-  <!-- Freunde-Bereich -->
-  <section id="friend-area">
-    <nav>
-      <button id="view-monthly">Monatskalender</button>
-      <button id="view-yearly">Jahreskalender</button>
-    </nav>
-    <div id="calendar-container"></div>
+  <div class="mode-switch">
+    <button id="month-view-btn">Monatsansicht</button>
+    <button id="year-view-btn">Jahresansicht</button>
+  </div>
 
-    <form id="booking-form" action="https://formsubmit.co/pauldippmann@gmail.com" method="POST" target="_blank" autocomplete="off">
-      <h3>Buchung vornehmen</h3>
-      <input type="hidden" name="_captcha" value="false" />
-      <label for="name">Name (Pflicht):</label>
-      <input type="text" id="name" name="Name" required />
-      <label for="persons">Anzahl Personen (Pflicht):</label>
-      <input type="number" id="persons" name="Personen" min="1" required />
-      <label for="breakfast">Frühstück benötigt?</label>
-      <select id="breakfast" name="Frühstück">
-        <option value="Nein" selected>Nein</option>
-        <option value="Ja">Ja</option>
-      </select>
-      <label for="arrival">Ankunftszeit (optional):</label>
-      <input type="time" id="arrival" name="Ankunftszeit" />
-      <label for="departure">Abfahrtszeit (optional):</label>
-      <input type="time" id="departure" name="Abfahrtszeit" />
-      <label>Zeitraum auswählen (Start- und Enddatum):</label>
-      <p id="selected-dates" style="font-weight:bold; color:#a6e22e;">Keine Daten ausgewählt</p>
-      <input type="hidden" name="Startdatum" id="hidden-start" />
-      <input type="hidden" name="Enddatum" id="hidden-end" />
-      <button type="submit">Buchen</button>
-      <p id="booking-msg"></p>
-    </form>
-  </section>
+  <div id="calendar-container" class="calendar"></div>
 
-  <!-- Admin-Bereich -->
-  <section id="admin-area" style="display:none;">
-    <h3>Admin-Bereich</h3>
-
-    <div id="admin-login-section">
-      <p>Bitte Admin-Passwort eingeben:</p>
-      <input type="password" id="admin-password" autocomplete="off" />
-      <button id="admin-login-btn">Login</button>
-      <p id="admin-login-error" class="error"></p>
-    </div>
-
-    <div id="admin-dashboard" style="display:none;">
-      <button id="admin-logout-btn" style="float:right; background:#b52a2a;">Logout Admin</button>
-      <h4>Buchungen Übersicht</h4>
-      <div id="bookings-list">
-        <table>
-          <thead>
-            <tr>
-              <th>Name</th>
-              <th>Personen</th>
-              <th>Frühstück</th>
-              <th>Ankunft</th>
-              <th>Abreise</th>
-              <th>Start</th>
-              <th>Ende</th>
-              <th>Aktion</th>
-            </tr>
-          </thead>
-          <tbody id="bookings-tbody"></tbody>
-        </table>
-      </div>
-
-      <div id="block-day-section">
-        <h4>Tage blockieren/freigeben</h4>
-        <input type="date" id="block-day-input" min="2025-09-01" max="2040-12-31" />
-        <button id="block-day-btn">Blockieren</button>
-        <button id="unblock-day-btn">Freigeben</button>
-        <p id="admin-msg"></p>
-      </div>
-
-      <button id="export-csv-btn" style="margin-top:1em;">Buchungen als CSV exportieren</button>
-    </div>
-  </section>
+  <h3>Buchung eintragen</h3>
+  <form id="booking-form">
+    <input type="text" id="name" placeholder="Dein Name *" required />
+    <input type="number" id="persons" min="1" placeholder="Anzahl Personen *" required />
+    <select id="breakfast" required>
+      <option value="">Frühstück benötigt? *</option>
+      <option value="Ja">Ja</option>
+      <option value="Nein">Nein</option>
+    </select>
+    <input type="time" id="arrival" placeholder="Ankunftszeit (optional)" />
+    <input type="time" id="departure" placeholder="Abfahrtszeit (optional)" />
+    <input type="text" id="start-date" placeholder="Startdatum auswählen *" readonly required />
+    <input type="text" id="end-date" placeholder="Enddatum auswählen *" readonly required />
+    <button type="submit">Buchung speichern</button>
+  </form>
+  <p id="booking-msg"></p>
 </div>
 
-<footer>© 2025 Offenbach Freunde Kalender</footer>
+<div id="admin-section" style="display:none;">
+  <h2>Admin Bereich</h2>
+  <button id="admin-logout-btn" style="background:#c62828; margin-bottom:10px;">Logout</button>
+  <h3>Blockierte Tage verwalten</h3>
+  <input type="date" id="admin-block-day" />
+  <button id="block-day-btn">Blockieren</button>
+  <button id="unblock-day-btn">Freigeben</button>
+  <p id="admin-msg"></p>
+  <p id="admin-error"></p>
+
+  <h3>Buchungen Übersicht</h3>
+  <div id="bookings-table-wrapper">
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Personen</th>
+          <th>Frühstück</th>
+          <th>Ankunft</th>
+          <th>Abfahrt</th>
+          <th>Startdatum</th>
+          <th>Enddatum</th>
+          <th>Aktion</th>
+        </tr>
+      </thead>
+      <tbody id="bookings-tbody"></tbody>
+    </table>
+  </div>
+  <button id="export-csv-btn" style="margin-top: 10px;">Buchungen als CSV exportieren</button>
+</div>
 
 <script>
-  // Allgemeine Variablen
-  const PASSWORD = "OffenbachPaul123";
-  const ADMIN_PASSWORD = "Admin2025!";
-  const startYear = 2025, startMonth = 8; // September 2025 (0-indexed)
-  const endYear = 2040, endMonth = 11;    // Dezember 2040 (0-indexed)
-
-  // Elemente
-  const loginBox = document.getElementById("login-box");
-  const loginBtn = document.getElementById("login-btn");
-  const loginError = document.getElementById("login-error");
-  const mainContent = document.getElementById("main-content");
-
-  const btnFriendArea = document.getElementById("btn-friend-area");
-  const btnAdminArea = document.getElementById("btn-admin-area");
-  const btnLogout = document.getElementById("btn-logout");
-
-  const friendArea = document.getElementById("friend-area");
-  const adminArea = document.getElementById("admin-area");
-
-  // Kalender Variablen
-  let currentYear = startYear;
-  let currentMonth = startMonth;
-
-  let bookings = JSON.parse(localStorage.getItem("bookings") || "[]");
-  let blockedDays = JSON.parse(localStorage.getItem("blockedDays") || "[]");
-
-  // Kalender Auswahl
-  let selection = { start: null, end: null };
-
-  // Login Funktion
-  loginBtn.addEventListener("click", () => {
-    const pw = document.getElementById("password").value.trim();
-    if (pw === PASSWORD) {
-      loginBox.style.display = "none";
-      mainContent.style.display = "block";
-      renderCalendar(currentYear, currentMonth);
-      showFriendArea();
-    } else {
-      loginError.textContent = "❌ Falsches Passwort!";
-    }
-  });
-
-  btnFriendArea.addEventListener("click", () => {
-    showFriendArea();
-  });
-  btnAdminArea.addEventListener("click", () => {
-    showAdminArea();
-  });
-  btnLogout.addEventListener("click", () => {
-    location.reload();
-  });
-
-  function showFriendArea() {
-    friendArea.style.display = "block";
-    adminArea.style.display = "none";
-  }
-  function showAdminArea() {
-    friendArea.style.display = "none";
-    adminArea.style.display = "block";
-    initAdmin();
-  }
-
-  // Kalender rendern Monats- und Jahresansicht
-  const calendarContainer = document.getElementById("calendar-container");
-  const btnMonthly = document.getElementById("view-monthly");
-  const btnYearly = document.getElementById("view-yearly");
-
-  btnMonthly.addEventListener("click", () => {
-    renderCalendar(currentYear, currentMonth);
-  });
-  btnYearly.addEventListener("click", () => {
-    renderYearlyCalendar(currentYear);
-  });
-
-  // Helferfunktionen Datum <-> String
-  function ymdToStr(y, m, d) {
-    return `${y}-${(m+1).toString().padStart(2,"0")}-${d.toString().padStart(2,"0")}`;
-  }
-  function strToDate(str) {
-    return new Date(str+"T00:00:00");
-  }
-
-  function isDateBlocked(dateStr) {
-    return blockedDays.includes(dateStr);
-  }
-  function isDateBooked(dateStr) {
-    return bookings.some(b => (b.start <= dateStr && b.end >= dateStr));
-  }
-
-  // Kalender rendern (Monatsansicht)
-  function renderCalendar(year, month) {
-    currentYear = year;
-    currentMonth = month;
-    calendarContainer.innerHTML = "";
-
-    // Monat und Jahr anzeigen mit Vor/Zurück Buttons
-    const navDiv = document.createElement("div");
-    navDiv.style.textAlign = "center";
-    navDiv.style.marginBottom = "0.5em";
-
-    const prevBtn = document.createElement("button");
-    prevBtn.textContent = "◀";
-    prevBtn.onclick = () => {
-      let m = currentMonth - 1;
-      let y = currentYear;
-      if (m < startMonth && y <= startYear) return;
-      if (m < 0) { m = 11; y--; if (y < startYear) return; }
-      renderCalendar(y, m);
-    };
-
-    const nextBtn = document.createElement("button");
-    nextBtn.textContent = "▶";
-    nextBtn.onclick = () => {
-      let m = currentMonth + 1;
-      let y = currentYear;
-      if (m > endMonth && y >= endYear) return;
-      if (m > 11) { m = 0; y++; if (y > endYear) return; }
-      renderCalendar(y, m);
-    };
-
-    const monthNames = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
-    const monthLabel = document.createElement("span");
-    monthLabel.textContent = `${monthNames[month]} ${year}`;
-    monthLabel.style.fontWeight = "bold";
-    monthLabel.style.margin = "0 1em";
-
-    navDiv.appendChild(prevBtn);
-    navDiv.appendChild(monthLabel);
-    navDiv.appendChild(nextBtn);
-    calendarContainer.appendChild(navDiv);
-
-    const table = document.createElement("table");
-    table.className = "calendar";
-
-    // Wochentage Header
-    const thead = document.createElement("thead");
-    const headerRow = document.createElement("tr");
-    ["So","Mo","Di","Mi","Do","Fr","Sa"].forEach(day => {
-      const th = document.createElement("th");
-      th.textContent = day;
-      headerRow.appendChild(th);
-    });
-    thead.appendChild(headerRow);
-    table.appendChild(thead);
-
-    // Tage füllen
-    const tbody = document.createElement("tbody");
-
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month+1, 0);
-    const firstWeekday = firstDay.getDay();
-
-    let dayNum = 1;
-    let done = false;
-    for(let row=0; row<6 && !done; row++) {
-      const tr = document.createElement("tr");
-      for(let col=0; col<7; col++) {
-        const td = document.createElement("td");
-        if(row === 0 && col < firstWeekday) {
-          td.className = "empty";
-          td.textContent = "";
-          tr.appendChild(td);
-          continue;
-        }
-        if(dayNum > lastDay.getDate()) {
-          td.className = "empty";
-          td.textContent = "";
-          tr.appendChild(td);
-          done = true;
-          continue;
-        }
-        const dateStr = ymdToStr(year, month, dayNum);
-
-        td.textContent = dayNum;
-
-        if(isDateBlocked(dateStr)) td.classList.add("blocked");
-        else if(isDateBooked(dateStr)) td.classList.add("booked");
-
-        td.dataset.date = dateStr;
-
-        // Klick Event für Auswahl Start/Enddatum
-        td.onclick = () => {
-          if(isDateBlocked(dateStr)) return;
-          if(!selection.start || (selection.start && selection.end)) {
-            selection.start = dateStr;
-            selection.end = null;
-          } else {
-            if(dateStr < selection.start) {
-              selection.end = selection.start;
-              selection.start = dateStr;
-            } else {
-              selection.end = dateStr;
-            }
-          }
-          highlightSelection();
-          updateBookingFormDates();
-        };
-
-        tr.appendChild(td);
-        dayNum++;
-      }
-      tbody.appendChild(tr);
-    }
-
-    table.appendChild(tbody);
-    calendarContainer.appendChild(table);
-  }
-
-  // Hervorhebung Auswahl im Kalender
-  function highlightSelection() {
-    const tds = calendarContainer.querySelectorAll("td[data-date]");
-    tds.forEach(td => {
-      td.classList.remove("selected-start", "selected-end", "selected-range");
-      const date = td.dataset.date;
-      if(selection.start && selection.end) {
-        if(date === selection.start) td.classList.add("selected-start");
-        else if(date === selection.end) td.classList.add("selected-end");
-        else if(date > selection.start && date < selection.end) td.classList.add("selected-range");
-      } else if(selection.start) {
-        if(date === selection.start) td.classList.add("selected-start");
-      }
-    });
-  }
-
-  // Update versteckte Felder für Formular
-  function updateBookingFormDates() {
-    const startInput = document.getElementById("hidden-start");
-    const endInput = document.getElementById("hidden-end");
-    const selDates = document.getElementById("selected-dates");
-    if(selection.start && selection.end) {
-      startInput.value = selection.start;
-      endInput.value = selection.end;
-      selDates.textContent = `${selection.start} bis ${selection.end}`;
-    } else if(selection.start) {
-      startInput.value = selection.start;
-      endInput.value = "";
-      selDates.textContent = `${selection.start}`;
-    } else {
-      startInput.value = "";
-      endInput.value = "";
-      selDates.textContent = "Keine Daten ausgewählt";
-    }
-  }
-
-  // Jahreskalender anzeigen (nur Übersicht)
-  function renderYearlyCalendar(year) {
-    calendarContainer.innerHTML = "";
-    currentYear = year;
-    const navDiv = document.createElement("div");
-    navDiv.style.textAlign = "center";
-    navDiv.style.marginBottom = "0.5em";
-
-    const prevBtn = document.createElement("button");
-    prevBtn.textContent = "◀";
-    prevBtn.onclick = () => {
-      if (currentYear <= startYear) return;
-      renderYearlyCalendar(currentYear -1);
-    };
-
-    const nextBtn = document.createElement("button");
-    nextBtn.textContent = "▶";
-    nextBtn.onclick = () => {
-      if (currentYear >= endYear) return;
-      renderYearlyCalendar(currentYear + 1);
-    };
-
-    const yearLabel = document.createElement("span");
-    yearLabel.textContent = year;
-    yearLabel.style.fontWeight = "bold";
-    yearLabel.style.margin = "0 1em";
-
-    navDiv.appendChild(prevBtn);
-    navDiv.appendChild(yearLabel);
-    navDiv.appendChild(nextBtn);
-    calendarContainer.appendChild(navDiv);
-
-    // 12 Monate anzeigen (nur Namen + Tage belegt/blockiert als kleine farbige Punkte)
-    const monthsDiv = document.createElement("div");
-    monthsDiv.style.display = "grid";
-    monthsDiv.style.gridTemplateColumns = "repeat(4, 1fr)";
-    monthsDiv.style.gap = "10px";
-
-    const monthNames = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
-
-    for(let m=0; m<12; m++) {
-      const monthBox = document.createElement("div");
-      monthBox.style.background = "rgba(0,0,0,0.5)";
-      monthBox.style.borderRadius = "10px";
-      monthBox.style.padding = "10px";
-      monthBox.style.color = "white";
-      monthBox.style.cursor = "pointer";
-
-      const monthTitle = document.createElement("div");
-      monthTitle.textContent = monthNames[m];
-      monthTitle.style.fontWeight = "bold";
-      monthTitle.style.marginBottom = "5px";
-
-      monthBox.appendChild(monthTitle);
-
-      // Tage Übersicht (Kreise für blockiert/belegt)
-      const daysInMonth = new Date(year, m+1, 0).getDate();
-      const daysContainer = document.createElement("div");
-      daysContainer.style.display = "flex";
-      daysContainer.style.flexWrap = "wrap";
-      daysContainer.style.gap = "2px";
-
-      for(let d=1; d<=daysInMonth; d++) {
-        const dayStr = ymdToStr(year, m, d);
-        const dayDot = document.createElement("div");
-        dayDot.style.width = "10px";
-        dayDot.style.height = "10px";
-        dayDot.style.borderRadius = "50%";
-
-        if(isDateBlocked(dayStr)) {
-          dayDot.style.background = "#6c757d";
-        } else if(isDateBooked(dayStr)) {
-          dayDot.style.background = "#d9534f";
-        } else {
-          dayDot.style.background = "#28a745aa";
-        }
-        daysContainer.appendChild(dayDot);
-      }
-      monthBox.appendChild(daysContainer);
-
-      // Klick auf Monat zeigt Monatsansicht dieses Monats
-      monthBox.onclick = () => {
-        renderCalendar(year, m);
-      };
-
-      monthsDiv.appendChild(monthBox);
-    }
-    calendarContainer.appendChild(monthsDiv);
-  }
-
-  // Formular Validierung & Warnung falls keine Daten ausgewählt
-  const bookingForm = document.getElementById("booking-form");
-  bookingForm.addEventListener("submit", (e) => {
-    if(!selection.start) {
-      e.preventDefault();
-      document.getElementById("booking-msg").textContent = "Bitte Startdatum auswählen!";
-      document.getElementById("booking-msg").className = "error";
-      return;
-    }
-    if(!selection.end) {
-      e.preventDefault();
-      document.getElementById("booking-msg").textContent = "Bitte Enddatum auswählen!";
-      document.getElementById("booking-msg").className = "error";
-      return;
-    }
-    // Speicherung lokal zur Übersicht im Admin
-    const formData = new FormData(bookingForm);
-    const newBooking = {
-      id: Date.now(),
-      name: formData.get("Name"),
-      persons: formData.get("Personen"),
-      breakfast: formData.get("Frühstück"),
-      arrival: formData.get("Ankunftszeit"),
-      departure: formData.get("Abfahrtszeit"),
-      start: formData.get("Startdatum"),
-      end: formData.get("Enddatum")
-    };
-    bookings.push(newBooking);
-    localStorage.setItem("bookings", JSON.stringify(bookings));
-    alert("Buchung wurde erfolgreich erfasst! Eine Bestätigung wird per E-Mail gesendet.");
-  });
-
-  // --- Admin Bereich ---
-
-  const adminLoginSection = document.getElementById("admin-login-section");
-  const adminDashboard = document.getElementById("admin-dashboard");
+(() => {
+  const friendLoginBtn = document.getElementById("friend-login-btn");
   const adminLoginBtn = document.getElementById("admin-login-btn");
-  const adminPasswordInput = document.getElementById("admin-password");
-  const adminLoginError = document.getElementById("admin-login-error");
   const adminLogoutBtn = document.getElementById("admin-logout-btn");
-  const bookingsTbody = document.getElementById("bookings-tbody");
-  const blockDayInput = document.getElementById("block-day-input");
+  const errorP = document.getElementById("error");
+
+  const loginBox = document.getElementById("login-box");
+  const content = document.getElementById("content");
+  const adminSection = document.getElementById("admin-section");
+
+  const monthViewBtn = document.getElementById("month-view-btn");
+  const yearViewBtn = document.getElementById("year-view-btn");
+  const calendarContainer = document.getElementById("calendar-container");
+
+  const bookingForm = document.getElementById("booking-form");
+  const bookingMsg = document.getElementById("booking-msg");
+
+  const nameInput = document.getElementById("name");
+  const personsInput = document.getElementById("persons");
+  const breakfastInput = document.getElementById("breakfast");
+  const arrivalInput = document.getElementById("arrival");
+  const departureInput = document.getElementById("departure");
+  const startDateInput = document.getElementById("start-date");
+  const endDateInput = document.getElementById("end-date");
+
+  // Admin block day inputs and messages
+  const blockDayInput = document.getElementById("admin-block-day");
   const blockDayBtn = document.getElementById("block-day-btn");
   const unblockDayBtn = document.getElementById("unblock-day-btn");
   const adminMsg = document.getElementById("admin-msg");
+  const adminError = document.getElementById("admin-error");
+
+  const bookingsTbody = document.getElementById("bookings-tbody");
   const exportCsvBtn = document.getElementById("export-csv-btn");
 
-  // Admin Login
-  adminLoginBtn.addEventListener("click", () => {
-    if(adminPasswordInput.value === ADMIN_PASSWORD) {
-      adminLoginSection.style.display = "none";
-      adminDashboard.style.display = "block";
-      adminLoginError.textContent = "";
-      renderBookingsTable();
-      loadBlockedDays();
+  // Konfiguration
+  const ADMIN_PASSWORD = "AdminPass123";
+  const FRIEND_PASS = ""; // kein Passwort mehr
+
+  // Kalender Start/Ende
+  const START_YEAR = 2025;
+  const END_YEAR = 2040;
+
+  // Daten speichern/laden via localStorage
+  let bookings = JSON.parse(localStorage.getItem("bookings") || "[]");
+  let blockedDays = JSON.parse(localStorage.getItem("blockedDays") || "[]");
+
+  // Kalenderzustand
+  let currentYear = START_YEAR;
+  let currentMonth = 8; // September 2025 (0-basiert: 0=Jan, also 8=Sep)
+  let viewMode = "month"; // "month" oder "year"
+
+  // Zum Start-/Enddatum-Auswählen
+  let selectingStartDate = true;
+
+  // Hilfsfunktionen für Datum-Strings "YYYY-MM-DD"
+  function formatDate(date) {
+    return date.toISOString().slice(0, 10);
+  }
+  function parseDate(str) {
+    return new Date(str + "T00:00:00");
+  }
+
+  // Kalender rendern (Monat oder Jahr)
+  function renderCalendar() {
+    calendarContainer.innerHTML = "";
+
+    if(viewMode === "month") {
+      renderMonthCalendar(currentYear, currentMonth);
     } else {
-      adminLoginError.textContent = "Falsches Passwort!";
+      renderYearCalendar(currentYear);
     }
-  });
+  }
 
-  // Admin Logout
-  adminLogoutBtn.addEventListener("click", () => {
-    adminDashboard.style.display = "none";
-    adminLoginSection.style.display = "block";
-    adminPasswordInput.value = "";
-  });
+  function renderMonthCalendar(year, month) {
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startWeekday = firstDay.getDay() || 7; // Sonntag=0 zu 7 ändern
+    const daysInMonth = lastDay.getDate();
 
-  // Buchungen Tabelle rendern
-  function renderBookingsTable() {
+    // Überschrift und Navigation
+    const header = document.createElement("div");
+    header.className = "calendar-header";
+
+    const prevBtn = document.createElement("button");
+    prevBtn.textContent = "<";
+    prevBtn.onclick = () => {
+      if(month === 0) {
+        if(year > START_YEAR) {
+          currentYear--;
+          currentMonth = 11;
+        }
+      } else currentMonth--;
+      renderCalendar();
+    };
+
+    const nextBtn = document.createElement("button");
+    nextBtn.textContent = ">";
+    nextBtn.onclick = () => {
+      if(month === 11) {
+        if(year < END_YEAR) {
+          currentYear++;
+          currentMonth = 0;
+        }
+      } else currentMonth++;
+      renderCalendar();
+    };
+
+    const title = document.createElement("h3");
+    title.textContent = firstDay.toLocaleString("de-DE", {month: "long", year: "numeric"});
+
+    const navDiv = document.createElement("div");
+    navDiv.className = "calendar-nav";
+    navDiv.appendChild(prevBtn);
+    navDiv.appendChild(nextBtn);
+
+    header.appendChild(navDiv);
+    header.appendChild(title);
+    header.appendChild(document.createElement("div")); // Platzhalter für Layout
+
+    calendarContainer.appendChild(header);
+
+    // Wochentage
+    const weekdaysDiv = document.createElement("div");
+    weekdaysDiv.className = "days";
+    ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].forEach(d => {
+      const wd = document.createElement("div");
+      wd.style.fontWeight = "bold";
+      wd.style.textAlign = "center";
+      wd.textContent = d;
+      weekdaysDiv.appendChild(wd);
+    });
+    calendarContainer.appendChild(weekdaysDiv);
+
+    // Tage füllen
+    const daysDiv = document.createElement("div");
+    daysDiv.className = "days";
+
+    // Leerfelder vor dem ersten Tag (Montag = 1)
+    for(let i=1; i < startWeekday; i++) {
+      const emptyDiv = document.createElement("div");
+      emptyDiv.className = "day disabled";
+      daysDiv.appendChild(emptyDiv);
+    }
+
+    // Tage rendern
+    for(let d=1; d<=daysInMonth; d++) {
+      const dateStr = `${year}-${String(month+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+      const dayDiv = document.createElement("div");
+      dayDiv.className = "day";
+      dayDiv.textContent = d;
+
+      // Blockiert?
+      if(blockedDays.includes(dateStr)) {
+        dayDiv.classList.add("blocked");
+      }
+      // Gebucht?
+      if(bookings.some(b => dateInRange(dateStr, b.startDate, b.endDate))) {
+        dayDiv.classList.add("booked");
+      }
+
+      // Klick nur wenn frei
+      if(!dayDiv.classList.contains("blocked") && !dayDiv.classList.contains("booked")) {
+        dayDiv.onclick = () => onDayClick(dateStr);
+      }
+
+      daysDiv.appendChild(dayDiv);
+    }
+
+    calendarContainer.appendChild(daysDiv);
+  }
+
+  // Jahresübersicht: alle Monate im Jahr anzeigen, mit farblicher Markierung der belegten/blockierten Tage
+  function renderYearCalendar(year) {
+    const container = document.createElement("div");
+    container.style.display = "grid";
+    container.style.gridTemplateColumns = "repeat(3, 1fr)";
+    container.style.gap = "20px";
+
+    for(let m=0; m<12; m++) {
+      const monthDiv = document.createElement("div");
+      monthDiv.style.background = "rgba(0,0,0,0.3)";
+      monthDiv.style.borderRadius = "8px";
+      monthDiv.style.padding = "10px";
+
+      const monthName = new Date(year, m, 1).toLocaleString("de-DE", {month:"long"});
+      const title = document.createElement("h4");
+      title.textContent = monthName;
+      title.style.textAlign = "center";
+      monthDiv.appendChild(title);
+
+      // Tage 1-31 (max)
+      const daysGrid = document.createElement("div");
+      daysGrid.style.display = "grid";
+      daysGrid.style.gridTemplateColumns = "repeat(7, 1fr)";
+      daysGrid.style.gap = "2px";
+
+      // Wochentage als Überschrift
+      ["Mo","Di","Mi","Do","Fr","Sa","So"].forEach(wd => {
+        const wdDiv = document.createElement("div");
+        wdDiv.style.fontWeight = "bold";
+        wdDiv.style.fontSize = "0.75rem";
+        wdDiv.style.textAlign = "center";
+        wdDiv.textContent = wd;
+        daysGrid.appendChild(wdDiv);
+      });
+
+      const daysInMonth = new Date(year,m+1,0).getDate();
+      const firstDay = new Date(year,m,1);
+      let startWeekday = firstDay.getDay() || 7;
+
+      // Leere Felder vor Monatstart
+      for(let i=1; i<startWeekday; i++) {
+        const emptyDiv = document.createElement("div");
+        emptyDiv.style.height = "18px";
+        daysGrid.appendChild(emptyDiv);
+      }
+
+      for(let d=1; d<=daysInMonth; d++) {
+        const dateStr = `${year}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+        const dayDiv = document.createElement("div");
+        dayDiv.textContent = d;
+        dayDiv.style.fontSize = "0.8rem";
+        dayDiv.style.textAlign = "center";
+        dayDiv.style.borderRadius = "4px";
+        dayDiv.style.padding = "2px";
+
+        if(blockedDays.includes(dateStr)) {
+          dayDiv.style.backgroundColor = "#ff4c4c";
+          dayDiv.style.color = "white";
+        } else if(bookings.some(b => dateInRange(dateStr, b.startDate, b.endDate))) {
+          dayDiv.style.backgroundColor = "#4caf5080";
+          dayDiv.style.color = "white";
+        } else {
+          dayDiv.style.backgroundColor = "rgba(255,255,255,0.1)";
+          dayDiv.style.color = "white";
+        }
+
+        daysGrid.appendChild(dayDiv);
+      }
+      monthDiv.appendChild(daysGrid);
+      container.appendChild(monthDiv);
+    }
+
+    calendarContainer.appendChild(container);
+  }
+
+  function dateInRange(dateStr, start, end) {
+    return (dateStr >= start && dateStr <= end);
+  }
+
+  // Beim Tag-Klick für Buchungsstart/-ende
+  function onDayClick(dateStr) {
+    if(selectingStartDate) {
+      startDateInput.value = dateStr;
+      endDateInput.value = "";
+      selectingStartDate = false;
+      bookingMsg.textContent = "Bitte Enddatum wählen.";
+    } else {
+      if(dateStr < startDateInput.value) {
+        bookingMsg.textContent = "Enddatum darf nicht vor Startdatum liegen!";
+        return;
+      }
+      endDateInput.value = dateStr;
+      selectingStartDate = true;
+      bookingMsg.textContent = "";
+    }
+  }
+
+  // Freundelogin - direkt ohne Passwort
+  friendLoginBtn.onclick = () => {
+    loginBox.style.display = "none";
+    content.style.display = "block";
+    adminSection.style.display = "none";
+    errorP.textContent = "";
+    renderCalendar();
+  };
+
+  // Adminlogin mit Passwort
+  adminLoginBtn.onclick = () => {
+    const pwd = document.getElementById("admin-password").value;
+    if(pwd === ADMIN_PASSWORD) {
+      loginBox.style.display = "none";
+      content.style.display = "none";
+      adminSection.style.display = "block";
+      errorP.textContent = "";
+      renderAdminBookings();
+      renderCalendar();
+    } else {
+      errorP.textContent = "Falsches Passwort!";
+    }
+  };
+
+  adminLogoutBtn.onclick = () => {
+    adminSection.style.display = "none";
+    content.style.display = "none";
+    loginBox.style.display = "block";
+    bookingMsg.textContent = "";
+    adminMsg.textContent = "";
+    adminError.textContent = "";
+    clearBookingForm();
+  };
+
+  // Kalenderansicht wechseln
+  monthViewBtn.onclick = () => {
+    viewMode = "month";
+    renderCalendar();
+  };
+  yearViewBtn.onclick = () => {
+    viewMode = "year";
+    renderCalendar();
+  };
+
+  // Buchung speichern
+  bookingForm.onsubmit = (e) => {
+    e.preventDefault();
+
+    // Validieren
+    if(!startDateInput.value || !endDateInput.value) {
+      bookingMsg.style.color = "#ff6b6b";
+      bookingMsg.textContent = "Bitte Start- und Enddatum auswählen!";
+      return;
+    }
+    if(endDateInput.value < startDateInput.value) {
+      bookingMsg.style.color = "#ff6b6b";
+      bookingMsg.textContent = "Enddatum darf nicht vor Startdatum liegen!";
+      return;
+    }
+
+    // Prüfen, ob Tage blockiert oder gebucht sind
+    let curDate = parseDate(startDateInput.value);
+    const lastDate = parseDate(endDateInput.value);
+
+    while(curDate <= lastDate) {
+      const dateStr = formatDate(curDate);
+      if(blockedDays.includes(dateStr)) {
+        bookingMsg.style.color = "#ff6b6b";
+        bookingMsg.textContent = `Tag ${dateStr} ist blockiert!`;
+        return;
+      }
+      if(bookings.some(b => dateInRange(dateStr, b.startDate, b.endDate))) {
+        bookingMsg.style.color = "#ff6b6b";
+        bookingMsg.textContent = `Tag ${dateStr} ist bereits gebucht!`;
+        return;
+      }
+      curDate.setDate(curDate.getDate() + 1);
+    }
+
+    // Daten sammeln
+    const newBooking = {
+      id: Date.now(),
+      name: nameInput.value.trim(),
+      persons: personsInput.value,
+      breakfast: breakfastInput.value,
+      arrival: arrivalInput.value || "nicht angegeben",
+      departure: departureInput.value || "nicht angegeben",
+      startDate: startDateInput.value,
+      endDate: endDateInput.value,
+    };
+
+    bookings.push(newBooking);
+    localStorage.setItem("bookings", JSON.stringify(bookings));
+
+    // E-Mail senden via formsubmit.co (Formular wird dafür genutzt)
+    fetch("https://formsubmit.co/ajax/pauldippmann@gmail.com", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        name: newBooking.name,
+        persons: newBooking.persons,
+        breakfast: newBooking.breakfast,
+        arrival: newBooking.arrival,
+        departure: newBooking.departure,
+        startDate: newBooking.startDate,
+        endDate: newBooking.endDate,
+        _subject: "Neue Übernachtungsbuchung von Freunden"
+      })
+    }).then(r => {
+      if(r.ok) {
+        bookingMsg.style.color = "#a3ffa3";
+        bookingMsg.textContent = "Buchung erfolgreich gespeichert und E-Mail gesendet!";
+        clearBookingForm();
+        renderCalendar();
+      } else {
+        bookingMsg.style.color = "#ff6b6b";
+        bookingMsg.textContent = "Buchung gespeichert, aber E-Mail konnte nicht gesendet werden.";
+      }
+    }).catch(() => {
+      bookingMsg.style.color = "#ff6b6b";
+      bookingMsg.textContent = "Buchung gespeichert, aber E-Mail konnte nicht gesendet werden.";
+    });
+  };
+
+  function clearBookingForm() {
+    bookingForm.reset();
+    startDateInput.value = "";
+    endDateInput.value = "";
+    selectingStartDate = true;
+  }
+
+  // Admin: Buchungen anzeigen
+  function renderAdminBookings() {
     bookingsTbody.innerHTML = "";
     if(bookings.length === 0) {
-      const tr = document.createElement("tr");
-      const td = document.createElement("td");
-      td.colSpan = 7;
-      td.textContent = "Keine Buchungen vorhanden.";
-      tr.appendChild(td);
-      bookingsTbody.appendChild(tr);
+      bookingsTbody.innerHTML = "<tr><td colspan='8'>Keine Buchungen vorhanden.</td></tr>";
       return;
     }
     bookings.forEach(b => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
-        <td>${b.name}</td>
+        <td>${escapeHtml(b.name)}</td>
         <td>${b.persons}</td>
-        <td>${b.breakfast}</td>
-        <td>${b.arrival}</td>
-        <td>${b.departure}</td>
-        <td>${b.start}</td>
-        <td>${b.end}</td>
+        <td>${escapeHtml(b.breakfast)}</td>
+        <td>${escapeHtml(b.arrival)}</td>
+        <td>${escapeHtml(b.departure)}</td>
+        <td>${b.startDate}</td>
+        <td>${b.endDate}</td>
+        <td><button data-id="${b.id}" class="delete-booking-btn" style="background:#c62828; color:white; border:none; padding:5px 8px; border-radius:5px; cursor:pointer;">Löschen</button></td>
       `;
       bookingsTbody.appendChild(tr);
     });
-  }
 
-  // Blockierte Tage laden und speichern
-  function loadBlockedDays() {
-    const stored = localStorage.getItem("blockedDays");
-    if(stored) {
-      blockedDays = JSON.parse(stored);
-    } else {
-      blockedDays = [];
-    }
-  }
-  function saveBlockedDays() {
-    localStorage.setItem("blockedDays", JSON.stringify(blockedDays));
-  }
-
-  // Blockieren und Freigeben von Tagen im Admin
-  blockDayBtn.addEventListener("click", () => {
-    const day = blockDayInput.value;
-    if(day && !blockedDays.includes(day)) {
-      blockedDays.push(day);
-      saveBlockedDays();
-      adminMsg.textContent = `Tag ${day} wurde blockiert.`;
-      adminMsg.className = "success";
-      renderCalendar(currentYear, currentMonth);
-      renderBookingsTable();
-    }
-  });
-  unblockDayBtn.addEventListener("click", () => {
-    const day = blockDayInput.value;
-    if(day && blockedDays.includes(day)) {
-      blockedDays = blockedDays.filter(d => d !== day);
-      saveBlockedDays();
-      adminMsg.textContent = `Tag ${day} wurde freigegeben.`;
-      adminMsg.className = "success";
-      renderCalendar(currentYear, currentMonth);
-      renderBookingsTable();
-    }
-  });
-
-  // Export Buchungen CSV
-  exportCsvBtn.addEventListener("click", () => {
-    if(bookings.length === 0) {
-      alert("Keine Buchungen zum Exportieren.");
-      return;
-    }
-    let csv = "Name,Personen,Frühstück,Ankunft,Abfahrt,Startdatum,Enddatum\n";
-    bookings.forEach(b => {
-      csv += `"${b.name}","${b.persons}","${b.breakfast}","${b.arrival}","${b.departure}","${b.start}","${b.end}"\n`;
+    // Löschen-Buttons Event
+    document.querySelectorAll(".delete-booking-btn").forEach(btn => {
+      btn.onclick = () => {
+        const id = parseInt(btn.getAttribute("data-id"));
+        bookings = bookings.filter(b => b.id !== id);
+        localStorage.setItem("bookings", JSON.stringify(bookings));
+        adminMsg.style.color = "#a3ffa3";
+        adminMsg.textContent = "Buchung gelöscht.";
+        renderAdminBookings();
+        renderCalendar();
+      };
     });
-    const blob = new Blob([csv], {type: "text/csv"});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `bookings_${new Date().toISOString().slice(0,10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  });
+  }
 
-  // Initial Setup
-  loadBlockedDays();
-  renderCalendar(currentYear, currentMonth);
+  // Admin: Tage blockieren/freigeben
+  blockDayForm.onsubmit = (e) => {
+    e.preventDefault();
+    const dayToBlock = blockDayInput.value;
+    if(!dayToBlock) return;
 
-})();</script>
+    if(blockedDays.includes(dayToBlock)) {
+      blockedDays = blockedDays.filter(d => d !== dayToBlock);
+      adminMsg.style.color = "#a3ffa3";
+      adminMsg.textContent = `Tag ${dayToBlock} freigegeben.`;
+    } else {
+      blockedDays.push(dayToBlock);
+      adminMsg.style.color = "#a3ffa3";
+      adminMsg.textContent = `Tag ${dayToBlock} blockiert.`;
+    }
+    localStorage.setItem("blockedDays", JSON.stringify(blockedDays));
+    blockDayInput.value = "";
+    renderCalendar();
+  };
+
+  // Hilfsfunktionen
+  function parseDate(str) {
+    const [y,m,d] = str.split("-").map(Number);
+    return new Date(y,m-1,d);
+  }
+  function formatDate(date) {
+    return date.toISOString().slice(0,10);
+  }
+  function escapeHtml(text) {
+    return text.replace(/[&<>"']/g, function(m) {
+      return ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      })[m];
+    });
+  }
+
+  renderCalendar();
+})();  
+</script>
+
+<style>
+  /* Grundlayout und Stile für Kalender */
+  .calendar-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  .days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+  }
+  .day {
+    background-color: rgba(255,255,255,0.1);
+    border-radius: 6px;
+    padding: 8px;
+    text-align: center;
+    cursor: pointer;
+    user-select: none;
+  }
+  .day.blocked {
+    background-color: #ff4c4c;
+    color: white;
+    cursor: not-allowed;
+  }
+  .day.booked {
+    background-color: #4caf5080;
+    color: white;
+    cursor: not-allowed;
+  }
+  .day.disabled {
+    background-color: transparent;
+    cursor: default;
+  }
+  h3, h4 {
+    margin: 5px 0;
+  }
+</style>
