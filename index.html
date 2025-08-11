@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<title>Freunde-Bereich mit Kalender</title>
+<style>
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: url('https://images.unsplash.com/photo-1506784983877-45594efa4cbe?auto=format&fit=crop&w=1600&q=80') no-repeat center center/cover;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 20px;
+    color: white;
+  }
+
+  #login-box, #content, #admin-section {
+    background: rgba(255,255,255,0.15);
+    backdrop-filter: blur(8px);
+    border-radius: 15px;
+    padding: 30px;
+    max-width: 500px;
+    text-align: center;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    animation: fadeIn 0.6s ease-out;
+    margin-bottom: 20px;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  h1, h2, p {
+    margin: 0 0 10px 0;
+  }
+
+  input, button {
+    padding: 12px;
+    margin: 10px 5px;
+    border: none;
+    border-radius: 8px;
+    outline: none;
+    font-size: 16px;
+  }
+
+  input {
+    width: 70%;
+  }
+
+  button {
+    background: #4CAF50;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+
+  button:hover {
+    background: #45a049;
+  }
+
+  #error {
+    color: #ff6b6b;
+    font-weight: bold;
+  }
+
+  #calendar {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 10px;
+    color: white;
+  }
+
+  .day {
+    padding: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .day:hover {
+    background-color: rgba(255,255,255,0.2);
+  }
+
+  .header {
+    font-weight: bold;
+    background: rgba(255,255,255,0.3);
+    cursor: default;
+  }
+
+  .selected {
+    background-color: #4caf50;
+    color: white;
+  }
+
+  .booked {
+    background-color: #ff6b6b;
+    color: white;
+    cursor: not-allowed;
+  }
+
+  .blocked {
+    background-color: #555;
+    color: #bbb;
+    cursor: not-allowed;
+  }
+
+  #monthYear {
+    font-size: 24px;
+    margin-bottom: 10px;
+  }
+
+  #navButtons button {
+    margin: 0 10px;
+  }
+
+  #bookingList {
+    text-align: left;
+    max-height: 150px;
+    overflow-y: auto;
+    background: rgba(0,0,0,0.2);
+    border-radius: 8px;
+    padding: 10px;
+  }
+</style>
+</head>
+<body>
+
+<div id="login-box">
+  <h2>Willkommen, Freund ✨</h2>
+  <p>Gib das geheime Passwort ein</p>
+  <input type="password" id="password" placeholder="Passwort" />
+  <br />
+  <button onclick="checkPassword()">Einloggen</button>
+  <p id="error"></p>
+</div>
+
+<div id="content" style="display:none; width: 100%; max-width: 700px;">
+  <h1>🎉 Hallo Freunde!</h1>
+  <p>Hier ist unser geheimer Bereich – nur für uns.</p>
+
+  <div id="monthYear"></div>
+  <div id="navButtons">
+    <button onclick="prevMonth()">← Vorheriger Monat</button>
+    <button onclick="nextMonth()">Nächster Monat →</button>
+  </div>
+
+  <div id="calendar"></div>
+
+  <h3>Übernachtungen eintragen</h3>
+  <p>Wähle Start- und Enddatum im Kalender aus.</p>
+  <input type="text" id="nameInput" placeholder="Dein Name" />
+  <button onclick="addBooking()">Buchen</button>
+
+  <h3>Gebuchte Übernachtungen</h3>
+  <div id="bookingList"></div>
+</div>
+
+<div id="admin-section" style="display:none; max-width: 700px; width: 100%;">
+  <h2>Admin-Bereich: Sperrtage verwalten</h2>
+  <p>Wähle Tage im Kalender aus, um sie als gesperrt zu markieren oder zu entfernen.</p>
+  <button onclick="toggleBlockMode()">Sperrmodus an/aus</button>
+  <p id="blockModeStatus">Sperrmodus ist aus.</p>
+</div>
+
+<script>
+  // Passwort-Hash für "geheim123"
+  const storedHash = "e8c8a7411cc909f99144119279aff1976ea26ef280865a6d0a5530b868e7ca2d";
+
+  async function sha256(message) {
+    const msgBuffer = new TextEncoder().encode(message);
+    const hashBuffer = await crypto.subtle.digest("SHA-256", msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+  }
+
+  const loginBox = document.getElementById("login-box");
+  const content = document.getElementById("content");
+  const adminSection = document.getElementById("admin-section");
+  const errorText = document.getElementById("error");
+
+  async function checkPassword() {
+    const input = document.getElementById("password").value.trim();
+    const hash = await sha256(input);
+
+    if (hash === storedHash) {
+      loginBox.style.display = "none";
+      content.style.display = "block";
+
+      // Admin-Zugang, falls Name "admin"
+      if (input === "admin") {
+        adminSection.style.display = "block";
+      }
+
+      loadData();
+      renderCalendar();
+    } else {
+      errorText.textContent = "❌ Falsches Passwort!";
+    }
+  }
+
+  // Kalender-Variablen
+  let currentDate = new Date();
+  let selectedStart = null;
+  let selectedEnd = null;
+  let blockMode = false;
+
+  // Daten: Buchungen und Sperrtage (localStorage)
+  let bookings = JSON.parse(localStorage.getItem("bookings")) || [];
+  let blockedDays = JSON.parse(localStorage.getItem("blockedDays")) || [];
+
+  function saveData() {
+    localStorage.setItem("bookings", JSON.stringify(bookings));
+    localStorage.setItem("blockedDays", JSON.stringify(blockedDays));
+  }
+
+  function loadData() {
+    bookings = JSON.parse(localStorage.getItem("bookings")) || [];
+    blockedDays = JSON.parse(localStorage.getItem("blockedDays")) || [];
+  }
+
+  function renderCalendar() {
+    const calendar = document.getElementById("calendar");
+    calendar.innerHTML = "";
+
+    // Wochentagsnamen
+    const weekdays = ["So", "Mo", "Di", "Mi", "Do", "Fr", "Sa"];
+    weekdays.forEach((day) => {
+      const header = document.createElement("div");
+      header.textContent = day;
+      header.classList.add("header");
+      calendar.appendChild(header);
+    });
+
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+
+    document.getElementById("monthYear").textContent = currentDate.toLocaleString("de-DE", {
+      month: "long",
+      year: "numeric",
+    });
+
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+
+    // Leerfelder bis zum ersten Wochentag
+    for (let i = 0; i < firstDay.getDay(); i++) {
+      const empty = document.createElement("div");
+      calendar.appendChild(empty);
+    }
+
+    // Tage generieren
+    for (let dayNum = 1; dayNum <= lastDay.getDate(); dayNum++) {
+      const day = document.createElement("div");
+      day.textContent = dayNum;
+      day.classList.add("day");
+
+      const dateStr = formatDate(new Date(year, month, dayNum));
+
+      // Prüfen ob gesperrt
+      if (blockedDays.includes(dateStr)) {
+        day.classList.add("blocked");
+      } else if (isBooked(dateStr)) {
+        day.classList.add("booked");
+      }
+
+      // Auswahl und Klicks
+      day.onclick = () => onDayClick(dateStr, day);
+
+      calendar.appendChild(day);
+    }
+  }
+
+  function formatDate(date) {
+    return date.toISOString().slice(0, 10);
+  }
+
+  function isBooked(dateStr) {
+    return bookings.some((b) => {
+      return (
+        dateStr >= b.start &&
+        dateStr <= b.end
+      );
+    });
+  }
+
+  function onDayClick(dateStr, dayElement) {
+    if (blockMode) {
+      // Im Sperrmodus Tage hinzufügen oder entfernen
+      if (blockedDays.includes(dateStr)) {
+        blockedDays = blockedDays.filter((d) => d !== dateStr);
+      } else {
+        blockedDays.push(dateStr);
+      }
+      saveData();
+      renderCalendar();
+      updateBookingList();
+      return;
+    }
+
+    // Normaler Buchungsmodus
+    if (!selectedStart || (selectedStart && selectedEnd)) {
+      selectedStart = dateStr;
+      selectedEnd = null;
+    } else if (selectedStart && !selectedEnd) {
+      if (dateStr < selectedStart) {
+        selectedEnd = selectedStart;
+        selectedStart = dateStr;
+      } else {
+        selectedEnd = dateStr;
+      }
+    }
+
+    // Visual Auswahl
+    updateSelectionVisual();
+  }
+
+  function updateSelectionVisual() {
+    const days = document.querySelectorAll(".day");
+    days.forEach((d) => {
+      d.classList.remove("selected");
+      const date = currentDate.getFullYear() + "-" +
+        String(currentDate.getMonth() + 1).padStart(2, "0") + "-" +
+        String(d.textContent).padStart(2, "0");
+      if (selectedStart && !selectedEnd) {
+        if (d.textContent == parseInt(selectedStart.slice(-2))) {
+          d.classList.add("selected");
+        }
+      }
+      if (selectedStart && selectedEnd) {
+        const start = new Date(selectedStart);
+        const end = new Date(selectedEnd);
+        const dayDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), parseInt(d.textContent));
+        if (dayDate >= start && dayDate <= end) {
+          d.classList.add("selected");
+        }
+      }
+    });
+  }
+
+  function addBooking() {
+    const name = document.getElementById("nameInput").value.trim();
+    if (!name) {
+      alert("Bitte gib deinen Namen ein!");
+      return;
+    }
+    if (!selectedStart || !selectedEnd) {
+      alert("Bitte wähle Start- und Enddatum aus!");
+      return;
+    }
+
+    // Check ob Tage gesperrt oder schon gebucht sind
+    let date = new Date(selectedStart);
+    const end = new Date(selectedEnd);
+    while (date <= end) {
+      const dStr = formatDate(date);
+      if (blockedDays.includes(dStr)) {
+        alert("Einer oder mehrere Tage sind gesperrt und können nicht gebucht werden.");
+        return;
+      }
+      if (isBooked(dStr)) {
+        alert("Einer oder mehrere Tage sind schon gebucht.");
+        return;
+      }
+      date.setDate(date.getDate() + 1);
+    }
+
+    bookings.push({ name, start: selectedStart, end: selectedEnd });
+    saveData();
+    updateBookingList();
+    selectedStart = null;
+    selectedEnd = null;
+    document.getElementById("nameInput").value = "";
+    renderCalendar();
+  }
+
+  function updateBookingList() {
+    const list = document.getElementById("bookingList");
+    list.innerHTML = "";
+    if (bookings.length === 0) {
+      list.textContent = "Keine Buchungen vorhanden.";
+      return;
+    }
+    bookings.forEach((b, i) => {
+      const item = document.createElement("div");
+      item.textContent = `${b.name}: ${b.start} bis ${b.end}`;
+      list.appendChild(item);
+    });
+  }
+
+  function prevMonth() {
+    currentDate.setMonth(currentDate.getMonth() - 1);
+    renderCalendar();
+  }
+
+  function nextMonth() {
+    currentDate.setMonth(currentDate.getMonth() + 1);
+    renderCalendar();
+  }
+
+  // Sperrmodus
+  function toggleBlockMode() {
+    blockMode = !blockMode;
+    document.getElementById("blockModeStatus").textContent = blockMode ? "Sperrmodus ist an." : "Sperrmodus ist aus.";
+  }
+
+</script>
+
+</body>
+</html>
