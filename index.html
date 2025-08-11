@@ -5,216 +5,216 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Freunde Kalender Offenbach</title>
 <style>
-  /* Grundlayout */
-  body, html {
-    margin: 0; padding: 0; height: 100%;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: url('https://upload.wikimedia.org/wikipedia/commons/4/44/Offenbach_am_Main_-_Rathaus_und_Mainufer_01.jpg') no-repeat center center fixed;
-    background-size: cover;
-    color: #fff;
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-  }
-  main {
-    flex-grow: 1;
-    background: rgba(0,0,0,0.6);
-    padding: 20px;
-    overflow-y: auto;
-  }
-  h1, h2, h3 {
-    margin: 0 0 10px 0;
-    text-align: center;
-  }
-  button {
-    cursor: pointer;
-    border: none;
-    border-radius: 5px;
-    padding: 8px 15px;
-    margin: 5px;
-    background-color: #4CAF50;
-    color: white;
-    font-weight: 600;
-    transition: background-color 0.3s ease;
-  }
-  button:hover {
-    background-color: #45a049;
-  }
-  input, select {
-    padding: 8px;
-    margin: 5px 0 15px 0;
-    border-radius: 5px;
-    border: none;
-    width: 100%;
-    box-sizing: border-box;
-  }
-  label {
-    font-weight: 600;
-    display: block;
-    margin-bottom: 5px;
-  }
-  #error-msg {
-    color: #ff6b6b;
-    text-align: center;
-    margin-bottom: 10px;
-  }
-  #success-msg {
-    color: #90ee90;
-    text-align: center;
-    margin-bottom: 10px;
-  }
+/* Grundlayout */
+body, html {
+  margin: 0; padding: 0; height: 100%;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: url('https://upload.wikimedia.org/wikipedia/commons/4/44/Offenbach_am_Main_-_Rathaus_und_Mainufer_01.jpg') no-repeat center center fixed;
+  background-size: cover;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+main {
+  flex-grow: 1;
+  background: rgba(0,0,0,0.6);
+  padding: 20px;
+  overflow-y: auto;
+}
+h1, h2, h3 {
+  margin: 0 0 10px 0;
+  text-align: center;
+}
+button {
+  cursor: pointer;
+  border: none;
+  border-radius: 5px;
+  padding: 8px 15px;
+  margin: 5px;
+  background-color: #4CAF50;
+  color: white;
+  font-weight: 600;
+  transition: background-color 0.3s ease;
+}
+button:hover {
+  background-color: #45a049;
+}
+input, select {
+  padding: 8px;
+  margin: 5px 0 15px 0;
+  border-radius: 5px;
+  border: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+label {
+  font-weight: 600;
+  display: block;
+  margin-bottom: 5px;
+}
+#error-msg {
+  color: #ff6b6b;
+  text-align: center;
+  margin-bottom: 10px;
+}
+#success-msg {
+  color: #90ee90;
+  text-align: center;
+  margin-bottom: 10px;
+}
 
-  /* Navigation */
-  nav {
-    background: rgba(0,0,0,0.7);
-    padding: 10px 20px;
-    text-align: center;
-  }
-  nav button {
-    margin: 0 10px;
-  }
+/* Navigation */
+nav {
+  background: rgba(0,0,0,0.7);
+  padding: 10px 20px;
+  text-align: center;
+}
+nav button {
+  margin: 0 10px;
+}
 
-  /* Kalender Styles */
-  .calendar-container {
-    max-width: 900px;
-    margin: 0 auto;
-  }
-  .calendar-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
-  }
-  .calendar-header h2 {
-    margin: 0;
-  }
-  .month-nav button {
-    font-size: 18px;
-    padding: 5px 10px;
-  }
-  table.calendar {
-    border-collapse: collapse;
-    width: 100%;
-    background: rgba(255,255,255,0.1);
-    border-radius: 8px;
-  }
+/* Kalender Styles */
+.calendar-container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.calendar-header h2 {
+  margin: 0;
+}
+.month-nav button {
+  font-size: 18px;
+  padding: 5px 10px;
+}
+table.calendar {
+  border-collapse: collapse;
+  width: 100%;
+  background: rgba(255,255,255,0.1);
+  border-radius: 8px;
+}
+table.calendar th, table.calendar td {
+  width: 14.2857%;
+  padding: 10px;
+  text-align: center;
+  vertical-align: middle;
+  cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.2);
+}
+table.calendar th {
+  background: rgba(255,255,255,0.2);
+  font-weight: 700;
+}
+table.calendar td.inactive {
+  color: #aaa;
+  cursor: default;
+  background: transparent;
+}
+table.calendar td.booked {
+  background-color: #d9534f; /* rot für belegt */
+  color: white;
+}
+table.calendar td.blocked {
+  background-color: #6c757d; /* grau für blockiert */
+  color: white;
+}
+table.calendar td.selected-start {
+  border: 3px solid #4caf50;
+}
+table.calendar td.selected-end {
+  border: 3px solid #4caf50;
+}
+table.calendar td.selected-range {
+  background-color: #81c784;
+  color: black;
+}
+
+/* Sonntag ganz rechts */
+table.calendar th:last-child, table.calendar td:last-child {
+  text-align: right;
+}
+
+/* Formular Styles */
+form {
+  max-width: 500px;
+  margin: 0 auto 30px auto;
+  background: rgba(255,255,255,0.1);
+  padding: 15px 20px;
+  border-radius: 8px;
+}
+.form-row {
+  margin-bottom: 10px;
+}
+.optional-label {
+  font-size: 0.9em;
+  color: #ccc;
+}
+
+/* Login Box */
+#login-box {
+  max-width: 400px;
+  margin: 40px auto;
+  background: rgba(255,255,255,0.15);
+  padding: 30px;
+  border-radius: 15px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+}
+#login-box h2 {
+  color: white;
+  margin-bottom: 15px;
+}
+
+/* Admin Bereich */
+#admin-area {
+  max-width: 900px;
+  margin: 0 auto;
+}
+#admin-bookings-list {
+  max-height: 300px;
+  overflow-y: auto;
+  background: rgba(255,255,255,0.1);
+  padding: 10px;
+  border-radius: 8px;
+}
+#admin-bookings-list table {
+  width: 100%;
+  border-collapse: collapse;
+  color: white;
+}
+#admin-bookings-list th, #admin-bookings-list td {
+  padding: 8px;
+  border: 1px solid rgba(255,255,255,0.3);
+  text-align: center;
+}
+#admin-bookings-list th {
+  background: rgba(255,255,255,0.2);
+}
+
+/* Scrollbar klein & dezent */
+#admin-bookings-list::-webkit-scrollbar {
+  width: 8px;
+}
+#admin-bookings-list::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.3);
+  border-radius: 4px;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
   table.calendar th, table.calendar td {
-    width: 14.2857%;
-    padding: 10px;
-    text-align: center;
-    vertical-align: middle;
-    cursor: pointer;
-    border: 1px solid rgba(255,255,255,0.2);
+    padding: 5px;
+    font-size: 12px;
   }
-  table.calendar th {
-    background: rgba(255,255,255,0.2);
-    font-weight: 700;
-  }
-  table.calendar td.inactive {
-    color: #aaa;
-    cursor: default;
-    background: transparent;
-  }
-  table.calendar td.booked {
-    background-color: #d9534f; /* rot für belegt */
-    color: white;
-  }
-  table.calendar td.blocked {
-    background-color: #6c757d; /* grau für blockiert */
-    color: white;
-  }
-  table.calendar td.selected-start {
-    border: 3px solid #4caf50;
-  }
-  table.calendar td.selected-end {
-    border: 3px solid #4caf50;
-  }
-  table.calendar td.selected-range {
-    background-color: #81c784;
-    color: black;
-  }
-
-  /* Sonntag ganz rechts */
-  table.calendar th:last-child, table.calendar td:last-child {
-    text-align: right;
-  }
-
-  /* Formular Styles */
   form {
-    max-width: 500px;
-    margin: 0 auto 30px auto;
-    background: rgba(255,255,255,0.1);
-    padding: 15px 20px;
-    border-radius: 8px;
+    width: 90%;
   }
-  .form-row {
-    margin-bottom: 10px;
-  }
-  .optional-label {
-    font-size: 0.9em;
-    color: #ccc;
-  }
-
-  /* Login Box */
-  #login-box {
-    max-width: 400px;
-    margin: 40px auto;
-    background: rgba(255,255,255,0.15);
-    padding: 30px;
-    border-radius: 15px;
-    backdrop-filter: blur(8px);
-    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-  }
-  #login-box h2 {
-    color: white;
-    margin-bottom: 15px;
-  }
-
-  /* Admin Bereich */
-  #admin-area {
-    max-width: 900px;
-    margin: 0 auto;
-  }
-  #admin-bookings-list {
-    max-height: 300px;
-    overflow-y: auto;
-    background: rgba(255,255,255,0.1);
-    padding: 10px;
-    border-radius: 8px;
-  }
-  #admin-bookings-list table {
-    width: 100%;
-    border-collapse: collapse;
-    color: white;
-  }
-  #admin-bookings-list th, #admin-bookings-list td {
-    padding: 8px;
-    border: 1px solid rgba(255,255,255,0.3);
-    text-align: center;
-  }
-  #admin-bookings-list th {
-    background: rgba(255,255,255,0.2);
-  }
-
-  /* Scrollbar klein & dezent */
-  #admin-bookings-list::-webkit-scrollbar {
-    width: 8px;
-  }
-  #admin-bookings-list::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.3);
-    border-radius: 4px;
-  }
-
-  /* Responsive */
-  @media (max-width: 600px) {
-    table.calendar th, table.calendar td {
-      padding: 5px;
-      font-size: 12px;
-    }
-    form {
-      width: 90%;
-    }
-  }
+}
 </style>
 </head>
 <body>
@@ -225,7 +225,6 @@
 </nav>
 
 <main>
-  <!-- Startseite -->
   <section id="start-page">
     <h1>Willkommen im Freunde Kalender Offenbach</h1>
     <p style="text-align:center; max-width:600px; margin:auto;">
@@ -234,7 +233,6 @@
     </p>
   </section>
 
-  <!-- Freunde Login (mit Passwort) -->
   <section id="friend-login" style="display:none;">
     <div id="login-box">
       <h2>Freunde Login</h2>
@@ -246,7 +244,6 @@
     </div>
   </section>
 
-  <!-- Freunde Bereich -->
   <section id="friend-area" style="display:none;">
     <h2>Übernachtung buchen</h2>
 
@@ -304,7 +301,6 @@
     </form>
   </section>
 
-  <!-- Jahreskalender Bereich -->
   <section id="yearly-calendar" style="display:none; max-width: 900px; margin: 0 auto;">
     <h2>Jahreskalender (Belegte Tage)</h2>
     <div style="text-align:center;">
@@ -316,7 +312,6 @@
     <div id="yearly-calendar-content" style="margin-top:20px;"></div>
   </section>
 
-  <!-- Admin Login -->
   <section id="admin-login" style="display:none;">
     <div id="login-box">
       <h2>Admin Login</h2>
@@ -328,7 +323,6 @@
     </div>
   </section>
 
-  <!-- Admin Bereich -->
   <section id="admin-area" style="display:none;">
     <h2>Admin Bereich</h2>
 
@@ -350,10 +344,10 @@
         <label for="block-end-date">Enddatum *</label>
         <input type="date" id="block-end-date" required />
       </div>
+      <div id="block-error" style="color:#ff6b6b; font-weight:bold; margin-bottom:10px;"></div>
       <button type="submit">Tage blockieren</button>
       <button type="button" id="btn-unblock-days">Tage freigeben</button>
     </form>
-
   </section>
 </main>
 
@@ -772,7 +766,7 @@
 
   document.getElementById("switch-calendar-view").onclick = () => {
     isYearlyView = true;
-    currentYear = CAL_START_YEAR;
+    currentYear = new Date().getFullYear();
     showSection("yearlyCalendar");
     renderYearlyCalendar(currentYear);
   };
@@ -919,24 +913,23 @@
   // -------------------
   // Blockierungen Hinzufügen (Admin)
   // -------------------
-  const blockForm = document.getElementById("block-form");
   const blockStartInput = document.getElementById("block-start-date");
   const blockEndInput = document.getElementById("block-end-date");
-  const blockError = document.getElementById("block-error");
-
-  blockForm.onsubmit = (e) => {
+  
+  document.getElementById("block-days-form").onsubmit = (e) => {
     e.preventDefault();
-    blockError.textContent = "";
+    const blockError = document.getElementById("block-error");
+    if(blockError) blockError.textContent = "";
 
     const startDate = blockStartInput.value;
     const endDate = blockEndInput.value;
 
     if(!startDate || !endDate) {
-      blockError.textContent = "Bitte Start- und Enddatum angeben.";
+      if(blockError) blockError.textContent = "Bitte Start- und Enddatum angeben.";
       return;
     }
     if(endDate < startDate) {
-      blockError.textContent = "Enddatum darf nicht vor Startdatum liegen.";
+      if(blockError) blockError.textContent = "Enddatum darf nicht vor Startdatum liegen.";
       return;
     }
 
@@ -946,13 +939,13 @@
 
     for(let b of bookings) {
       if(checkOverlap(startDate, endDate, b.startDate, b.endDate)) {
-        blockError.textContent = `Der Zeitraum überschneidet sich mit einer bestehenden Buchung (${b.name}: ${b.startDate} - ${b.endDate}).`;
+        if(blockError) blockError.textContent = `Der Zeitraum überschneidet sich mit einer bestehenden Buchung (${b.name}: ${b.startDate} - ${b.endDate}).`;
         return;
       }
     }
     for(let b of blocks) {
       if(checkOverlap(startDate, endDate, b.startDate, b.endDate)) {
-        blockError.textContent = `Der Zeitraum überschneidet sich mit einem bereits blockierten Zeitraum (${b.startDate} - ${b.endDate}).`;
+        if(blockError) blockError.textContent = `Der Zeitraum überschneidet sich mit einem bereits blockierten Zeitraum (${b.startDate} - ${b.endDate}).`;
         return;
       }
     }
@@ -960,14 +953,39 @@
     blocks.push({startDate, endDate});
     saveBlocks(blocks);
     alert("Blockierung erfolgreich hinzugefügt!");
-    blockForm.reset();
+    document.getElementById("block-days-form").reset();
     renderAdminBookings();
     renderCalendar(currentYear, currentMonth);
   };
+  
+  // Funktion zum Freigeben von Tagen
+  function unblockDays(startDate, endDate) {
+    let blocks = loadBlocks();
+    const originalLength = blocks.length;
+    blocks = blocks.filter(block => !checkOverlap(block.startDate, block.endDate, startDate, endDate));
+    if (blocks.length === originalLength) {
+      return false;
+    }
+    saveBlocks(blocks);
+    return true;
+  }
+  
+  // Event-Listener für den "Tage freigeben" Button
+  document.getElementById("btn-unblock-days").onclick = () => {
+    const blockStartInput = document.getElementById("block-start-date");
+    const blockEndInput = document.getElementById("block-end-date");
+    const startDate = blockStartInput.value;
+    const endDate = blockEndInput.value;
 
-  // Initial Anzeige
-  showSection("start");
-  renderCalendar(currentYear, currentMonth);
-})();</script>
-</body>
-</html>
+    if (!startDate || !endDate) {
+      alert("Bitte gib ein Start- und Enddatum zum Freigeben ein.");
+      return;
+    }
+    
+    if (confirm(`Sollen die Tage von ${startDate} bis ${endDate} wirklich freigegeben werden?`)) {
+      const success = unblockDays(startDate, endDate);
+      if (success) {
+        alert("Tage erfolgreich freigegeben!");
+        document.getElementById("block-days-form").reset();
+        renderAdminBookings();
+        renderCalendar(currentYear,
