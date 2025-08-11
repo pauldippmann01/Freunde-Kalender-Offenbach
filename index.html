@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Freunde Kalender Offenbach</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* Reset und Booking.com-Design */
+:root {
+  --primary-blue: #0071c2;
+  --secondary-blue: #00589d;
+  --text-dark: #333;
+  --text-light: #fff;
+  --bg-light: #f3f3f3;
+  --bg-white: #fff;
+  --border-grey: #e8e8e8;
+  --booked-red: #f44336;
+  --blocked-gray: #666;
+  --available-green: #b2dfdb; /* Hellgrün für verfügbare Tage */
+  --selected-green-dark: #00897b; /* Dunkelgrün für ausgewählte Tage */
+  --selected-green-light: #81c784;
+}
+
+body, html {
+  margin: 0; padding: 0; height: 100%;
+  font-family: 'Open Sans', sans-serif;
+  background-color: var(--bg-light);
+  color: var(--text-dark);
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+main {
+  flex-grow: 1;
+  background-color: var(--bg-light);
+  padding: 20px;
+  overflow-y: auto;
+}
+h1, h2, h3 {
+  margin: 0 0 10px 0;
+  text-align: center;
+  color: var(--text-dark);
+}
+button {
+  cursor: pointer;
+  border: none;
+  border-radius: 4px;
+  padding: 10px 20px;
+  margin: 5px;
+  background-color: var(--primary-blue);
+  color: var(--text-light);
+  font-weight: 600;
+  transition: background-color 0.2s ease;
+}
+button:hover {
+  background-color: var(--secondary-blue);
+}
+input, select {
+  padding: 8px;
+  margin: 5px 0 10px 0;
+  border-radius: 4px;
+  border: 1px solid var(--border-grey);
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 0.9em;
+}
+label {
+  font-weight: 600;
+  display: block;
+  margin-bottom: 2px;
+  font-size: 0.9em;
+}
+.error-msg {
+  color: var(--booked-red);
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+/* Navigation */
+nav {
+  background-color: var(--primary-blue);
+  padding: 10px 20px;
+  text-align: center;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+nav button {
+  background: none;
+  color: var(--text-light);
+  border: 1px solid transparent;
+}
+nav button:hover {
+  background: rgba(255,255,255,0.2);
+  border: 1px solid rgba(255,255,255,0.5);
+}
+
+/* Kalender Styles */
+.calendar-container {
+  max-width: 100%;
+  margin: 20px auto;
+  background-color: var(--bg-white);
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.calendar-header h2 {
+  margin: 0;
+}
+.month-nav button {
+  font-size: 18px;
+  padding: 5px 10px;
+  background: none;
+  color: var(--primary-blue);
+}
+.month-nav button:hover {
+  background: rgba(0,0,0,0.05);
+}
+table.calendar {
+  border-collapse: collapse;
+  width: 100%;
+  background-color: var(--bg-white);
+  border-radius: 8px;
+  table-layout: fixed; 
+}
+table.calendar th, table.calendar td {
+  width: 14.2857%;
+  padding: 8px; 
+  height: 30px; 
+  text-align: center;
+  vertical-align: middle;
+  border: 1px solid var(--border-grey);
+  transition: background-color 0.2s ease;
+  box-sizing: border-box; 
+}
+table.calendar td {
+  cursor: pointer;
+  background-color: var(--available-green); /* Standardfarbe für freie Tage */
+}
+table.calendar th {
+  background-color: var(--bg-light);
+  font-weight: 700;
+}
+table.calendar td.inactive {
+  color: #ccc;
+  cursor: default;
+  background-color: #f9f9f9;
+}
+table.calendar td:not(.inactive):hover {
+  background-color: #f0f0f0;
+}
+table.calendar td.booked {
+  background-color: var(--booked-red);
+  color: var(--text-light);
+}
+table.calendar td.blocked {
+  background-color: var(--blocked-gray);
+  color: var(--text-light);
+}
+table.calendar td.selected-start,
+table.calendar td.selected-end {
+  border: 2px solid var(--selected-green-dark);
+  background-color: var(--selected-green-dark) !important;
+  color: var(--text-light) !important;
+}
+table.calendar td.selected-range {
+  background-color: var(--selected-green-dark);
+  color: var(--text-light);
+}
+
+/* Tooltip (Maus-Hover) */
+.tooltip {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* Wichtig, damit Klicks die Zelle durchdringen */
+}
+.tooltiptext {
+  visibility: hidden;
+  width: 120px;
+  background-color: #555;
+  color: #fff;
+  text-align: center;
+  border-radius: 6px;
+  padding: 5px 0;
+  position: absolute;
+  z-index: 1;
+  bottom: 125%; 
+  left: 50%;
+  margin-left: -60px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none; /* Verhindert, dass der Tooltip selbst Klicks abfängt */
+}
+td:hover .tooltiptext {
+  visibility: visible;
+  opacity: 1;
+}
+.tooltiptext::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #555 transparent transparent transparent;
+}
+
+/* Kalender-Legende */
+#calendar-legend {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 20px;
+    font-size: 0.9em;
+    padding: 10px;
+    border-radius: 4px;
+    background-color: var(--bg-white);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+.legend-item {
+    display: flex;
+    align-items: center;
+    color: var(--text-dark);
+}
+.legend-color {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    margin-right: 8px;
+}
+#legend-color-booked { background-color: var(--booked-red); }
+#legend-color-blocked { background-color: var(--blocked-gray); }
+#legend-color-available { background-color: var(--available-green); }
+#legend-color-selected { background-color: var(--selected-green-dark); }
+
+/* Formular Styles */
+form {
+  max-width: 500px;
+  margin: 0 auto 30px auto;
+  background-color: var(--bg-white);
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+.form-row {
+  margin-bottom: 10px;
+}
+.optional-label {
+  font-size: 0.9em;
+  color: #777;
+}
+
+/* Login Box */
+#login-box {
+  max-width: 400px;
+  margin: 40px auto;
+  background-color: var(--bg-white);
+  padding: 30px;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  text-align: center;
+}
+#login-box h2 {
+  color: var(--primary-blue);
+  margin-bottom: 15px;
+}
+
+/* Admin Bereich */
+.admin-area-container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+#admin-bookings-list {
+  max-height: 300px;
+  overflow-y: auto;
+  background-color: var(--bg-white);
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  margin-bottom: 20px;
+}
+#admin-bookings-list table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--text-dark);
+}
+#admin-bookings-list th, #admin-bookings-list td {
+  padding: 10px;
+  border: 1px solid var(--border-grey);
+  text-align: center;
+}
+#admin-bookings-list th {
+  background-color: var(--bg-light);
+}
+#admin-yearly-controls {
+  margin-bottom: 10px;
+  padding: 10px;
+  background-color: var(--bg-white);
+  border-radius: 8px;
+}
+
+/* Jahreskalender */
+.calendar-view {
+  max-width: 900px;
+  margin: 0 auto;
+}
+#yearly-calendar-content, #admin-yearly-calendar-content {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+    justify-content: center;
+}
+#yearly-calendar-content .calendar, #admin-yearly-calendar-content .calendar {
+    font-size: 10px;
+}
+#yearly-calendar-content .calendar th, #admin-yearly-calendar-content .calendar th {
+  padding: 8px;
+}
+#yearly-calendar-content .calendar td, #admin-yearly-calendar-content .calendar td {
+  padding: 0;
+  height: 25px; 
+  line-height: 25px;
+}
+#yearly-calendar-content .calendar td span, #admin-yearly-calendar-content .calendar td span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 8px;
+  box-sizing: border-box;
+}
+#yearly-calendar-content .calendar .tooltiptext, #admin-yearly-calendar-content .calendar .tooltiptext {
+    width: 80px;
+    left: 50%;
+    margin-left: -40px;
+}
+#yearly-calendar-content .calendar, #admin-yearly-calendar-content .calendar {
+    width: 100%; 
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  #yearly-calendar-content, #admin-yearly-calendar-content {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  table.calendar th, table.calendar td {
+    padding: 8px;
+    font-size: 10px;
+  }
+  form {
+    width: 95%;
+  }
+  #yearly-calendar-content .calendar td span, #admin-yearly-calendar-content .calendar td span {
+    padding: 5px;
+  }
+}
+</style>
+</head>
+<body>
+<nav>
+  <button id="btn-to-start" style="display:none;">🏠 Startseite</button>
+  <button id="btn-show-friend-login">🧑 Freunde Login</button>
+  <button id="btn-show-admin-login">🔑 Admin Login</button>
+</nav>
+
+<main>
+  <section id="start-page">
+    <h1 style="color: var(--primary-blue);">Willkommen im Freunde Kalender Offenbach</h1>
+    <p style="text-align:center; max-width:600px; margin:auto; color:var(--text-dark);">
+      Hier kannst du als Freund deine Übernachtung buchen.<br />
+      Oder als Admin den Kalender verwalten.
+    </p>
+  </section>
+
+  <section id="friend-login" style="display:none;">
+    <div id="login-box">
+      <h2>Freunde Login</h2>
+      <p>Bitte Passwort eingeben:</p>
+      <input type="password" id="friend-password" placeholder="Passwort" />
+      <div id="friend-login-error" class="error-msg"></div>
+      <button id="friend-login-btn">Einloggen</button>
+    </div>
+  </section>
+
+  <section id="friend-area" style="display:none;">
+    <div class="calendar-view">
+        <h2 style="color: var(--primary-blue);">Jahreskalender (Freunde-Ansicht)</h2>
+        <div style="text-align:center;">
+          <button id="year-prev" style="background-color: var(--secondary-blue);">&lt; Vorjahr</button>
+          <span id="year-display" style="font-weight: 700; margin: 0 15px; font-size: 1.2em;"></span>
+          <button id="year-next" style="background-color: var(--secondary-blue);">Nächstes Jahr &gt;</button>
+        </div>
+        
+        <div id="calendar-legend">
+          <div class="legend-item">
+            <div class="legend-color" id="legend-color-available"></div>
+            <span>Freie Tage</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" id="legend-color-booked"></div>
+            <span>Gebuchte Tage</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" id="legend-color-blocked"></div>
+            <span>Blockierte Tage</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" id="legend-color-selected"></div>
+            <span>Ausgewählter Zeitraum</span>
+          </div>
+        </div>
+        
+        <div id="yearly-calendar-content" style="margin-top:20px;"></div>
+    </div>
+    
+    <form id="booking-form" style="display:none;">
+      <h3>Buchungsdetails</h3>
+      <div class="form-row">
+        <label for="book-name">Name *</label>
+        <input type="text" id="book-name" required />
+      </div>
+      <div class="form-row">
+        <label for="book-persons">Anzahl Personen * (max. 3)</label>
+        <input type="number" id="book-persons" min="1" max="3" value="1" required />
+      </div>
+      <div class="form-row">
+        <label for="book-start-date">Startdatum *</label>
+        <input type="date" id="book-start-date" required />
+      </div>
+      <div class="form-row">
+        <label for="book-end-date">Enddatum *</label>
+        <input type="date" id="book-end-date" required />
+      </div>
+      <div class="form-row">
+        <label for="book-breakfast">Frühstück benötigt? *</label>
+        <select id="book-breakfast" required>
+          <option value="ja">Ja</option>
+          <option value="nein" selected>Nein</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label for="book-arrival-time">Anreise Uhrzeit <span class="optional-label">(optional)</span></label>
+        <input type="time" id="book-arrival-time" />
+      </div>
+      <div class="form-row">
+        <label for="book-departure-time">Abreise Uhrzeit <span class="optional-label">(optional)</span></label>
+        <input type="time" id="book-departure-time" />
+      </div>
+      <div id="booking-error" class="error-msg"></div>
+      <button type="submit" style="background-color: var(--selected-green-dark);">Buchung abschicken</button>
+      <button type="button" id="btn-cancel-booking-form" style="background-color: #d9534f;">Abbrechen</button>
+    </form>
+  </section>
+
+  <section id="admin-login" style="display:none;">
+    <div id="login-box">
+      <h2>Admin Login</h2>
+      <p>Bitte Admin-Passwort eingeben:</p>
+      <input type="password" id="admin-password" placeholder="Admin Passwort" />
+      <div id="admin-login-error" class="error-msg"></div>
+      <button id="admin-login-btn">Einloggen</button>
+    </div>
+  </section>
+
+  <section id="admin-area" style="display:none;">
+    <div class="calendar-view">
+        <h2 style="color: var(--primary-blue);">Jahreskalender (Admin-Ansicht)</h2>
+        <div style="margin-bottom: 20px; text-align: center;">
+          <button id="btn-logout-admin" style="background-color: #d9534f;">Admin Logout</button>
+          <button id="btn-export-csv" style="background-color: var(--selected-green-dark);">Exportiere Buchungen (CSV)</button>
+        </div>
+        <div style="text-align:center;">
+          <button id="admin-year-prev" style="background-color: var(--secondary-blue);">&lt; Vorjahr</button>
+          <span id="admin-year-display" style="font-weight: 700; margin: 0 15px; font-size: 1.2em;"></span>
+          <button id="admin-year-next" style="background-color: var(--secondary-blue);">Nächstes Jahr &gt;</button>
+        </div>
+        
+        <div id="calendar-legend">
+          <div class="legend-item">
+            <div class="legend-color" id="legend-color-available"></div>
+            <span>Freie Tage</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" id="legend-color-booked"></div>
+            <span>Gebuchte Tage</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" id="legend-color-blocked"></div>
+            <span>Blockierte Tage</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" id="legend-color-selected"></div>
+            <span>Ausgewählter Zeitraum</span>
+          </div>
+        </div>
+
+        <div id="admin-yearly-calendar-content" style="margin-top:20px;"></div>
+        
+        <div id="admin-yearly-controls" style="text-align: center;">
+            <button id="btn-block-selected" style="background-color: var(--blocked-gray);">Ausgewählte Tage blockieren</button>
+            <button id="btn-unblock-selected" style="background-color: #f0ad4e;">Ausgewählte Tage freigeben</button>
+        </div>
+    </div>
+    
+    <div class="admin-area-container">
+      <h3>Belegte und Blockierte Tage</h3>
+      <div id="admin-bookings-list"></div>
+    </div>
+  </section>
+</main>
+
+<script>
+(() => {
+  // Passwörter
+  const FRIEND_PASSWORD = "test";
+  const ADMIN_PASSWORD = "test";
+
+  // Kalender Start & Ende
+  const CAL_START_YEAR = 2025;
+  const CAL_END_YEAR = 2040;
+
+  // State
+  let currentYear;
+  let selectedStartDate = null;
+  let selectedEndDate = null;
+  let currentView = 'friend'; // Kann 'friend' oder 'admin' sein
+  
+  // Buchungen und Blockierungen werden in localStorage gespeichert
+  const STORAGE_BOOKINGS = "offenbach_bookings";
+  const STORAGE_BLOCKS = "offenbach_blocks";
+
+  // Utility
+  function saveBookings(bookings) {
+    localStorage.setItem(STORAGE_BOOKINGS, JSON.stringify(bookings));
+  }
+  function loadBookings() {
+    const data = localStorage.getItem(STORAGE_BOOKINGS);
+    return data ? JSON.parse(data) : [];
+  }
+  function saveBlocks(blocks) {
+    localStorage.setItem(STORAGE_BLOCKS, JSON.stringify(blocks));
+  }
+  function loadBlocks() {
+    const data = localStorage.getItem(STORAGE_BLOCKS);
+    return data ? JSON.parse(data) : [];
+  }
+  function formatDate(d) {
+    const year = d.getFullYear();
+    const month = (d.getMonth() + 1).toString().padStart(2, '0');
+    const day = d.getDate().toString().padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  }
+  function dateFromStr(s) {
+    if (!s) return null;
+    const [year, month, day] = s.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+  function checkOverlap(startA, endA, startB, endB) {
+    return !(endA < startB || startA > endB);
+  }
+  function getBookingsForDate(dateStr) {
+    const bookings = loadBookings();
+    return bookings.find(bk => checkOverlap(dateStr, dateStr, bk.startDate, bk.endDate));
+  }
+  function getBlocksForDate(dateStr) {
+    const blocks = loadBlocks();
+    return blocks.find(bl => checkOverlap(dateStr, dateStr, bl.startDate, bl.endDate));
+  }
+
+  // -------------------
+  // Navigation & Sections
+  // -------------------
+  const sections = {
+    start: document.getElementById("start-page"),
+    friendLogin: document.getElementById("friend-login"),
+    friendArea: document.getElementById("friend-area"),
+    adminLogin: document.getElementById("admin-login"),
+    adminArea: document.getElementById("admin-area"),
+  };
+
+  function showSection(name) {
+    Object.values(sections).forEach(sec => sec.style.display = "none");
+    sections[name].style.display = "block";
+
+    const btnToStart = document.getElementById("btn-to-start");
+    if(name !== "start") {
+      btnToStart.style.display = "inline-block";
+    } else {
+      btnToStart.style.display = "none";
+    }
+  }
+
+  // -------------------
+  // Event Listeners
+  // -------------------
+  document.getElementById("btn-show-friend-login").addEventListener('click', () => {
+    document.getElementById("friend-login-error").textContent = "";
+    document.getElementById("friend-password").value = "";
+    showSection("friendLogin");
+  });
+
+  document.getElementById("btn-show-admin-login").addEventListener('click', () => {
+    document.getElementById("admin-login-error").textContent = "";
+    document.getElementById("admin-password").value = "";
+    showSection("adminLogin");
+  });
+  
+  document.getElementById("btn-to-start").addEventListener('click', () => {
+    showSection("start");
+  });
+
+  document.getElementById("friend-login-btn").addEventListener('click', () => {
+    const pw = document.getElementById("friend-password").value;
+    if(pw === FRIEND_PASSWORD) {
+      currentView = 'friend';
+      showSection("friendArea");
+      resetBookingForm();
+      renderYearlyCalendar(currentYear);
+    } else {
+      document.getElementById("friend-login-error").textContent = "Falsches Passwort!";
+    }
+  });
+
+  document.getElementById("admin-login-btn").addEventListener('click', () => {
+    const pw = document.getElementById("admin-password").value;
+    if(pw === ADMIN_PASSWORD) {
+      currentView = 'admin';
+      showSection("adminArea");
+      renderYearlyCalendar(currentYear);
+      renderAdminBookings();
+    } else {
+      document.getElementById("admin-login-error").textContent = "Falsches Admin-Passwort!";
+    }
+  });
+
+  document.getElementById("btn-logout-admin").addEventListener('click', () => {
+    showSection("start");
+  });
+  
+  document.getElementById("year-prev").addEventListener('click', () => {
+    if(currentYear > CAL_START_YEAR) {
+      currentYear--;
+      renderYearlyCalendar(currentYear);
+    }
+  });
+  document.getElementById("year-next").addEventListener('click', () => {
+    if(currentYear < CAL_END_YEAR) {
+      currentYear++;
+      renderYearlyCalendar(currentYear);
+    }
+  });
+  document.getElementById("admin-year-prev").addEventListener('click', () => {
+    if(currentYear > CAL_START_YEAR) {
+      currentYear--;
+      renderYearlyCalendar(currentYear);
+    }
+  });
+  document.getElementById("admin-year-next").addEventListener('click', () => {
+    if(currentYear < CAL_END_YEAR) {
+      currentYear++;
+      renderYearlyCalendar(currentYear);
+    }
+  });
+
+  // -----------------------
+  // Jahreskalender Übersicht
+  // -----------------------
+  function renderYearlyCalendar(year) {
+    const calendarContent = currentView === 'friend' ? document.getElementById("yearly-calendar-content") : document.getElementById("admin-yearly-calendar-content");
+    const yearDisplay = currentView === 'friend' ? document.getElementById("year-display") : document.getElementById("admin-year-display");
+    
+    yearDisplay.textContent = year;
+    calendarContent.innerHTML = "";
+
+    const bookings = loadBookings();
+    const blocks = loadBlocks();
+
+    const monthNames = [
+      "Januar","Februar","März","April","Mai","Juni",
+      "Juli","August","September","Oktober","November","Dezember"
+    ];
+
+    for(let m=0; m<12; m++) {
+      const firstDay = new Date(year, m, 1);
+      const lastDay = new Date(year, m+1, 0);
+      const daysInMonth = lastDay.getDate();
+
+      let monthHtml = `<table class="calendar" data-month="${m}" data-year="${year}">`;
+      monthHtml += `<thead><tr><th colspan="7">${monthNames[m]}</th></tr>`;
+      monthHtml += `<tr><th>M</th><th>D</th><th>M</th><th>D</th><th>F</th><th>S</th><th>S</th></tr></thead><tbody><tr>`;
+
+      const startWeekday = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
+      for(let i=0; i<startWeekday; i++) {
+        monthHtml += `<td class="inactive"></td>`;
+      }
+      for(let day=1; day<=daysInMonth; day++) {
+        const date = new Date(year, m, day);
+        const dateStr = formatDate(date);
+        let classes = "";
+        let tooltip = "";
+
+        const bookedEntry = getBookingsForDate(dateStr);
+        if(getBlocksForDate(dateStr)) {
+          classes = "blocked";
+          tooltip = "Wohnung nicht verfügbar";
+        } else if(bookedEntry) {
+          classes = "booked";
+          tooltip = bookedEntry.name;
+        }
+
+        let cellContent = day;
+        if (tooltip) {
+          monthHtml += `<td class="${classes}" data-date="${dateStr}"><div class="tooltip"><span>${cellContent}</span><span class="tooltiptext">${tooltip}</span></div></td>`;
+        } else {
+          monthHtml += `<td class="${classes}" data-date="${dateStr}"><span>${cellContent}</span></td>`;
+        }
+
+        if((startWeekday + day) % 7 === 0) {
+          monthHtml += "</tr><tr>";
+        }
+      }
+      monthHtml += "</tr></tbody></table>";
+      calendarContent.insertAdjacentHTML("beforeend", monthHtml);
+    }
+    attachDateClickHandlers();
+    updateSelectedDays();
+  }
+
+  function updateSelectedDays() {
+    const calendarSection = currentView === 'friend' ? document.getElementById("yearly-calendar-content") : document.getElementById("admin-yearly-calendar-content");
+    const allCells = calendarSection.querySelectorAll("td");
+    allCells.forEach(cell => {
+      cell.classList.remove('selected-start', 'selected-end', 'selected-range');
+      if(!cell.classList.contains('booked') && !cell.classList.contains('blocked') && !cell.classList.contains('inactive')) {
+        cell.style.backgroundColor = 'var(--available-green)';
+      }
+    });
+
+    if (!selectedStartDate) {
+      if (currentView === 'friend') {
+        bookingForm.style.display = "none";
+      }
+      return;
+    }
+    
+    const sDate = dateFromStr(formatDate(selectedStartDate));
+    let eDate = selectedEndDate ? dateFromStr(formatDate(selectedEndDate)) : sDate;
+    
+    const start = sDate <= eDate ? sDate : eDate;
+    const end = sDate <= eDate ? eDate : sDate;
+
+    let currentDate = new Date(start);
+    const bookings = loadBookings();
+    const blocks = loadBlocks();
+
+    let isSelectionValid = true;
+    let tempDate = new Date(start);
+    while (tempDate <= end) {
+      const dateStr = formatDate(tempDate);
+      if(bookings.some(b => checkOverlap(dateStr, dateStr, b.startDate, b.endDate)) || 
+         (currentView === 'friend' && blocks.some(b => checkOverlap(dateStr, dateStr, b.startDate, b.endDate)))) {
+        isSelectionValid = false;
+        break;
+      }
+      tempDate.setDate(tempDate.getDate() + 1);
+    }
+
+    if (!isSelectionValid) {
+        selectedStartDate = null;
+        selectedEndDate = null;
+        if (currentView === 'friend') {
+          bookingForm.style.display = "none";
+        }
+        updateSelectedDays(); // Rerender to clear any selection
+        return;
+    }
+
+    currentDate = new Date(start);
+    while (currentDate <= end) {
+      const dateStr = formatDate(currentDate);
+      const cell = calendarSection.querySelector(`td[data-date="${dateStr}"]`);
+      if (cell) {
+        cell.style.backgroundColor = 'var(--selected-green-dark)';
+        if (formatDate(currentDate) === formatDate(start)) {
+          cell.classList.add('selected-start');
+        } else if (formatDate(currentDate) === formatDate(end)) {
+          cell.classList.add('selected-end');
+        } else {
+          cell.classList.add('selected-range');
+        }
+      }
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    if (currentView === 'friend') {
+        if(selectedEndDate) {
+            showBookingForm();
+        } else {
+            bookingForm.style.display = "none";
+        }
+    }
+  }
+
+  // ---------------------
+  // Datums- und Bereichsauswahl
+  // ---------------------
+  
+  function attachDateClickHandlers() {
+    const calendarSection = currentView === 'friend' ? document.getElementById("yearly-calendar-content") : document.getElementById("admin-yearly-calendar-content");
+    const cells = calendarSection.querySelectorAll("td:not(.inactive)");
+    
+    cells.forEach(cell => {
+      cell.style.cursor = "pointer";
+      cell.addEventListener('click', (e) => {
+        const clickedCell = e.target.closest('td');
+        if (!clickedCell) return;
+        
+        const dateStr = clickedCell.getAttribute("data-date");
+        const date = dateFromStr(dateStr);
+
+        if(currentView === 'friend' && (clickedCell.classList.contains('booked') || clickedCell.classList.contains('blocked'))) {
+            selectedStartDate = null;
+            selectedEndDate = null;
+            updateSelectedDays();
+            return;
+        }
+
+        if(!selectedStartDate || (selectedStartDate && selectedEndDate)) {
+          selectedStartDate = date;
+          selectedEndDate = null;
+        } else {
+          if(date < selectedStartDate) {
+            selectedEndDate = selectedStartDate;
+            selectedStartDate = date;
+          } else {
+            selectedEndDate = date;
+          }
+        }
+        updateSelectedDays();
+      });
+    });
+  }
+
+  // ---------------------
+  // Buchungsformular (Freunde)
+  // ---------------------
+  const bookingForm = document.getElementById("booking-form");
+  const bookStartInput = document.getElementById("book-start-date");
+  const bookEndInput = document.getElementById("book-end-date");
+  const bookingError = document.getElementById("booking-error");
+
+  function showBookingForm() {
+    if(!selectedStartDate || !selectedEndDate) {
+      bookingForm.style.display = "none";
+      return;
+    }
+    bookStartInput.value = formatDate(selectedStartDate);
+    bookEndInput.value = formatDate(selectedEndDate);
+    bookingError.textContent = "";
+    bookingForm.style.display = "block";
+    bookingForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    document.getElementById("book-name").focus();
+  }
+  function resetBookingForm() {
+    selectedStartDate = null;
+    selectedEndDate = null;
+    updateSelectedDays();
+    bookingForm.style.display = "none";
+    bookingError.textContent = "";
+    bookingForm.reset && bookingForm.reset();
+  }
+  
+  document.getElementById("btn-cancel-booking-form").addEventListener('click', () => {
+    resetBookingForm();
+  });
+
+  bookingForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = document.getElementById("book-name").value.trim();
+    const persons = parseInt(document.getElementById("book-persons").value);
+    const breakfast = document.getElementById("book-breakfast").value;
+    const arrival = document.getElementById("book-arrival-time").value || null;
+    const departure = document.getElementById("book-departure-time").value || null;
+    const startDate = bookStartInput.value;
+    const endDate = bookEndInput.value;
+
+    bookingError.textContent = "";
+
+    if(!name) {
+      bookingError.textContent = "Bitte Name eingeben.";
+      return;
+    }
+    if(!persons || persons < 1 || persons > 3) {
+      bookingError.textContent = "Bitte gültige Anzahl Personen eingeben (max. 3).";
+      return;
+    }
+    if(!startDate || !endDate) {
+      bookingError.textContent = "Bitte gültige Start- und Enddaten eingeben.";
+      return;
+    }
+    if(endDate < startDate) {
+      bookingError.textContent = "Enddatum darf nicht vor Startdatum liegen.";
+      return;
+    }
+
+    const bookings = loadBookings();
+    const blocks = loadBlocks();
+    
+    // Validierung für Überschneidungen
+    const rangeStart = dateFromStr(startDate);
+    const rangeEnd = dateFromStr(endDate);
+    let day = new Date(rangeStart);
+    while (day <= rangeEnd) {
+      const dayStr = formatDate(day);
+      if (getBlocksForDate(dayStr)) {
+        bookingError.textContent = `Der Zeitraum überschneidet sich mit einem blockierten Zeitraum.`;
+        return;
+      }
+      if (getBookingsForDate(dayStr)) {
+        bookingError.textContent = `Der Zeitraum überschneidet sich mit einer bestehenden Buchung.`;
+        return;
+      }
+      day.setDate(day.getDate() + 1);
+    }
+    
+    const newBooking = {
+      id: "b" + Date.now(),
+      name,
+      persons,
+      breakfast,
+      arrivalTime: arrival,
+      departureTime: departure,
+      startDate,
+      endDate,
+    };
+    bookings.push(newBooking);
+    saveBookings(bookings);
+
+    alert("Buchung erfolgreich gespeichert!");
+    resetBookingForm();
+    renderYearlyCalendar(currentYear);
+  });
+
+  // -------------------
+  // Admin Bereich
+  // -------------------
+  const adminBookingsList = document.getElementById("admin-bookings-list");
+
+  function renderAdminBookings() {
+    const bookings = loadBookings();
+    const blocks = loadBlocks();
+
+    let html = `<table><thead><tr><th>Typ</th><th>Name</th><th>Personen</th><th>Frühstück</th><th>Anreise</th><th>Abreise</th><th>Startdatum</th><th>Enddatum</th><th>Aktion</th></tr></thead><tbody>`;
+
+    bookings.forEach(bk => {
+      html += `<tr>
+        <td>Buchung</td>
+        <td>${bk.name}</td>
+        <td>${bk.persons}</td>
+        <td>${bk.breakfast}</td>
+        <td>${bk.arrivalTime || "-"}</td>
+        <td>${bk.departureTime || "-"}</td>
+        <td>${bk.startDate}</td>
+        <td>${bk.endDate}</td>
+        <td><button class="btn-delete-booking" data-id="${bk.id}" style="background-color: #d9534f; padding:5px 10px;">Löschen</button></td>
+      </tr>`;
+    });
+
+    blocks.forEach((bl, idx) => {
+      html += `<tr>
+        <td>Blockiert</td>
+        <td colspan="5" style="text-align:center;">-</td>
+        <td>${bl.startDate}</td>
+        <td>${bl.endDate}</td>
+        <td><button class="btn-delete-block" data-idx="${idx}" style="background-color: var(--blocked-gray); padding:5px 10px;">Entfernen</button></td>
+      </tr>`;
+    });
+
+    html += "</tbody></table>";
+
+    adminBookingsList.innerHTML = html;
+
+    document.querySelectorAll(".btn-delete-booking").forEach(btn => {
+      btn.addEventListener('click', () => {
+        if(confirm("Buchung wirklich löschen?")) {
+          const id = btn.getAttribute("data-id");
+          deleteBooking(id);
+        }
+      });
+    });
+    document.querySelectorAll(".btn-delete-block").forEach(btn => {
+      btn.addEventListener('click', () => {
+        if(confirm("Blockierung wirklich entfernen?")) {
+          const idx = parseInt(btn.getAttribute("data-idx"));
+          deleteBlock(idx);
+        }
+      });
+    });
+  }
+
+  function deleteBooking(id) {
+    let bookings = loadBookings();
+    bookings = bookings.filter(b => b.id !== id);
+    saveBookings(bookings);
+    renderAdminBookings();
+    renderYearlyCalendar(currentYear);
+  }
+  function deleteBlock(idx) {
+    let blocks = loadBlocks();
+    blocks.splice(idx, 1);
+    saveBlocks(blocks);
+    renderAdminBookings();
+    renderYearlyCalendar(currentYear);
+  }
+
+  // -------------------
+  // Blockieren/Freigeben direkt im Kalender (Admin)
+  // -------------------
+  document.getElementById("btn-block-selected").addEventListener('click', () => {
+    if (!selectedStartDate || !selectedEndDate) {
+        alert("Bitte wähle zuerst einen Zeitraum im Kalender aus.");
+        return;
+    }
+
+    const startDate = formatDate(selectedStartDate <= selectedEndDate ? selectedStartDate : selectedEndDate);
+    const endDate = formatDate(selectedStartDate <= selectedEndDate ? selectedEndDate : selectedStartDate);
+
+    const bookings = loadBookings();
+    let blocks = loadBlocks();
+
+    // Validierung: Keine Überschneidung mit Buchungen
+    const rangeStart = dateFromStr(startDate);
+    const rangeEnd = dateFromStr(endDate);
+    let day = new Date(rangeStart);
+    while (day <= rangeEnd) {
+      const dayStr = formatDate(day);
+      if (getBookingsForDate(dayStr)) {
+        alert("Der ausgewählte Zeitraum überschneidet sich mit einer bestehenden Buchung.");
+        return;
+      }
+      day.setDate(day.getDate() + 1);
+    }
+
+    blocks.push({startDate, endDate});
+    saveBlocks(blocks);
+    alert(`Zeitraum von ${startDate} bis ${endDate} erfolgreich blockiert.`);
+    selectedStartDate = null;
+    selectedEndDate = null;
+    renderAdminBookings();
+    renderYearlyCalendar(currentYear);
+  });
+  
+  document.getElementById("btn-unblock-selected").addEventListener('click', () => {
+    if (!selectedStartDate || !selectedEndDate) {
+        alert("Bitte wähle zuerst einen Zeitraum im Kalender aus.");
+        return;
+    }
+    
+    const startDate = formatDate(selectedStartDate <= selectedEndDate ? selectedStartDate : selectedEndDate);
+    const endDate = formatDate(selectedStartDate <= selectedEndDate ? selectedEndDate : selectedStartDate);
+
+    if (confirm(`Sollen die Tage von ${startDate} bis ${endDate} wirklich freigegeben werden?`)) {
+      let blocks = loadBlocks();
+      const originalLength = blocks.length;
+      blocks = blocks.filter(block => !checkOverlap(block.startDate, block.endDate, startDate, endDate));
+      saveBlocks(blocks);
+      
+      if (blocks.length !== originalLength) {
+        alert("Tage erfolgreich freigegeben!");
+      } else {
+        alert("Keine Blockierung im ausgewählten Zeitraum gefunden.");
+      }
+      selectedStartDate = null;
+      selectedEndDate = null;
+      renderAdminBookings();
+      renderYearlyCalendar(currentYear);
+    }
+  });
+
+
+  // CSV-Export-Funktion
+  function exportBookingsToCsv() {
+    const bookings = loadBookings();
+    if (bookings.length === 0) {
+      alert("Keine Buchungen zum Exportieren vorhanden.");
+      return;
+    }
+
+    const csvRows = [];
+    const headers = ["Name", "Personen", "Frühstück", "Anreisezeit", "Abreisezeit", "Startdatum", "Enddatum"];
+    csvRows.push(headers.join(';')); 
+
+    for (const booking of bookings) {
+      const row = [
+        booking.name,
+        booking.persons,
+        booking.breakfast,
+        booking.arrivalTime || "",
+        booking.departureTime || "",
+        booking.startDate,
+        booking.endDate
+      ];
+      csvRows.push(row.join(';'));
+    }
+
+    const csvString = csvRows.join('\n');
+    const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `Freunde_Buchungen_${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+  }
+  
+  document.getElementById("btn-export-csv").addEventListener('click', exportBookingsToCsv);
+
+  // Initialanzeige
+  function initialize() {
+    const today = new Date();
+    currentYear = today.getFullYear();
+
+    if (currentYear < CAL_START_YEAR) {
+        currentYear = CAL_START_YEAR;
+    } else if (currentYear > CAL_END_YEAR) {
+        currentYear = CAL_END_YEAR;
+    }
+    
+    showSection("start");
+  }
+
+  initialize();
+})();
+</script>
+</body>
+</html>
