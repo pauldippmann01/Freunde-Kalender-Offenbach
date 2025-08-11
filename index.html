@@ -19,7 +19,8 @@
   --border-grey: #e8e8e8;
   --booked-red: #f44336;
   --blocked-gray: #666;
-  --selected-green: #4caf50;
+  --available-green: #b2dfdb; /* Hellgrün für verfügbare Tage */
+  --selected-green-dark: #00897b; /* Dunkelgrün für ausgewählte Tage */
   --selected-green-light: #81c784;
 }
 
@@ -58,17 +59,19 @@ button:hover {
   background-color: var(--secondary-blue);
 }
 input, select {
-  padding: 10px;
-  margin: 5px 0 15px 0;
+  padding: 8px;
+  margin: 5px 0 10px 0;
   border-radius: 4px;
   border: 1px solid var(--border-grey);
   width: 100%;
   box-sizing: border-box;
+  font-size: 0.9em;
 }
 label {
   font-weight: 600;
   display: block;
-  margin-bottom: 5px;
+  margin-bottom: 2px;
+  font-size: 0.9em;
 }
 .error-msg {
   color: var(--booked-red);
@@ -139,6 +142,7 @@ table.calendar th, table.calendar td {
 }
 table.calendar td {
   cursor: pointer;
+  background-color: var(--available-green); /* Standardfarbe für freie Tage */
 }
 table.calendar th {
   background-color: var(--bg-light);
@@ -162,12 +166,12 @@ table.calendar td.blocked {
 }
 table.calendar td.selected-start,
 table.calendar td.selected-end {
-  border: 2px solid var(--selected-green);
-  background-color: var(--selected-green-light) !important;
+  border: 2px solid var(--selected-green-dark);
+  background-color: var(--selected-green-dark) !important;
   color: var(--text-light) !important;
 }
 table.calendar td.selected-range {
-  background-color: var(--selected-green-light);
+  background-color: var(--selected-green-dark);
   color: var(--text-light);
 }
 
@@ -236,7 +240,8 @@ td:hover .tooltiptext {
 }
 #legend-color-booked { background-color: var(--booked-red); }
 #legend-color-blocked { background-color: var(--blocked-gray); }
-#legend-color-selected { background-color: var(--selected-green-light); }
+#legend-color-available { background-color: var(--available-green); }
+#legend-color-selected { background-color: var(--selected-green-dark); }
 
 /* Formular Styles */
 form {
@@ -248,7 +253,7 @@ form {
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 .form-row {
-  margin-bottom: 15px;
+  margin-bottom: 10px;
 }
 .optional-label {
   font-size: 0.9em;
@@ -297,47 +302,56 @@ form {
 #admin-bookings-list th {
   background-color: var(--bg-light);
 }
+#admin-yearly-controls {
+  margin-bottom: 10px;
+  padding: 10px;
+  background-color: var(--bg-white);
+  border-radius: 8px;
+}
 
 /* Jahreskalender */
 .calendar-view {
   max-width: 900px;
   margin: 0 auto;
 }
-#yearly-calendar-content {
+#yearly-calendar-content, #admin-yearly-calendar-content {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    grid-template-columns: repeat(4, 1fr);
     gap: 15px;
     justify-content: center;
 }
-#yearly-calendar-content .calendar {
+#yearly-calendar-content .calendar, #admin-yearly-calendar-content .calendar {
     font-size: 10px;
 }
-#yearly-calendar-content .calendar th {
+#yearly-calendar-content .calendar th, #admin-yearly-calendar-content .calendar th {
   padding: 8px;
 }
-#yearly-calendar-content .calendar td {
+#yearly-calendar-content .calendar td, #admin-yearly-calendar-content .calendar td {
   padding: 0;
   height: 25px; 
   line-height: 25px;
 }
-#yearly-calendar-content .calendar td span {
+#yearly-calendar-content .calendar td span, #admin-yearly-calendar-content .calendar td span {
   display: block;
   width: 100%;
   height: 100%;
   padding: 8px;
   box-sizing: border-box;
 }
-#yearly-calendar-content .calendar .tooltiptext {
+#yearly-calendar-content .calendar .tooltiptext, #admin-yearly-calendar-content .calendar .tooltiptext {
     width: 80px;
     left: 50%;
     margin-left: -40px;
 }
-#yearly-calendar-content .calendar {
+#yearly-calendar-content .calendar, #admin-yearly-calendar-content .calendar {
     width: 100%; 
 }
 
 /* Responsive */
 @media (max-width: 600px) {
+  #yearly-calendar-content, #admin-yearly-calendar-content {
+    grid-template-columns: repeat(2, 1fr);
+  }
   table.calendar th, table.calendar td {
     padding: 8px;
     font-size: 10px;
@@ -345,7 +359,7 @@ form {
   form {
     width: 95%;
   }
-  #yearly-calendar-content .calendar td span {
+  #yearly-calendar-content .calendar td span, #admin-yearly-calendar-content .calendar td span {
     padding: 5px;
   }
 }
@@ -388,6 +402,10 @@ form {
         
         <div id="calendar-legend">
           <div class="legend-item">
+            <div class="legend-color" id="legend-color-available"></div>
+            <span>Freie Tage</span>
+          </div>
+          <div class="legend-item">
             <div class="legend-color" id="legend-color-booked"></div>
             <span>Gebuchte Tage</span>
           </div>
@@ -411,8 +429,8 @@ form {
         <input type="text" id="book-name" required />
       </div>
       <div class="form-row">
-        <label for="book-persons">Anzahl Personen *</label>
-        <input type="number" id="book-persons" min="1" value="1" required />
+        <label for="book-persons">Anzahl Personen * (max. 3)</label>
+        <input type="number" id="book-persons" min="1" max="3" value="1" required />
       </div>
       <div class="form-row">
         <label for="book-start-date">Startdatum *</label>
@@ -438,7 +456,7 @@ form {
         <input type="time" id="book-departure-time" />
       </div>
       <div id="booking-error" class="error-msg"></div>
-      <button type="submit" style="background-color: var(--selected-green);">Buchung abschicken</button>
+      <button type="submit" style="background-color: var(--selected-green-dark);">Buchung abschicken</button>
       <button type="button" id="btn-cancel-booking-form" style="background-color: #d9534f;">Abbrechen</button>
     </form>
   </section>
@@ -458,34 +476,44 @@ form {
         <h2 style="color: var(--primary-blue);">Jahreskalender (Admin-Ansicht)</h2>
         <div style="margin-bottom: 20px; text-align: center;">
           <button id="btn-logout-admin" style="background-color: #d9534f;">Admin Logout</button>
-          <button id="btn-export-csv" style="background-color: var(--selected-green);">Exportiere Buchungen (CSV)</button>
+          <button id="btn-export-csv" style="background-color: var(--selected-green-dark);">Exportiere Buchungen (CSV)</button>
         </div>
         <div style="text-align:center;">
           <button id="admin-year-prev" style="background-color: var(--secondary-blue);">&lt; Vorjahr</button>
           <span id="admin-year-display" style="font-weight: 700; margin: 0 15px; font-size: 1.2em;"></span>
           <button id="admin-year-next" style="background-color: var(--secondary-blue);">Nächstes Jahr &gt;</button>
         </div>
+        
+        <div id="calendar-legend">
+          <div class="legend-item">
+            <div class="legend-color" id="legend-color-available"></div>
+            <span>Freie Tage</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" id="legend-color-booked"></div>
+            <span>Gebuchte Tage</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" id="legend-color-blocked"></div>
+            <span>Blockierte Tage</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" id="legend-color-selected"></div>
+            <span>Ausgewählter Zeitraum</span>
+          </div>
+        </div>
 
         <div id="admin-yearly-calendar-content" style="margin-top:20px;"></div>
+        
+        <div id="admin-yearly-controls" style="text-align: center;">
+            <button id="btn-block-selected" style="background-color: var(--blocked-gray);">Ausgewählte Tage blockieren</button>
+            <button id="btn-unblock-selected" style="background-color: #f0ad4e;">Ausgewählte Tage freigeben</button>
+        </div>
     </div>
     
     <div class="admin-area-container">
       <h3>Belegte und Blockierte Tage</h3>
       <div id="admin-bookings-list"></div>
-      <h3>Tage blockieren/freigeben</h3>
-      <form id="block-days-form">
-        <div class="form-row">
-          <label for="block-start-date">Startdatum *</label>
-          <input type="date" id="block-start-date" required />
-        </div>
-        <div class="form-row">
-          <label for="block-end-date">Enddatum *</label>
-          <input type="date" id="block-end-date" required />
-        </div>
-        <div id="block-error" class="error-msg"></div>
-        <button type="submit">Tage blockieren</button>
-        <button type="button" id="btn-unblock-days" style="background-color: var(--blocked-gray);">Tage freigeben</button>
-      </form>
     </div>
   </section>
 </main>
@@ -542,6 +570,10 @@ form {
   function getBookingsForDate(dateStr) {
     const bookings = loadBookings();
     return bookings.find(bk => checkOverlap(dateStr, dateStr, bk.startDate, bk.endDate));
+  }
+  function getBlocksForDate(dateStr) {
+    const blocks = loadBlocks();
+    return blocks.find(bl => checkOverlap(dateStr, dateStr, bl.startDate, bl.endDate));
   }
 
   // -------------------
@@ -640,7 +672,7 @@ form {
   });
 
   // -----------------------
-  // Jahreskalender Übersicht (als Hauptansicht)
+  // Jahreskalender Übersicht
   // -----------------------
   function renderYearlyCalendar(year) {
     const calendarContent = currentView === 'friend' ? document.getElementById("yearly-calendar-content") : document.getElementById("admin-yearly-calendar-content");
@@ -677,7 +709,7 @@ form {
         let tooltip = "";
 
         const bookedEntry = getBookingsForDate(dateStr);
-        if(blocks.some(b => checkOverlap(dateStr, dateStr, b.startDate, b.endDate))) {
+        if(getBlocksForDate(dateStr)) {
           classes = "blocked";
           tooltip = "Wohnung nicht verfügbar";
         } else if(bookedEntry) {
@@ -699,34 +731,29 @@ form {
       monthHtml += "</tr></tbody></table>";
       calendarContent.insertAdjacentHTML("beforeend", monthHtml);
     }
-    if (currentView === 'friend') {
-      attachDateClickHandlers();
-      updateSelectedDays();
-    }
+    attachDateClickHandlers();
+    updateSelectedDays();
   }
 
   function updateSelectedDays() {
-    const allCells = document.querySelectorAll("#yearly-calendar-content td");
+    const calendarSection = currentView === 'friend' ? document.getElementById("yearly-calendar-content") : document.getElementById("admin-yearly-calendar-content");
+    const allCells = calendarSection.querySelectorAll("td");
     allCells.forEach(cell => {
       cell.classList.remove('selected-start', 'selected-end', 'selected-range');
+      if(!cell.classList.contains('booked') && !cell.classList.contains('blocked') && !cell.classList.contains('inactive')) {
+        cell.style.backgroundColor = 'var(--available-green)';
+      }
     });
 
     if (!selectedStartDate) {
-      bookingForm.style.display = "none";
-      return;
-    }
-
-    if (!selectedEndDate) {
-      const cell = document.querySelector(`td[data-date="${formatDate(selectedStartDate)}"]`);
-      if (cell && !cell.classList.contains('booked') && !cell.classList.contains('blocked')) {
-        cell.classList.add('selected-start');
+      if (currentView === 'friend') {
+        bookingForm.style.display = "none";
       }
-      bookingForm.style.display = "none"; 
       return;
     }
-
+    
     const sDate = dateFromStr(formatDate(selectedStartDate));
-    const eDate = dateFromStr(formatDate(selectedEndDate));
+    let eDate = selectedEndDate ? dateFromStr(formatDate(selectedEndDate)) : sDate;
     
     const start = sDate <= eDate ? sDate : eDate;
     const end = sDate <= eDate ? eDate : sDate;
@@ -740,7 +767,7 @@ form {
     while (tempDate <= end) {
       const dateStr = formatDate(tempDate);
       if(bookings.some(b => checkOverlap(dateStr, dateStr, b.startDate, b.endDate)) || 
-         blocks.some(b => checkOverlap(dateStr, dateStr, b.startDate, b.endDate))) {
+         (currentView === 'friend' && blocks.some(b => checkOverlap(dateStr, dateStr, b.startDate, b.endDate)))) {
         isSelectionValid = false;
         break;
       }
@@ -750,14 +777,19 @@ form {
     if (!isSelectionValid) {
         selectedStartDate = null;
         selectedEndDate = null;
-        bookingForm.style.display = "none";
+        if (currentView === 'friend') {
+          bookingForm.style.display = "none";
+        }
+        updateSelectedDays(); // Rerender to clear any selection
         return;
     }
 
+    currentDate = new Date(start);
     while (currentDate <= end) {
       const dateStr = formatDate(currentDate);
-      const cell = document.querySelector(`td[data-date="${dateStr}"]`);
+      const cell = calendarSection.querySelector(`td[data-date="${dateStr}"]`);
       if (cell) {
+        cell.style.backgroundColor = 'var(--selected-green-dark)';
         if (formatDate(currentDate) === formatDate(start)) {
           cell.classList.add('selected-start');
         } else if (formatDate(currentDate) === formatDate(end)) {
@@ -768,7 +800,14 @@ form {
       }
       currentDate.setDate(currentDate.getDate() + 1);
     }
-    showBookingForm();
+
+    if (currentView === 'friend') {
+        if(selectedEndDate) {
+            showBookingForm();
+        } else {
+            bookingForm.style.display = "none";
+        }
+    }
   }
 
   // ---------------------
@@ -776,7 +815,9 @@ form {
   // ---------------------
   
   function attachDateClickHandlers() {
-    const cells = document.querySelectorAll("#yearly-calendar-content td:not(.inactive)");
+    const calendarSection = currentView === 'friend' ? document.getElementById("yearly-calendar-content") : document.getElementById("admin-yearly-calendar-content");
+    const cells = calendarSection.querySelectorAll("td:not(.inactive)");
+    
     cells.forEach(cell => {
       cell.style.cursor = "pointer";
       cell.addEventListener('click', (e) => {
@@ -786,7 +827,7 @@ form {
         const dateStr = clickedCell.getAttribute("data-date");
         const date = dateFromStr(dateStr);
 
-        if(clickedCell.classList.contains('booked') || clickedCell.classList.contains('blocked')) {
+        if(currentView === 'friend' && (clickedCell.classList.contains('booked') || clickedCell.classList.contains('blocked'))) {
             selectedStartDate = null;
             selectedEndDate = null;
             updateSelectedDays();
@@ -810,16 +851,11 @@ form {
   }
 
   // ---------------------
-  // Buchungsformular
+  // Buchungsformular (Freunde)
   // ---------------------
   const bookingForm = document.getElementById("booking-form");
   const bookStartInput = document.getElementById("book-start-date");
   const bookEndInput = document.getElementById("book-end-date");
-  const bookNameInput = document.getElementById("book-name");
-  const bookPersonsInput = document.getElementById("book-persons");
-  const bookBreakfastInput = document.getElementById("book-breakfast");
-  const bookArrivalInput = document.getElementById("book-arrival-time");
-  const bookDepartureInput = document.getElementById("book-departure-time");
   const bookingError = document.getElementById("booking-error");
 
   function showBookingForm() {
@@ -832,7 +868,7 @@ form {
     bookingError.textContent = "";
     bookingForm.style.display = "block";
     bookingForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    bookNameInput.focus();
+    document.getElementById("book-name").focus();
   }
   function resetBookingForm() {
     selectedStartDate = null;
@@ -849,11 +885,11 @@ form {
 
   bookingForm.addEventListener('submit', (e) => {
     e.preventDefault();
-    const name = bookNameInput.value.trim();
-    const persons = parseInt(bookPersonsInput.value);
-    const breakfast = bookBreakfastInput.value;
-    const arrival = bookArrivalInput.value || null;
-    const departure = bookDepartureInput.value || null;
+    const name = document.getElementById("book-name").value.trim();
+    const persons = parseInt(document.getElementById("book-persons").value);
+    const breakfast = document.getElementById("book-breakfast").value;
+    const arrival = document.getElementById("book-arrival-time").value || null;
+    const departure = document.getElementById("book-departure-time").value || null;
     const startDate = bookStartInput.value;
     const endDate = bookEndInput.value;
 
@@ -863,8 +899,8 @@ form {
       bookingError.textContent = "Bitte Name eingeben.";
       return;
     }
-    if(!persons || persons < 1) {
-      bookingError.textContent = "Bitte gültige Anzahl Personen eingeben.";
+    if(!persons || persons < 1 || persons > 3) {
+      bookingError.textContent = "Bitte gültige Anzahl Personen eingeben (max. 3).";
       return;
     }
     if(!startDate || !endDate) {
@@ -878,20 +914,24 @@ form {
 
     const bookings = loadBookings();
     const blocks = loadBlocks();
-
-    for(let b of bookings) {
-      if(checkOverlap(startDate, endDate, b.startDate, b.endDate)) {
-        bookingError.textContent = `Der Zeitraum überschneidet sich mit einer bestehenden Buchung (${b.name}: ${b.startDate} - ${b.endDate}).`;
+    
+    // Validierung für Überschneidungen
+    const rangeStart = dateFromStr(startDate);
+    const rangeEnd = dateFromStr(endDate);
+    let day = new Date(rangeStart);
+    while (day <= rangeEnd) {
+      const dayStr = formatDate(day);
+      if (getBlocksForDate(dayStr)) {
+        bookingError.textContent = `Der Zeitraum überschneidet sich mit einem blockierten Zeitraum.`;
         return;
       }
-    }
-    for(let b of blocks) {
-      if(checkOverlap(startDate, endDate, b.startDate, b.endDate)) {
-        bookingError.textContent = `Der Zeitraum überschneidet sich mit einem blockierten Zeitraum (${b.startDate} - ${b.endDate}).`;
+      if (getBookingsForDate(dayStr)) {
+        bookingError.textContent = `Der Zeitraum überschneidet sich mit einer bestehenden Buchung.`;
         return;
       }
+      day.setDate(day.getDate() + 1);
     }
-
+    
     const newBooking = {
       id: "b" + Date.now(),
       name,
@@ -914,9 +954,6 @@ form {
   // Admin Bereich
   // -------------------
   const adminBookingsList = document.getElementById("admin-bookings-list");
-  const blockStartInput = document.getElementById("block-start-date");
-  const blockEndInput = document.getElementById("block-end-date");
-  const blockError = document.getElementById("block-error");
 
   function renderAdminBookings() {
     const bookings = loadBookings();
@@ -986,80 +1023,69 @@ form {
   }
 
   // -------------------
-  // Blockierungen Hinzufügen (Admin)
+  // Blockieren/Freigeben direkt im Kalender (Admin)
   // -------------------
-  document.getElementById("block-days-form").addEventListener('submit', (e) => {
-    e.preventDefault();
-    blockError.textContent = "";
-
-    const startDate = blockStartInput.value;
-    const endDate = blockEndInput.value;
-
-    if(!startDate || !endDate) {
-      blockError.textContent = "Bitte Start- und Enddatum angeben.";
-      return;
+  document.getElementById("btn-block-selected").addEventListener('click', () => {
+    if (!selectedStartDate || !selectedEndDate) {
+        alert("Bitte wähle zuerst einen Zeitraum im Kalender aus.");
+        return;
     }
-    if(endDate < startDate) {
-      blockError.textContent = "Enddatum darf nicht vor Startdatum liegen.";
-      return;
-    }
+
+    const startDate = formatDate(selectedStartDate <= selectedEndDate ? selectedStartDate : selectedEndDate);
+    const endDate = formatDate(selectedStartDate <= selectedEndDate ? selectedEndDate : selectedStartDate);
 
     const bookings = loadBookings();
-    const blocks = loadBlocks();
+    let blocks = loadBlocks();
 
-    for(let b of bookings) {
-      if(checkOverlap(startDate, endDate, b.startDate, b.endDate)) {
-        blockError.textContent = `Der Zeitraum überschneidet sich mit einer bestehenden Buchung (${b.name}: ${b.startDate} - ${b.endDate}).`;
+    // Validierung: Keine Überschneidung mit Buchungen
+    const rangeStart = dateFromStr(startDate);
+    const rangeEnd = dateFromStr(endDate);
+    let day = new Date(rangeStart);
+    while (day <= rangeEnd) {
+      const dayStr = formatDate(day);
+      if (getBookingsForDate(dayStr)) {
+        alert("Der ausgewählte Zeitraum überschneidet sich mit einer bestehenden Buchung.");
         return;
       }
-    }
-    for(let b of blocks) {
-      if(checkOverlap(startDate, endDate, b.startDate, b.endDate)) {
-        blockError.textContent = `Der Zeitraum überschneidet sich mit einem bereits blockierten Zeitraum (${b.startDate} - ${b.endDate}).`;
-        return;
-      }
+      day.setDate(day.getDate() + 1);
     }
 
     blocks.push({startDate, endDate});
     saveBlocks(blocks);
-    alert("Blockierung erfolgreich hinzugefügt!");
-    document.getElementById("block-days-form").reset();
+    alert(`Zeitraum von ${startDate} bis ${endDate} erfolgreich blockiert.`);
+    selectedStartDate = null;
+    selectedEndDate = null;
     renderAdminBookings();
     renderYearlyCalendar(currentYear);
   });
   
-  function unblockDays(startDate, endDate) {
-    let blocks = loadBlocks();
-    const originalLength = blocks.length;
-    blocks = blocks.filter(block => !checkOverlap(block.startDate, block.endDate, startDate, endDate));
-    if (blocks.length === originalLength) {
-      return false;
-    }
-    saveBlocks(blocks);
-    return true;
-  }
-  
-  document.getElementById("btn-unblock-days").addEventListener('click', () => {
-    const startDate = blockStartInput.value;
-    const endDate = blockEndInput.value;
-
-    if (!startDate || !endDate) {
-      alert("Bitte gib ein Start- und Enddatum zum Freigeben ein.");
-      return;
+  document.getElementById("btn-unblock-selected").addEventListener('click', () => {
+    if (!selectedStartDate || !selectedEndDate) {
+        alert("Bitte wähle zuerst einen Zeitraum im Kalender aus.");
+        return;
     }
     
+    const startDate = formatDate(selectedStartDate <= selectedEndDate ? selectedStartDate : selectedEndDate);
+    const endDate = formatDate(selectedStartDate <= selectedEndDate ? selectedEndDate : selectedStartDate);
+
     if (confirm(`Sollen die Tage von ${startDate} bis ${endDate} wirklich freigegeben werden?`)) {
-      const success = unblockDays(startDate, endDate);
-      if (success) {
+      let blocks = loadBlocks();
+      const originalLength = blocks.length;
+      blocks = blocks.filter(block => !checkOverlap(block.startDate, block.endDate, startDate, endDate));
+      saveBlocks(blocks);
+      
+      if (blocks.length !== originalLength) {
         alert("Tage erfolgreich freigegeben!");
-        document.getElementById("block-days-form").reset();
-        renderAdminBookings();
-        renderYearlyCalendar(currentYear);
       } else {
         alert("Keine Blockierung im ausgewählten Zeitraum gefunden.");
       }
+      selectedStartDate = null;
+      selectedEndDate = null;
+      renderAdminBookings();
+      renderYearlyCalendar(currentYear);
     }
   });
+
 
   // CSV-Export-Funktion
   function exportBookingsToCsv() {
