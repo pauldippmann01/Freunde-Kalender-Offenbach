@@ -125,9 +125,13 @@ table.calendar td.blocked {
 }
 table.calendar td.selected-start {
   border: 3px solid #4caf50;
+  background-color: #81c784 !important;
+  color: black !important;
 }
 table.calendar td.selected-end {
   border: 3px solid #4caf50;
+  background-color: #81c784 !important;
+  color: black !important;
 }
 table.calendar td.selected-range {
   background-color: #81c784;
@@ -367,6 +371,8 @@ form {
   let currentYear;
   let currentMonth;
   let isYearlyView = false;
+  let selectedStartDate = null;
+  let selectedEndDate = null;
 
   // Buchungen und Blockierungen werden in localStorage gespeichert
   const STORAGE_BOOKINGS = "offenbach_bookings";
@@ -390,8 +396,20 @@ form {
   function formatDate(d) {
     return d.toISOString().slice(0,10);
   }
+  function dateFromStr(s) {
+    if (!s) return null;
+    const [year, month, day] = s.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
   function checkOverlap(startA, endA, startB, endB) {
     return !(endA < startB || startA > endB);
+  }
+  function areDatesInRange(date, start, end) {
+    if (!start || !end) return false;
+    const d = new Date(date);
+    const s = new Date(start);
+    const e = new Date(end);
+    return d >= s && d <= e;
   }
 
   // -------------------
@@ -530,12 +548,26 @@ form {
     }
 
     for(let day=1; day<=daysInMonth; day++) {
-      const dateStr = formatDate(new Date(year, month, day));
+      const date = new Date(year, month, day);
+      const dateStr = formatDate(date);
       let classes = "";
       if(blocks.some(b => checkOverlap(dateStr, dateStr, b.startDate, b.endDate))) {
         classes = "blocked";
       } else if(bookings.some(bk => checkOverlap(dateStr, dateStr, bk.startDate, bk.endDate))) {
         classes = "booked";
+      } else if (selectedStartDate && selectedEndDate) {
+        const s = dateFromStr(formatDate(selectedStartDate < selectedEndDate ? selectedStartDate : selectedEndDate));
+        const e = dateFromStr(formatDate(selectedEndDate > selectedStartDate ? selectedEndDate : selectedStartDate));
+        const d = dateFromStr(dateStr);
+        if (d.getTime() === s.getTime()) {
+          classes = "selected-start";
+        } else if (d.getTime() === e.getTime()) {
+          classes = "selected-end";
+        } else if (d > s && d < e) {
+          classes = "selected-range";
+        }
+      } else if (selectedStartDate && formatDate(selectedStartDate) === dateStr) {
+        classes = "selected-start";
       }
 
       let cellContent = day;
@@ -557,25 +589,25 @@ form {
     calendarEl.innerHTML = html;
 
     attachDateClickHandlers();
+    showBookingForm();
   }
 
   // ---------------------
   // Datums- und Bereichsauswahl
   // ---------------------
-  let selectedStartDate = null;
-  let selectedEndDate = null;
-
+  
   function attachDateClickHandlers() {
     const cells = calendarEl.querySelectorAll("td:not(.inactive)");
     cells.forEach(cell => {
       cell.style.cursor = "pointer";
       cell.onclick = () => {
-        const date = cell.getAttribute("data-date");
+        const dateStr = cell.getAttribute("data-date");
+        const date = new Date(dateStr);
         if(cell.classList.contains('booked') || cell.classList.contains('blocked')) {
             return;
         }
 
-        if(!selectedStartDate || (selectedStartDate && selectedEndDate)) {
+        if(!selectedStartDate || selectedStartDate && selectedEndDate) {
           selectedStartDate = date;
           selectedEndDate = null;
         } else {
@@ -586,23 +618,9 @@ form {
             selectedEndDate = date;
           }
         }
-        updateSelectionVisual();
+        renderCalendar(currentYear, currentMonth); // Re-render to show selection
         showBookingForm();
       };
-    });
-  }
-
-  function updateSelectionVisual() {
-    const cells = calendarEl.querySelectorAll("td");
-    cells.forEach(cell => {
-      cell.classList.remove("selected-start", "selected-end", "selected-range");
-      const date = cell.getAttribute("data-date");
-      if(!date) return;
-      if(date === selectedStartDate) cell.classList.add("selected-start");
-      if(date === selectedEndDate) cell.classList.add("selected-end");
-      if(selectedStartDate && selectedEndDate && date > selectedStartDate && date < selectedEndDate) {
-        cell.classList.add("selected-range");
-      }
     });
   }
 
@@ -624,8 +642,8 @@ form {
       bookingForm.style.display = "none";
       return;
     }
-    bookStartInput.value = selectedStartDate;
-    bookEndInput.value = selectedEndDate ? selectedEndDate : selectedStartDate;
+    bookStartInput.value = formatDate(selectedStartDate);
+    bookEndInput.value = selectedEndDate ? formatDate(selectedEndDate) : formatDate(selectedStartDate);
     bookingError.textContent = "";
     bookingForm.style.display = "block";
     bookNameInput.focus();
@@ -633,7 +651,7 @@ form {
   function resetBookingForm() {
     selectedStartDate = null;
     selectedEndDate = null;
-    updateSelectionVisual();
+    renderCalendar(currentYear, currentMonth);
     bookingForm.style.display = "none";
     bookingError.textContent = "";
     bookingForm.reset && bookingForm.reset();
