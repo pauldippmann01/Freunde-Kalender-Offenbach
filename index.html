@@ -7,6 +7,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+
 <style>
 /* Reset und Booking.com-Design */
 :root {
@@ -429,6 +433,10 @@ form {
         <input type="text" id="book-name" required />
       </div>
       <div class="form-row">
+        <label for="book-email">E-Mail-Adresse *</label>
+        <input type="email" id="book-email" required />
+      </div>
+      <div class="form-row">
         <label for="book-persons">Anzahl Personen * (max. 3)</label>
         <input type="number" id="book-persons" min="1" max="3" value="1" required />
       </div>
@@ -516,6 +524,17 @@ form {
       <div id="admin-bookings-list"></div>
     </div>
   </section>
+
+  <section id="cancel-page" style="display:none; text-align: center; padding: 50px;">
+    <h2>Buchung stornieren</h2>
+    <p id="cancel-status-text">Stornierungslink wird überprüft...</p>
+    <div id="cancel-details" style="margin-top: 20px; text-align: left; max-width: 400px; margin: 20px auto;"></div>
+    <div id="cancel-buttons" style="margin-top: 20px;">
+        <button id="btn-confirm-cancellation" style="background-color: #d9534f;">Buchung bestätigen & stornieren</button>
+        <button id="btn-return-home" style="background-color: var(--secondary-blue);">Zurück zur Startseite</button>
+    </div>
+  </section>
+
 </main>
 
 <script>
@@ -523,7 +542,29 @@ form {
   // Passwörter
   const FRIEND_PASSWORD = "test";
   const ADMIN_PASSWORD = "test";
+  const ADMIN_EMAIL = "deine-admin-email@example.com"; // <-- TRAGE HIER DEINE E-MAIL-ADRESSE EIN
 
+  // EmailJS Konfiguration
+  const EMAILJS_SERVICE_ID = 'dein_service_id'; // <-- HIER DEINEN SERVICE ID EINFÜGEN
+  const EMAILJS_TEMPLATE_ID_ADMIN = 'dein_admin_template_id'; // <-- HIER DEIN ADMIN TEMPLATE ID EINFÜGEN
+  const EMAILJS_TEMPLATE_ID_FRIEND = 'dein_friend_template_id'; // <-- HIER DEIN FREUND TEMPLATE ID EINFÜGEN
+  const EMAILJS_TEMPLATE_ID_CANCEL = 'dein_cancel_template_id'; // <-- HIER DEIN STORNO TEMPLATE ID EINFÜGEN
+  const EMAILJS_PUBLIC_KEY = 'dein_public_key'; // <-- HIER DEINEN PUBLIC KEY EINFÜGEN
+
+  // Firebase Konfiguration
+ const firebaseConfig = {
+    apiKey: "AIzaSyAu9hXGYbgmD-_pz0LHN5VgUcV9mRNkU98",
+    authDomain: "freunde-kalender-offenbach.firebaseapp.com",
+    projectId: "freunde-kalender-offenbach",
+    storageBucket: "freunde-kalender-offenbach.firebasestorage.app",
+    messagingSenderId: "753671032354",
+    appId: "1:753671032354:web:a154b43ccdfcc491c4c47b"
+  };
+
+  // Initialisiere Firebase und Firestore
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+  
   // Kalender Start & Ende
   const CAL_START_YEAR = 2025;
   const CAL_END_YEAR = 2040;
@@ -534,25 +575,16 @@ form {
   let selectedEndDate = null;
   let currentView = 'friend'; // Kann 'friend' oder 'admin' sein
   
-  // Buchungen und Blockierungen werden in localStorage gespeichert
-  const STORAGE_BOOKINGS = "offenbach_bookings";
-  const STORAGE_BLOCKS = "offenbach_blocks";
+  const sections = {
+    start: document.getElementById("start-page"),
+    friendLogin: document.getElementById("friend-login"),
+    friendArea: document.getElementById("friend-area"),
+    adminLogin: document.getElementById("admin-login"),
+    adminArea: document.getElementById("admin-area"),
+    cancel: document.getElementById("cancel-page")
+  };
 
   // Utility
-  function saveBookings(bookings) {
-    localStorage.setItem(STORAGE_BOOKINGS, JSON.stringify(bookings));
-  }
-  function loadBookings() {
-    const data = localStorage.getItem(STORAGE_BOOKINGS);
-    return data ? JSON.parse(data) : [];
-  }
-  function saveBlocks(blocks) {
-    localStorage.setItem(STORAGE_BLOCKS, JSON.stringify(blocks));
-  }
-  function loadBlocks() {
-    const data = localStorage.getItem(STORAGE_BLOCKS);
-    return data ? JSON.parse(data) : [];
-  }
   function formatDate(d) {
     const year = d.getFullYear();
     const month = (d.getMonth() + 1).toString().padStart(2, '0');
@@ -567,26 +599,39 @@ form {
   function checkOverlap(startA, endA, startB, endB) {
     return !(endA < startB || startA > endB);
   }
-  function getBookingsForDate(dateStr) {
-    const bookings = loadBookings();
-    return bookings.find(bk => checkOverlap(dateStr, dateStr, bk.startDate, bk.endDate));
+  function generateCancellationId() {
+    return 'cancel_' + Math.random().toString(36).substr(2, 9);
   }
-  function getBlocksForDate(dateStr) {
-    const blocks = loadBlocks();
-    return blocks.find(bl => checkOverlap(dateStr, dateStr, bl.startDate, bl.endDate));
+
+  // -------------------
+  // Firebase Data Fetching
+  // -------------------
+  async function fetchBookings() {
+    const snapshot = await db.collection('bookings').get();
+    const bookings = [];
+    snapshot.forEach(doc => {
+      bookings.push({ id: doc.id, ...doc.data() });
+    });
+    return bookings;
+  }
+  async function fetchBlocks() {
+    const snapshot = await db.collection('blocks').get();
+    const blocks = [];
+    snapshot.forEach(doc => {
+      blocks.push({ id: doc.id, ...doc.data() });
+    });
+    return blocks;
+  }
+  async function deleteBooking(bookingId) {
+    await db.collection('bookings').doc(bookingId).delete();
+  }
+  async function deleteBlock(blockId) {
+    await db.collection('blocks').doc(blockId).delete();
   }
 
   // -------------------
   // Navigation & Sections
   // -------------------
-  const sections = {
-    start: document.getElementById("start-page"),
-    friendLogin: document.getElementById("friend-login"),
-    friendArea: document.getElementById("friend-area"),
-    adminLogin: document.getElementById("admin-login"),
-    adminArea: document.getElementById("admin-area"),
-  };
-
   function showSection(name) {
     Object.values(sections).forEach(sec => sec.style.display = "none");
     sections[name].style.display = "block";
@@ -630,7 +675,7 @@ form {
     }
   });
 
-  document.getElementById("admin-login-btn").addEventListener('click', () => {
+  document.getElementById("admin-login-btn").addEventListener('click', async () => {
     const pw = document.getElementById("admin-password").value;
     if(pw === ADMIN_PASSWORD) {
       currentView = 'admin';
@@ -674,15 +719,14 @@ form {
   // -----------------------
   // Jahreskalender Übersicht
   // -----------------------
-  function renderYearlyCalendar(year) {
+  async function renderYearlyCalendar(year) {
     const calendarContent = currentView === 'friend' ? document.getElementById("yearly-calendar-content") : document.getElementById("admin-yearly-calendar-content");
     const yearDisplay = currentView === 'friend' ? document.getElementById("year-display") : document.getElementById("admin-year-display");
     
     yearDisplay.textContent = year;
     calendarContent.innerHTML = "";
 
-    const bookings = loadBookings();
-    const blocks = loadBlocks();
+    const [bookings, blocks] = await Promise.all([fetchBookings(), fetchBlocks()]);
 
     const monthNames = [
       "Januar","Februar","März","April","Mai","Juni",
@@ -708,8 +752,10 @@ form {
         let classes = "";
         let tooltip = "";
 
-        const bookedEntry = getBookingsForDate(dateStr);
-        if(getBlocksForDate(dateStr)) {
+        const bookedEntry = bookings.find(bk => checkOverlap(dateStr, dateStr, bk.startDate, bk.endDate));
+        const blockedEntry = blocks.find(bl => checkOverlap(dateStr, dateStr, bl.startDate, bl.endDate));
+
+        if(blockedEntry) {
           classes = "blocked";
           tooltip = "Wohnung nicht verfügbar";
         } else if(bookedEntry) {
@@ -759,55 +805,57 @@ form {
     const end = sDate <= eDate ? eDate : sDate;
 
     let currentDate = new Date(start);
-    const bookings = loadBookings();
-    const blocks = loadBlocks();
+    const bookings = fetchBookings();
+    const blocks = fetchBlocks();
 
-    let isSelectionValid = true;
-    let tempDate = new Date(start);
-    while (tempDate <= end) {
-      const dateStr = formatDate(tempDate);
-      if(bookings.some(b => checkOverlap(dateStr, dateStr, b.startDate, b.endDate)) || 
-         (currentView === 'friend' && blocks.some(b => checkOverlap(dateStr, dateStr, b.startDate, b.endDate)))) {
-        isSelectionValid = false;
-        break;
-      }
-      tempDate.setDate(tempDate.getDate() + 1);
-    }
-
-    if (!isSelectionValid) {
-        selectedStartDate = null;
-        selectedEndDate = null;
-        if (currentView === 'friend') {
-          bookingForm.style.display = "none";
+    Promise.all([bookings, blocks]).then(([bks, blks]) => {
+      let isSelectionValid = true;
+      let tempDate = new Date(start);
+      while (tempDate <= end) {
+        const dateStr = formatDate(tempDate);
+        if(bks.some(b => checkOverlap(dateStr, dateStr, b.startDate, b.endDate)) || 
+           (currentView === 'friend' && blks.some(b => checkOverlap(dateStr, dateStr, b.startDate, b.endDate)))) {
+          isSelectionValid = false;
+          break;
         }
-        updateSelectedDays(); // Rerender to clear any selection
-        return;
-    }
-
-    currentDate = new Date(start);
-    while (currentDate <= end) {
-      const dateStr = formatDate(currentDate);
-      const cell = calendarSection.querySelector(`td[data-date="${dateStr}"]`);
-      if (cell) {
-        cell.style.backgroundColor = 'var(--selected-green-dark)';
-        if (formatDate(currentDate) === formatDate(start)) {
-          cell.classList.add('selected-start');
-        } else if (formatDate(currentDate) === formatDate(end)) {
-          cell.classList.add('selected-end');
-        } else {
-          cell.classList.add('selected-range');
-        }
+        tempDate.setDate(tempDate.getDate() + 1);
       }
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-
-    if (currentView === 'friend') {
-        if(selectedEndDate) {
-            showBookingForm();
-        } else {
+  
+      if (!isSelectionValid) {
+          selectedStartDate = null;
+          selectedEndDate = null;
+          if (currentView === 'friend') {
             bookingForm.style.display = "none";
+          }
+          updateSelectedDays();
+          return;
+      }
+  
+      currentDate = new Date(start);
+      while (currentDate <= end) {
+        const dateStr = formatDate(currentDate);
+        const cell = calendarSection.querySelector(`td[data-date="${dateStr}"]`);
+        if (cell) {
+          cell.style.backgroundColor = 'var(--selected-green-dark)';
+          if (formatDate(currentDate) === formatDate(start)) {
+            cell.classList.add('selected-start');
+          } else if (formatDate(currentDate) === formatDate(end)) {
+            cell.classList.add('selected-end');
+          } else {
+            cell.classList.add('selected-range');
+          }
         }
-    }
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+  
+      if (currentView === 'friend') {
+          if(selectedEndDate) {
+              showBookingForm();
+          } else {
+              bookingForm.style.display = "none";
+          }
+      }
+    });
   }
 
   // ---------------------
@@ -883,9 +931,10 @@ form {
     resetBookingForm();
   });
 
-  bookingForm.addEventListener('submit', (e) => {
+  bookingForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const name = document.getElementById("book-name").value.trim();
+    const email = document.getElementById("book-email").value.trim();
     const persons = parseInt(document.getElementById("book-persons").value);
     const breakfast = document.getElementById("book-breakfast").value;
     const arrival = document.getElementById("book-arrival-time").value || null;
@@ -897,6 +946,10 @@ form {
 
     if(!name) {
       bookingError.textContent = "Bitte Name eingeben.";
+      return;
+    }
+    if(!email) {
+      bookingError.textContent = "Bitte E-Mail-Adresse eingeben.";
       return;
     }
     if(!persons || persons < 1 || persons > 3) {
@@ -912,20 +965,19 @@ form {
       return;
     }
 
-    const bookings = loadBookings();
-    const blocks = loadBlocks();
+    const bookings = await fetchBookings();
+    const blocks = await fetchBlocks();
     
-    // Validierung für Überschneidungen
     const rangeStart = dateFromStr(startDate);
     const rangeEnd = dateFromStr(endDate);
     let day = new Date(rangeStart);
     while (day <= rangeEnd) {
       const dayStr = formatDate(day);
-      if (getBlocksForDate(dayStr)) {
+      if (blocks.some(b => checkOverlap(dayStr, dayStr, b.startDate, b.endDate))) {
         bookingError.textContent = `Der Zeitraum überschneidet sich mit einem blockierten Zeitraum.`;
         return;
       }
-      if (getBookingsForDate(dayStr)) {
+      if (bookings.some(b => checkOverlap(dayStr, dayStr, b.startDate, b.endDate))) {
         bookingError.textContent = `Der Zeitraum überschneidet sich mit einer bestehenden Buchung.`;
         return;
       }
@@ -933,19 +985,43 @@ form {
     }
     
     const newBooking = {
-      id: "b" + Date.now(),
       name,
+      email,
       persons,
       breakfast,
       arrivalTime: arrival,
       departureTime: departure,
       startDate,
       endDate,
+      cancellationId: generateCancellationId()
     };
-    bookings.push(newBooking);
-    saveBookings(bookings);
+    
+    await db.collection('bookings').add(newBooking);
 
-    alert("Buchung erfolgreich gespeichert!");
+    // E-Mails senden
+    const cancellationLink = `${window.location.origin}${window.location.pathname}?cancelId=${newBooking.cancellationId}`;
+    const templateParams = {
+        from_name: newBooking.name,
+        to_email: newBooking.email,
+        admin_email: ADMIN_EMAIL,
+        start_date: newBooking.startDate,
+        end_date: newBooking.endDate,
+        persons: newBooking.persons,
+        cancellation_link: cancellationLink,
+        breakfast: newBooking.breakfast,
+        arrival_time: newBooking.arrivalTime,
+        departure_time: newBooking.departureTime
+    };
+
+    try {
+        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_ADMIN, templateParams, EMAILJS_PUBLIC_KEY);
+        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_FRIEND, templateParams, EMAILJS_PUBLIC_KEY);
+        alert("Buchung erfolgreich gespeichert und Bestätigung gesendet!");
+    } catch (error) {
+        console.error("Fehler beim Senden der E-Mail:", error);
+        alert("Buchung erfolgreich, aber E-Mail konnte nicht gesendet werden. Bitte kontaktiere den Admin.");
+    }
+
     resetBookingForm();
     renderYearlyCalendar(currentYear);
   });
@@ -955,33 +1031,32 @@ form {
   // -------------------
   const adminBookingsList = document.getElementById("admin-bookings-list");
 
-  function renderAdminBookings() {
-    const bookings = loadBookings();
-    const blocks = loadBlocks();
+  async function renderAdminBookings() {
+    const bookings = await fetchBookings();
+    const blocks = await fetchBlocks();
 
-    let html = `<table><thead><tr><th>Typ</th><th>Name</th><th>Personen</th><th>Frühstück</th><th>Anreise</th><th>Abreise</th><th>Startdatum</th><th>Enddatum</th><th>Aktion</th></tr></thead><tbody>`;
+    let html = `<table><thead><tr><th>Typ</th><th>Name</th><th>E-Mail</th><th>Personen</th><th>Frühstück</th><th>Startdatum</th><th>Enddatum</th><th>Aktion</th></tr></thead><tbody>`;
 
     bookings.forEach(bk => {
       html += `<tr>
         <td>Buchung</td>
         <td>${bk.name}</td>
+        <td>${bk.email}</td>
         <td>${bk.persons}</td>
         <td>${bk.breakfast}</td>
-        <td>${bk.arrivalTime || "-"}</td>
-        <td>${bk.departureTime || "-"}</td>
         <td>${bk.startDate}</td>
         <td>${bk.endDate}</td>
         <td><button class="btn-delete-booking" data-id="${bk.id}" style="background-color: #d9534f; padding:5px 10px;">Löschen</button></td>
       </tr>`;
     });
 
-    blocks.forEach((bl, idx) => {
+    blocks.forEach(bl => {
       html += `<tr>
         <td>Blockiert</td>
         <td colspan="5" style="text-align:center;">-</td>
         <td>${bl.startDate}</td>
         <td>${bl.endDate}</td>
-        <td><button class="btn-delete-block" data-idx="${idx}" style="background-color: var(--blocked-gray); padding:5px 10px;">Entfernen</button></td>
+        <td><button class="btn-delete-block" data-id="${bl.id}" style="background-color: var(--blocked-gray); padding:5px 10px;">Entfernen</button></td>
       </tr>`;
     });
 
@@ -990,42 +1065,56 @@ form {
     adminBookingsList.innerHTML = html;
 
     document.querySelectorAll(".btn-delete-booking").forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         if(confirm("Buchung wirklich löschen?")) {
           const id = btn.getAttribute("data-id");
-          deleteBooking(id);
+          const bookingToDelete = bookings.find(b => b.id === id);
+          if (bookingToDelete) {
+             await deleteBookingWithNotification(bookingToDelete, true);
+          }
         }
       });
     });
     document.querySelectorAll(".btn-delete-block").forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', async () => {
         if(confirm("Blockierung wirklich entfernen?")) {
-          const idx = parseInt(btn.getAttribute("data-idx"));
-          deleteBlock(idx);
+          const id = btn.getAttribute("data-id");
+          await deleteBlock(id);
+          renderAdminBookings();
+          renderYearlyCalendar(currentYear);
         }
       });
     });
   }
 
-  function deleteBooking(id) {
-    let bookings = loadBookings();
-    bookings = bookings.filter(b => b.id !== id);
-    saveBookings(bookings);
-    renderAdminBookings();
-    renderYearlyCalendar(currentYear);
-  }
-  function deleteBlock(idx) {
-    let blocks = loadBlocks();
-    blocks.splice(idx, 1);
-    saveBlocks(blocks);
-    renderAdminBookings();
-    renderYearlyCalendar(currentYear);
+  async function deleteBookingWithNotification(booking, isAdminAction) {
+    try {
+        await deleteBooking(booking.id);
+        
+        // Sende Stornierungs-E-Mail an den Buchenden
+        const templateParams = {
+            to_email: booking.email,
+            start_date: booking.startDate,
+            end_date: booking.endDate,
+            admin_action: isAdminAction ? 'Ja' : 'Nein'
+        };
+
+        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_CANCEL, templateParams, EMAILJS_PUBLIC_KEY);
+        alert(`Buchung von ${booking.name} erfolgreich storniert. Bestätigung wurde per E-Mail gesendet.`);
+        
+        renderAdminBookings();
+        renderYearlyCalendar(currentYear);
+        showSection('start');
+    } catch (error) {
+        console.error("Fehler beim Stornieren der Buchung:", error);
+        alert("Ein Fehler ist aufgetreten. Die Buchung konnte nicht storniert werden.");
+    }
   }
 
   // -------------------
   // Blockieren/Freigeben direkt im Kalender (Admin)
   // -------------------
-  document.getElementById("btn-block-selected").addEventListener('click', () => {
+  document.getElementById("btn-block-selected").addEventListener('click', async () => {
     if (!selectedStartDate || !selectedEndDate) {
         alert("Bitte wähle zuerst einen Zeitraum im Kalender aus.");
         return;
@@ -1034,24 +1123,22 @@ form {
     const startDate = formatDate(selectedStartDate <= selectedEndDate ? selectedStartDate : selectedEndDate);
     const endDate = formatDate(selectedStartDate <= selectedEndDate ? selectedEndDate : selectedStartDate);
 
-    const bookings = loadBookings();
-    let blocks = loadBlocks();
-
+    const bookings = await fetchBookings();
+    
     // Validierung: Keine Überschneidung mit Buchungen
     const rangeStart = dateFromStr(startDate);
     const rangeEnd = dateFromStr(endDate);
     let day = new Date(rangeStart);
     while (day <= rangeEnd) {
       const dayStr = formatDate(day);
-      if (getBookingsForDate(dayStr)) {
+      if (bookings.some(b => checkOverlap(dayStr, dayStr, b.startDate, b.endDate))) {
         alert("Der ausgewählte Zeitraum überschneidet sich mit einer bestehenden Buchung.");
         return;
       }
       day.setDate(day.getDate() + 1);
     }
 
-    blocks.push({startDate, endDate});
-    saveBlocks(blocks);
+    await db.collection('blocks').add({startDate, endDate});
     alert(`Zeitraum von ${startDate} bis ${endDate} erfolgreich blockiert.`);
     selectedStartDate = null;
     selectedEndDate = null;
@@ -1059,7 +1146,7 @@ form {
     renderYearlyCalendar(currentYear);
   });
   
-  document.getElementById("btn-unblock-selected").addEventListener('click', () => {
+  document.getElementById("btn-unblock-selected").addEventListener('click', async () => {
     if (!selectedStartDate || !selectedEndDate) {
         alert("Bitte wähle zuerst einen Zeitraum im Kalender aus.");
         return;
@@ -1069,16 +1156,22 @@ form {
     const endDate = formatDate(selectedStartDate <= selectedEndDate ? selectedEndDate : selectedStartDate);
 
     if (confirm(`Sollen die Tage von ${startDate} bis ${endDate} wirklich freigegeben werden?`)) {
-      let blocks = loadBlocks();
-      const originalLength = blocks.length;
-      blocks = blocks.filter(block => !checkOverlap(block.startDate, block.endDate, startDate, endDate));
-      saveBlocks(blocks);
+      const blocks = await fetchBlocks();
+      let blocksToRemove = blocks.filter(block => checkOverlap(block.startDate, block.endDate, startDate, endDate));
       
-      if (blocks.length !== originalLength) {
+      if (blocksToRemove.length > 0) {
+        const batch = db.batch();
+        blocksToRemove.forEach(block => {
+          const docRef = db.collection('blocks').doc(block.id);
+          batch.delete(docRef);
+        });
+        await batch.commit();
+
         alert("Tage erfolgreich freigegeben!");
       } else {
         alert("Keine Blockierung im ausgewählten Zeitraum gefunden.");
       }
+
       selectedStartDate = null;
       selectedEndDate = null;
       renderAdminBookings();
@@ -1088,20 +1181,21 @@ form {
 
 
   // CSV-Export-Funktion
-  function exportBookingsToCsv() {
-    const bookings = loadBookings();
+  async function exportBookingsToCsv() {
+    const bookings = await fetchBookings();
     if (bookings.length === 0) {
       alert("Keine Buchungen zum Exportieren vorhanden.");
       return;
     }
 
     const csvRows = [];
-    const headers = ["Name", "Personen", "Frühstück", "Anreisezeit", "Abreisezeit", "Startdatum", "Enddatum"];
+    const headers = ["Name", "E-Mail", "Personen", "Frühstück", "Anreisezeit", "Abreisezeit", "Startdatum", "Enddatum"];
     csvRows.push(headers.join(';')); 
 
     for (const booking of bookings) {
       const row = [
         booking.name,
+        booking.email,
         booking.persons,
         booking.breakfast,
         booking.arrivalTime || "",
@@ -1122,6 +1216,51 @@ form {
   
   document.getElementById("btn-export-csv").addEventListener('click', exportBookingsToCsv);
 
+  // -------------------
+  // Stornierungslogik (Buchender)
+  // -------------------
+  async function handleCancellationLink(cancellationId) {
+    showSection('cancel');
+    const statusText = document.getElementById('cancel-status-text');
+    const detailsDiv = document.getElementById('cancel-details');
+    const buttonsDiv = document.getElementById('cancel-buttons');
+
+    buttonsDiv.style.display = 'none';
+    detailsDiv.innerHTML = '';
+    
+    const bookingsRef = db.collection('bookings').where('cancellationId', '==', cancellationId);
+    const querySnapshot = await bookingsRef.get();
+
+    if (querySnapshot.empty) {
+        statusText.textContent = "Ungültiger oder bereits stornierter Buchungslink.";
+        return;
+    }
+
+    const doc = querySnapshot.docs[0];
+    const booking = doc.data();
+    const bookingId = doc.id;
+
+    statusText.textContent = "Buchungsdetails:";
+    detailsDiv.innerHTML = `
+        <p><strong>Name:</strong> ${booking.name}</p>
+        <p><strong>E-Mail:</strong> ${booking.email}</p>
+        <p><strong>Zeitraum:</strong> ${booking.startDate} bis ${booking.endDate}</p>
+        <p><strong>Personen:</strong> ${booking.persons}</p>
+    `;
+    buttonsDiv.style.display = 'block';
+
+    document.getElementById('btn-confirm-cancellation').onclick = async () => {
+        if (confirm(`Soll die Buchung von ${booking.name} wirklich storniert werden?`)) {
+            await deleteBookingWithNotification({id: bookingId, ...booking}, false);
+            statusText.textContent = "Ihre Buchung wurde erfolgreich storniert.";
+            buttonsDiv.style.display = 'none';
+        }
+    };
+    document.getElementById('btn-return-home').onclick = () => {
+        window.location.href = window.location.origin + window.location.pathname;
+    };
+  }
+
   // Initialanzeige
   function initialize() {
     const today = new Date();
@@ -1132,8 +1271,15 @@ form {
     } else if (currentYear > CAL_END_YEAR) {
         currentYear = CAL_END_YEAR;
     }
-    
-    showSection("start");
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const cancellationId = urlParams.get('cancelId');
+
+    if (cancellationId) {
+        handleCancellationLink(cancellationId);
+    } else {
+        showSection("start");
+    }
   }
 
   initialize();
