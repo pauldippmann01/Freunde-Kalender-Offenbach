@@ -3,29 +3,30 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Freunde Kalender Offenbach</title>
+<title>Gast Kalender Offenbach</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVK+jJdG7y6Dq2T2n6m3hU7I6t0y7sC6XFvA6X/m0Pz06x3Vq5tA7M7O4x4E4S4C7x7D6y8A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
 <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 
 <style>
-/* Reset und Booking.com-Design */
+/* AirBnB-Design */
 :root {
-  --primary-blue: #0071c2;
-  --secondary-blue: #00589d;
-  --text-dark: #333;
-  --text-light: #fff;
-  --bg-light: #f3f3f3;
-  --bg-white: #fff;
-  --border-grey: #e8e8e8;
-  --booked-red: #f44336;
-  --blocked-gray: #666;
-  --available-green: #b2dfdb; /* Hellgrün für verfügbare Tage */
-  --selected-green-dark: #00897b; /* Dunkelgrün für ausgewählte Tage */
-  --selected-green-light: #81c784;
+  --primary-color: #ff385c;
+  --secondary-color: #222222;
+  --text-dark: #222222;
+  --text-light: #ffffff;
+  --bg-light: #ffffff;
+  --bg-hover: #f7f7f7;
+  --border-grey: #dddddd;
+  --booked-red: #ff385c;
+  --blocked-gray: #717171;
+  --available-white: #ffffff;
+  --selected-red: #ff385c;
+  --selected-border: #222222;
 }
 
 body, html {
@@ -50,64 +51,77 @@ h1, h2, h3 {
 }
 button {
   cursor: pointer;
-  border: none;
-  border-radius: 4px;
-  padding: 10px 20px;
+  border: 1px solid var(--border-grey);
+  border-radius: 8px;
+  padding: 12px 24px;
   margin: 5px;
-  background-color: var(--primary-blue);
+  background-color: var(--secondary-color);
   color: var(--text-light);
   font-weight: 600;
   transition: background-color 0.2s ease;
+  font-size: 16px;
 }
 button:hover {
-  background-color: var(--secondary-blue);
+  background-color: #000000;
+}
+button.primary-btn {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+button.primary-btn:hover {
+  background-color: #d80b2a;
 }
 input, select {
-  padding: 8px;
+  padding: 12px;
   margin: 5px 0 10px 0;
-  border-radius: 4px;
+  border-radius: 8px;
   border: 1px solid var(--border-grey);
   width: 100%;
   box-sizing: border-box;
-  font-size: 0.9em;
+  font-size: 16px;
 }
 label {
   font-weight: 600;
   display: block;
   margin-bottom: 2px;
-  font-size: 0.9em;
+  font-size: 14px;
 }
 .error-msg {
   color: var(--booked-red);
   text-align: center;
   margin-bottom: 10px;
 }
+.icon {
+  margin-right: 8px;
+}
 
 /* Navigation */
 nav {
-  background-color: var(--primary-blue);
+  background-color: var(--bg-light);
   padding: 10px 20px;
   text-align: center;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  border-bottom: 1px solid var(--border-grey);
 }
 nav button {
-  background: none;
-  color: var(--text-light);
-  border: 1px solid transparent;
+  background: var(--bg-light);
+  color: var(--text-dark);
+  border: 1px solid var(--border-grey);
+  font-size: 14px;
+  padding: 8px 16px;
 }
 nav button:hover {
-  background: rgba(255,255,255,0.2);
-  border: 1px solid rgba(255,255,255,0.5);
+  background: var(--bg-hover);
 }
 
 /* Kalender Styles */
 .calendar-container {
   max-width: 100%;
   margin: 20px auto;
-  background-color: var(--bg-white);
+  background-color: var(--bg-light);
   padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  border-radius: 12px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.12);
 }
 .calendar-header {
   display: flex;
@@ -122,7 +136,7 @@ nav button:hover {
   font-size: 18px;
   padding: 5px 10px;
   background: none;
-  color: var(--primary-blue);
+  color: var(--secondary-color);
 }
 .month-nav button:hover {
   background: rgba(0,0,0,0.05);
@@ -130,8 +144,8 @@ nav button:hover {
 table.calendar {
   border-collapse: collapse;
   width: 100%;
-  background-color: var(--bg-white);
-  border-radius: 8px;
+  background-color: var(--bg-light);
+  border-radius: 12px;
   table-layout: fixed; 
 }
 table.calendar th, table.calendar td {
@@ -146,7 +160,7 @@ table.calendar th, table.calendar td {
 }
 table.calendar td {
   cursor: pointer;
-  background-color: var(--available-green); /* Standardfarbe für freie Tage */
+  background-color: var(--available-white); /* Standardfarbe für freie Tage */
 }
 table.calendar th {
   background-color: var(--bg-light);
@@ -158,7 +172,7 @@ table.calendar td.inactive {
   background-color: #f9f9f9;
 }
 table.calendar td:not(.inactive):hover {
-  background-color: #f0f0f0;
+  background-color: var(--bg-hover);
 }
 table.calendar td.booked {
   background-color: var(--booked-red);
@@ -169,14 +183,16 @@ table.calendar td.blocked {
   color: var(--text-light);
 }
 table.calendar td.selected-start,
-table.calendar td.selected-end {
-  border: 2px solid var(--selected-green-dark);
-  background-color: var(--selected-green-dark) !important;
+table.calendar td.selected-end,
+table.calendar td.selected-range {
+  background-color: var(--selected-red) !important;
   color: var(--text-light) !important;
 }
-table.calendar td.selected-range {
-  background-color: var(--selected-green-dark);
-  color: var(--text-light);
+table.calendar td.selected-start {
+    border-left: 2px solid var(--selected-border);
+}
+table.calendar td.selected-end {
+    border-right: 2px solid var(--selected-border);
 }
 
 /* Tooltip (Maus-Hover) */
@@ -185,12 +201,12 @@ table.calendar td.selected-range {
   display: block;
   width: 100%;
   height: 100%;
-  pointer-events: none; /* Wichtig, damit Klicks die Zelle durchdringen */
+  pointer-events: none;
 }
 .tooltiptext {
   visibility: hidden;
   width: 120px;
-  background-color: #555;
+  background-color: var(--secondary-color);
   color: #fff;
   text-align: center;
   border-radius: 6px;
@@ -202,7 +218,7 @@ table.calendar td.selected-range {
   margin-left: -60px;
   opacity: 0;
   transition: opacity 0.3s;
-  pointer-events: none; /* Verhindert, dass der Tooltip selbst Klicks abfängt */
+  pointer-events: none;
 }
 td:hover .tooltiptext {
   visibility: visible;
@@ -216,20 +232,20 @@ td:hover .tooltiptext {
   margin-left: -5px;
   border-width: 5px;
   border-style: solid;
-  border-color: #555 transparent transparent transparent;
+  border-color: var(--secondary-color) transparent transparent transparent;
 }
 
 /* Kalender-Legende */
 #calendar-legend {
     display: flex;
     justify-content: center;
-    gap: 20px;
+    gap: 15px;
     margin-bottom: 20px;
     font-size: 0.9em;
     padding: 10px;
-    border-radius: 4px;
-    background-color: var(--bg-white);
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    border-radius: 8px;
+    background-color: var(--bg-light);
+    flex-wrap: wrap;
 }
 .legend-item {
     display: flex;
@@ -237,45 +253,46 @@ td:hover .tooltiptext {
     color: var(--text-dark);
 }
 .legend-color {
-    width: 20px;
-    height: 20px;
+    width: 16px;
+    height: 16px;
     border-radius: 4px;
     margin-right: 8px;
+    border: 1px solid var(--border-grey);
 }
-#legend-color-booked { background-color: var(--booked-red); }
-#legend-color-blocked { background-color: var(--blocked-gray); }
-#legend-color-available { background-color: var(--available-green); }
-#legend-color-selected { background-color: var(--selected-green-dark); }
+#legend-color-booked { background-color: var(--booked-red); border-color: var(--booked-red);}
+#legend-color-blocked { background-color: var(--blocked-gray); border-color: var(--blocked-gray);}
+#legend-color-available { background-color: var(--available-white); }
+#legend-color-selected { background-color: var(--selected-red); border-color: var(--selected-red);}
 
 /* Formular Styles */
 form {
   max-width: 500px;
   margin: 0 auto 30px auto;
-  background-color: var(--bg-white);
+  background-color: var(--bg-light);
   padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  border-radius: 12px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.12);
 }
 .form-row {
   margin-bottom: 10px;
 }
 .optional-label {
   font-size: 0.9em;
-  color: #777;
+  color: #717171;
 }
 
 /* Login Box */
 #login-box {
   max-width: 400px;
   margin: 40px auto;
-  background-color: var(--bg-white);
+  background-color: var(--bg-light);
   padding: 30px;
-  border-radius: 8px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  border-radius: 12px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.12);
   text-align: center;
 }
 #login-box h2 {
-  color: var(--primary-blue);
+  color: var(--text-dark);
   margin-bottom: 15px;
 }
 
@@ -287,11 +304,12 @@ form {
 #admin-bookings-list {
   max-height: 300px;
   overflow-y: auto;
-  background-color: var(--bg-white);
+  background-color: var(--bg-light);
   padding: 10px;
   border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   margin-bottom: 20px;
+  border: 1px solid var(--border-grey);
 }
 #admin-bookings-list table {
   width: 100%;
@@ -304,12 +322,12 @@ form {
   text-align: center;
 }
 #admin-bookings-list th {
-  background-color: var(--bg-light);
+  background-color: var(--bg-hover);
 }
 #admin-yearly-controls {
   margin-bottom: 10px;
   padding: 10px;
-  background-color: var(--bg-white);
+  background-color: var(--bg-light);
   border-radius: 8px;
 }
 
@@ -371,23 +389,22 @@ form {
 </head>
 <body>
 <nav>
-  <button id="btn-to-start" style="display:none;">🏠 Startseite</button>
-  <button id="btn-show-friend-login">🧑 Freunde Login</button>
-  <button id="btn-show-admin-login">🔑 Admin Login</button>
+  <button id="btn-to-start" style="display:none;"><i class="fas fa-home icon"></i> Startseite</button>
+  <button id="btn-show-friend-login"><i class="fas fa-user-friends icon"></i> Gast-Login</button>
+  <button id="btn-show-admin-login"><i class="fas fa-user-shield icon"></i> Admin Login</button>
 </nav>
 
 <main>
   <section id="start-page">
-    <h1 style="color: var(--primary-blue);">Willkommen im Freunde Kalender Offenbach</h1>
+    <h1 style="color: var(--secondary-color);">Willkommen in Offenbach!</h1>
     <p style="text-align:center; max-width:600px; margin:auto; color:var(--text-dark);">
-      Hier kannst du als Freund deine Übernachtung buchen.<br />
-      Oder als Admin den Kalender verwalten.
+      Ich freue mich auf deinen Besuch! Über den Kalender kannst du als Gast bequem eine Übernachtung buchen. Oder du meldest dich als Admin an, um den Kalender zu verwalten.
     </p>
   </section>
 
   <section id="friend-login" style="display:none;">
     <div id="login-box">
-      <h2>Freunde Login</h2>
+      <h2>Gast Login</h2>
       <p>Bitte Passwort eingeben:</p>
       <input type="password" id="friend-password" placeholder="Passwort" />
       <div id="friend-login-error" class="error-msg"></div>
@@ -397,11 +414,11 @@ form {
 
   <section id="friend-area" style="display:none;">
     <div class="calendar-view">
-        <h2 style="color: var(--primary-blue);">Jahreskalender (Freunde-Ansicht)</h2>
+        <h2 style="color: var(--secondary-color);">Jahreskalender (Gast-Ansicht)</h2>
         <div style="text-align:center;">
-          <button id="year-prev" style="background-color: var(--secondary-blue);">&lt; Vorjahr</button>
+          <button id="year-prev" style="background-color: var(--secondary-color);">&lt; Vorjahr</button>
           <span id="year-display" style="font-weight: 700; margin: 0 15px; font-size: 1.2em;"></span>
-          <button id="year-next" style="background-color: var(--secondary-blue);">Nächstes Jahr &gt;</button>
+          <button id="year-next" style="background-color: var(--secondary-color);">Nächstes Jahr &gt;</button>
         </div>
         
         <div id="calendar-legend">
@@ -438,7 +455,7 @@ form {
       </div>
       <div class="form-row">
         <label for="book-persons">Anzahl Personen * (max. 3)</label>
-        <input type="number" id="book-persons" min="1" max="3" value="1" required />
+        <input type="number" id="book-persons" min="1" max="3" required />
       </div>
       <div class="form-row">
         <label for="book-start-date">Startdatum *</label>
@@ -464,7 +481,7 @@ form {
         <input type="time" id="book-departure-time" />
       </div>
       <div id="booking-error" class="error-msg"></div>
-      <button type="submit" style="background-color: var(--selected-green-dark);">Buchung abschicken</button>
+      <button type="submit" class="primary-btn" style="background-color: var(--primary-color);">Buchung abschicken</button>
       <button type="button" id="btn-cancel-booking-form" style="background-color: #d9534f;">Abbrechen</button>
     </form>
   </section>
@@ -481,15 +498,15 @@ form {
 
   <section id="admin-area" style="display:none;">
     <div class="calendar-view">
-        <h2 style="color: var(--primary-blue);">Jahreskalender (Admin-Ansicht)</h2>
+        <h2 style="color: var(--secondary-color);">Jahreskalender (Admin-Ansicht)</h2>
         <div style="margin-bottom: 20px; text-align: center;">
-          <button id="btn-logout-admin" style="background-color: #d9534f;">Admin Logout</button>
-          <button id="btn-export-csv" style="background-color: var(--selected-green-dark);">Exportiere Buchungen (CSV)</button>
+          <button id="btn-logout-admin" style="background-color: #d9534f;"><i class="fas fa-sign-out-alt icon"></i> Admin Logout</button>
+          <button id="btn-export-csv" class="primary-btn"><i class="fas fa-file-csv icon"></i> Exportiere Buchungen (CSV)</button>
         </div>
         <div style="text-align:center;">
-          <button id="admin-year-prev" style="background-color: var(--secondary-blue);">&lt; Vorjahr</button>
+          <button id="admin-year-prev" style="background-color: var(--secondary-color);">&lt; Vorjahr</button>
           <span id="admin-year-display" style="font-weight: 700; margin: 0 15px; font-size: 1.2em;"></span>
-          <button id="admin-year-next" style="background-color: var(--secondary-blue);">Nächstes Jahr &gt;</button>
+          <button id="admin-year-next" style="background-color: var(--secondary-color);">Nächstes Jahr &gt;</button>
         </div>
         
         <div id="calendar-legend">
@@ -530,8 +547,8 @@ form {
     <p id="cancel-status-text">Stornierungslink wird überprüft...</p>
     <div id="cancel-details" style="margin-top: 20px; text-align: left; max-width: 400px; margin: 20px auto;"></div>
     <div id="cancel-buttons" style="margin-top: 20px;">
-        <button id="btn-confirm-cancellation" style="background-color: #d9534f;">Buchung bestätigen & stornieren</button>
-        <button id="btn-return-home" style="background-color: var(--secondary-blue);">Zurück zur Startseite</button>
+        <button id="btn-confirm-cancellation" class="primary-btn" style="background-color: var(--booked-red);">Buchung bestätigen & stornieren</button>
+        <button id="btn-return-home" style="background-color: var(--secondary-color);">Zurück zur Startseite</button>
     </div>
   </section>
 
@@ -540,14 +557,14 @@ form {
 <script>
 (() => {
   // Passwörter
-  const FRIEND_PASSWORD = "test";
-  const ADMIN_PASSWORD = "test";
-  const ADMIN_EMAIL = "pauldippmann@gmail.com"; // <-- TRAGE HIER DEINE E-MAIL-ADRESSE EIN
+  const FRIEND_PASSWORD = "ÜinOffenbach!";
+  const ADMIN_PASSWORD = "Romulus2025?!";
+  const ADMIN_EMAIL = "deine-admin-email@example.com";
 
- // EmailJS Konfiguration
+  // EmailJS Konfiguration
   const EMAILJS_SERVICE_ID = 'service_9vdk8p2';
   const EMAILJS_TEMPLATE_ID_ADMIN = 'template_exo2yi1';
-  const EMAILJS_TEMPLATE_ID_FRIEND = 'template_exo2yi1'; // Wir verwenden die gleiche Vorlage
+  const EMAILJS_TEMPLATE_ID_FRIEND = 'template_exo2yi1'; 
   const EMAILJS_TEMPLATE_ID_CANCEL = 'template_9azx5z9';
   const EMAILJS_PUBLIC_KEY = 'OXLiZSAem79gPP-Wl';
 
@@ -787,7 +804,7 @@ form {
     allCells.forEach(cell => {
       cell.classList.remove('selected-start', 'selected-end', 'selected-range');
       if(!cell.classList.contains('booked') && !cell.classList.contains('blocked') && !cell.classList.contains('inactive')) {
-        cell.style.backgroundColor = 'var(--available-green)';
+        cell.style.backgroundColor = 'var(--available-white)';
       }
     });
 
@@ -836,7 +853,7 @@ form {
         const dateStr = formatDate(currentDate);
         const cell = calendarSection.querySelector(`td[data-date="${dateStr}"]`);
         if (cell) {
-          cell.style.backgroundColor = 'var(--selected-green-dark)';
+          cell.style.backgroundColor = 'var(--selected-red)';
           if (formatDate(currentDate) === formatDate(start)) {
             cell.classList.add('selected-start');
           } else if (formatDate(currentDate) === formatDate(end)) {
@@ -899,7 +916,7 @@ form {
   }
 
   // ---------------------
-  // Buchungsformular (Freunde)
+  // Buchungsformular (Gast)
   // ---------------------
   const bookingForm = document.getElementById("booking-form");
   const bookStartInput = document.getElementById("book-start-date");
@@ -1013,7 +1030,7 @@ form {
         departure_time: newBooking.departureTime
     };
 
-   try {
+    try {
         await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_ADMIN, templateParams, EMAILJS_PUBLIC_KEY);
         alert("Buchung erfolgreich gespeichert und Bestätigung gesendet!");
     } catch (error) {
@@ -1090,9 +1107,9 @@ form {
     try {
         await deleteBooking(booking.id);
         
-        // Sende Stornierungs-E-Mail an den Buchenden
         const templateParams = {
             to_email: booking.email,
+            admin_email: ADMIN_EMAIL,
             start_date: booking.startDate,
             end_date: booking.endDate,
             admin_action: isAdminAction ? 'Ja' : 'Nein'
@@ -1103,7 +1120,7 @@ form {
         
         renderAdminBookings();
         renderYearlyCalendar(currentYear);
-        showSection('start');
+        // showSection('start'); // Diese Zeile wurde entfernt, damit der Admin auf der Seite bleibt
     } catch (error) {
         console.error("Fehler beim Stornieren der Buchung:", error);
         alert("Ein Fehler ist aufgetreten. Die Buchung konnte nicht storniert werden.");
