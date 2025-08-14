@@ -10,7 +10,7 @@
         const EMAILJS_PUBLIC_KEY = 'OXLiZSAem79gPP-Wl';
 
         const firebaseConfig = {
-            apiKey: "AIzaSyAu9hXGYbgmD-_pz0LHN5VgUcV9mRNkU98",
+            apiKey: "AIzaSyAu9hXGYbgD-_pz0LHN5VgUcV9mRNkU98",
             authDomain: "freunde-kalender-offenbach.firebaseapp.com",
             projectId: "freunde-kalender-offenbach",
             storageBucket: "freunde-kalender-offenbach.firebasestorage.app",
@@ -255,7 +255,7 @@
                 'Fehler beim Blockieren der Tage.': 'Error blocking days.',
                 'Tage erfolgreich blockiert.': 'Days successfully blocked.',
                 'Fehler beim Freigeben der Tage.': 'Error unblocking days.',
-                'Tage erfolgreich freigegeben.': 'Days successfully unblocked.',
+                'Tage erfolgreich unblocked.',
                 'Der ausgewählte Zeitraum muss mindestens eine Übernachtung enthalten.': 'The selected period must contain at least one overnight stay.',
                 'Der ausgewählte Zeitraum überschreitet die maximal erlaubte Länge von 14 Tagen.': 'The selected period exceeds the maximum allowed length of 14 days.',
                 'Wochentage': 'Weekdays',
@@ -323,7 +323,7 @@
         }
 
         function getBookingStatusForDay(date, view) {
-            const dateStr = formatDate(date);
+            const dateStr = date.toISOString().split('T')[0];
 
             const isBlocked = blockedDates.some(block => {
                 const blockStart = new Date(block.startDate);
@@ -417,7 +417,7 @@
             const dateStr = date.toISOString().split('T')[0];
             const today = new Date();
             today.setHours(0, 0, 0, 0);
-            
+
             const isGuestView = currentView === 'friend';
 
             if (isGuestView && date < today) {
@@ -447,10 +447,10 @@
                 const start = new Date(Math.min(selectedStartDate.getTime(), newDate.getTime()));
                 const end = new Date(Math.max(selectedStartDate.getTime(), newDate.getTime()));
                 end.setDate(end.getDate() + 1);
-                
+
                 selectedStartDate = start;
                 selectedEndDate = end;
-                
+
                 const rangeDays = (selectedEndDate.getTime() - selectedStartDate.getTime()) / (1000 * 3600 * 24);
 
                 if (rangeDays < 1) {
@@ -477,7 +477,7 @@
                         return;
                     }
                 }
-                
+
                 if (isGuestView) {
                     document.getElementById('book-start-date').value = selectedStartDate.toISOString().split('T')[0];
                     document.getElementById('book-end-date').value = selectedEndDate.toISOString().split('T')[0];
@@ -660,7 +660,7 @@
             currentYear = today.getFullYear();
             const urlParams = new URLSearchParams(window.location.search);
             const cancelId = urlParams.get('cancel');
-            
+
             if (cancelId) {
                 showSection('cancel');
                 handleCancellation(cancelId);
@@ -810,7 +810,7 @@
                     showNotification(translate('Wartelistenanfrage konnte nicht gesendet werden.'), true);
                 });
         });
-        
+
         document.getElementById('btn-cancel-waitlist-form').addEventListener('click', (e) => {
             e.preventDefault();
             document.getElementById('waitlist-form').style.display = 'none';
@@ -871,7 +871,7 @@
             document.getElementById('friend-password').value = '';
             document.getElementById('friend-login-btn').click();
         });
-        
+
         document.getElementById('btn-return-home-from-booking').addEventListener('click', () => {
             showSection('start');
             document.getElementById('booking-success').style.display = 'none';
@@ -1083,12 +1083,12 @@
                         fetchDataAndRender();
                     })
                     .catch(error => {
-                        console.error("Error removing document: ", error);
-                        showNotification(translate('Fehler beim Löschen der Buchung.'), true);
-                    });
+                    console.error("Error removing document: ", error);
+                    showNotification(translate('Fehler beim Löschen der Buchung.'), true);
+                });
             }
         });
-        
+
         document.getElementById('btn-delete-waitlist-entry').addEventListener('click', () => {
             const id = document.getElementById('edit-waitlist-id').value;
             if (confirm(translate('Möchten Sie diese Wartelistenanfrage wirklich löschen?'))) {
@@ -1157,11 +1157,21 @@
                     <td>${booking.startDate}</td>
                     <td>${booking.endDate}</td>
                     <td>${booking.status}</td>
-                    <td><button onclick="showEditForm(${JSON.stringify(booking).replace(/"/g, "'")})">${translate('Bearbeiten')}</button></td>
+                    <td><button class="edit-booking-btn" data-id="${booking.id}">${translate('Bearbeiten')}</button></td>
                 `;
                 tbody.appendChild(tr);
             });
             listEl.appendChild(table);
+
+            document.querySelectorAll('.edit-booking-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const bookingId = e.target.dataset.id;
+                    const bookingToEdit = bookings.find(b => b.id === bookingId);
+                    if (bookingToEdit) {
+                        showEditForm(bookingToEdit);
+                    }
+                });
+            });
         }
 
         function renderWaitlist() {
@@ -1188,11 +1198,21 @@
                     <td>${entry.email}</td>
                     <td>${entry.startDate}</td>
                     <td>${entry.endDate}</td>
-                    <td><button onclick="showWaitlistEditForm(${JSON.stringify(entry).replace(/"/g, "'")})">${translate('Bearbeiten')}</button></td>
+                    <td><button class="edit-waitlist-btn" data-id="${entry.id}">${translate('Bearbeiten')}</button></td>
                 `;
                 tbody.appendChild(tr);
             });
             listEl.appendChild(table);
+
+            document.querySelectorAll('.edit-waitlist-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const waitlistId = e.target.dataset.id;
+                    const waitlistEntryToEdit = waitlist.find(w => w.id === waitlistId);
+                    if (waitlistEntryToEdit) {
+                        showWaitlistEditForm(waitlistEntryToEdit);
+                    }
+                });
+            });
         }
 
         function updateStats() {
