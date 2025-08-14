@@ -218,7 +218,7 @@
         .icon {
             margin-right: 5px;
         }
-        
+
         .tooltip {
           position: relative;
           display: block;
@@ -236,7 +236,7 @@
           padding: 5px 0;
           position: absolute;
           z-index: 1;
-          bottom: 125%; 
+          bottom: 125%;
           left: 50%;
           margin-left: -60px;
           opacity: 0;
@@ -257,7 +257,7 @@
           border-style: solid;
           border-color: #555 transparent transparent transparent;
         }
-        
+
         @media (max-width: 600px) {
             #yearly-calendar-content, #admin-yearly-calendar-content {
                 grid-template-columns: repeat(2, 1fr);
@@ -307,7 +307,7 @@
                     <span id="year-display" style="font-weight: 700; margin: 0 15px; font-size: 1.2em;"></span>
                     <button id="year-next">Nächstes Jahr &gt;</button>
                 </div>
-                
+
                 <div id="calendar-legend">
                     <div class="legend-item">
                         <div class="legend-color" id="legend-color-available"></div>
@@ -329,7 +329,7 @@
 
                 <div id="yearly-calendar-content"></div>
             </div>
-            
+
             <form id="booking-form" style="display:none;">
                 <h3 style="margin-top: 0;">Buchungsdetails</h3>
                 <div>
@@ -395,7 +395,7 @@
                     <span id="admin-year-display" style="font-weight: 700; margin: 0 15px; font-size: 1.2em;"></span>
                     <button id="admin-year-next">Nächstes Jahr &gt;</button>
                 </div>
-                
+
                 <div id="calendar-legend">
                     <div class="legend-item">
                         <div class="legend-color" id="legend-color-available"></div>
@@ -416,12 +416,12 @@
                 </div>
 
                 <div id="admin-yearly-calendar-content"></div>
-                
+
                 <div style="text-align: center; margin-top: 10px;">
                     <button id="btn-block-selected" style="background-color: #757575;">Ausgewählte Tage blockieren</button>
                     <button id="btn-unblock-selected" style="background-color: #f44336;">Ausgewählte Tage freigeben</button>
                 </div>
-                
+
                 <h3>Belegte und Blockierte Tage</h3>
                 <div id="admin-bookings-list"></div>
             </div>
@@ -443,19 +443,25 @@
 
     <script>
         (() => {
-            // Passwörter
+            // SICHERHEITSHINWEIS: Passwörter im Client-Side-Code sind unsicher!
+            // Jeder Nutzer kann den Code einsehen und sich die Passwörter herauskopieren.
+            // Diese sollten stattdessen sicher auf einem Backend-Server verwaltet werden.
             const FRIEND_PASSWORD = "ÜinOffenbach!";
             const ADMIN_PASSWORD = "Romulus2025?!";
             const ADMIN_EMAIL = "deine-admin-email@example.com";
 
-            // EmailJS Konfiguration
+            // SICHERHEITSHINWEIS: EmailJS-Konfiguration im Client-Side-Code ist unsicher.
+            // Ein Angreifer könnte diese Daten nutzen, um E-Mails über Ihre Dienste zu senden.
+            // Verwenden Sie eine sichere Backend-Lösung, um E-Mails zu versenden.
             const EMAILJS_SERVICE_ID = 'service_9vdk8p2';
             const EMAILJS_TEMPLATE_ID_ADMIN = 'template_exo2yi1';
-            const EMAILJS_TEMPLATE_ID_FRIEND = 'template_exo2yi1'; 
+            const EMAILJS_TEMPLATE_ID_FRIEND = 'template_exo2yi1';
             const EMAILJS_TEMPLATE_ID_CANCEL = 'template_9azx5z9';
             const EMAILJS_PUBLIC_KEY = 'OXLiZSAem79gPP-Wl';
 
-            // Firebase Konfiguration
+            // SICHERHEITSHINWEIS: Firebase-Konfiguration im Client-Side-Code.
+            // Dies ist zwar üblich, aber stellen Sie sicher, dass Ihre Firestore-Regeln
+            // streng genug sind, um unbefugte Schreibvorgänge zu verhindern.
             const firebaseConfig = {
                 apiKey: "AIzaSyAu9hXGYbgmD-_pz0LHN5VgUcV9mRNkU98",
                 authDomain: "freunde-kalender-offenbach.firebaseapp.com",
@@ -478,7 +484,7 @@
             let selectedStartDate = null;
             let selectedEndDate = null;
             let currentView = 'friend'; // Kann 'friend' oder 'admin' sein
-            
+
             const sections = {
                 start: document.getElementById("start-page"),
                 friendLogin: document.getElementById("friend-login"),
@@ -562,7 +568,7 @@
                 document.getElementById("admin-password").value = "";
                 showSection("adminLogin");
             });
-            
+
             document.getElementById("btn-to-start").addEventListener('click', () => {
                 showSection("start");
             });
@@ -594,7 +600,7 @@
             document.getElementById("btn-logout-admin").addEventListener('click', () => {
                 showSection("start");
             });
-            
+
             document.getElementById("year-prev").addEventListener('click', () => {
                 if(currentYear > CAL_START_YEAR) {
                     currentYear--;
@@ -626,7 +632,7 @@
             async function renderYearlyCalendar(year) {
                 const calendarContent = currentView === 'friend' ? document.getElementById("yearly-calendar-content") : document.getElementById("admin-yearly-calendar-content");
                 const yearDisplay = currentView === 'friend' ? document.getElementById("year-display") : document.getElementById("admin-year-display");
-                
+
                 yearDisplay.textContent = year;
                 calendarContent.innerHTML = "";
 
@@ -701,10 +707,10 @@
                     }
                     return;
                 }
-                
+
                 const sDate = dateFromStr(formatDate(selectedStartDate));
                 let eDate = selectedEndDate ? dateFromStr(formatDate(selectedEndDate)) : sDate;
-                
+
                 const start = sDate <= eDate ? sDate : eDate;
                 const end = sDate <= eDate ? eDate : sDate;
 
@@ -717,14 +723,14 @@
                     let tempDate = new Date(start);
                     while (tempDate <= end) {
                         const dateStr = formatDate(tempDate);
-                        if(bks.some(b => checkOverlap(dateStr, dateStr, b.startDate, b.endDate)) || 
+                        if(bks.some(b => checkOverlap(dateStr, dateStr, b.startDate, b.endDate)) ||
                            (currentView === 'friend' && blks.some(b => checkOverlap(dateStr, dateStr, b.startDate, b.endDate)))) {
                             isSelectionValid = false;
                             break;
                         }
                         tempDate.setDate(tempDate.getDate() + 1);
                     }
-                
+
                     if (!isSelectionValid) {
                         selectedStartDate = null;
                         selectedEndDate = null;
@@ -734,7 +740,7 @@
                         updateSelectedDays();
                         return;
                     }
-                
+
                     currentDate = new Date(start);
                     while (currentDate <= end) {
                         const dateStr = formatDate(currentDate);
@@ -751,7 +757,7 @@
                         }
                         currentDate.setDate(currentDate.getDate() + 1);
                     }
-                
+
                     if (currentView === 'friend') {
                         if(selectedEndDate) {
                             showBookingForm();
@@ -765,17 +771,17 @@
             // ---------------------
             // Datums- und Bereichsauswahl
             // ---------------------
-            
+
             function attachDateClickHandlers() {
                 const calendarSection = currentView === 'friend' ? document.getElementById("yearly-calendar-content") : document.getElementById("admin-yearly-calendar-content");
                 const cells = calendarSection.querySelectorAll("td:not(.inactive)");
-                
+
                 cells.forEach(cell => {
                     cell.style.cursor = "pointer";
                     cell.addEventListener('click', (e) => {
                         const clickedCell = e.target.closest('td');
                         if (!clickedCell) return;
-                        
+
                         const dateStr = clickedCell.getAttribute("data-date");
                         const date = dateFromStr(dateStr);
 
@@ -830,7 +836,7 @@
                 bookingError.textContent = "";
                 bookingForm.reset && bookingForm.reset();
             }
-            
+
             document.getElementById("btn-cancel-booking-form").addEventListener('click', () => {
                 resetBookingForm();
             });
@@ -871,7 +877,7 @@
 
                 const bookings = await fetchBookings();
                 const blocks = await fetchBlocks();
-                
+
                 const rangeStart = dateFromStr(startDate);
                 const rangeEnd = dateFromStr(endDate);
                 let day = new Date(rangeStart);
@@ -887,7 +893,7 @@
                     }
                     day.setDate(day.getDate() + 1);
                 }
-                
+
                 const newBooking = {
                     name,
                     email,
@@ -899,34 +905,38 @@
                     endDate,
                     cancellationId: generateCancellationId()
                 };
-                
-                await db.collection('bookings').add(newBooking);
-
-                // E-Mails senden
-                const cancellationLink = `${window.location.origin}${window.location.pathname}?cancelId=${newBooking.cancellationId}`;
-                const templateParams = {
-                    from_name: newBooking.name,
-                    to_email: newBooking.email,
-                    admin_email: ADMIN_EMAIL,
-                    start_date: newBooking.startDate,
-                    end_date: newBooking.endDate,
-                    persons: newBooking.persons,
-                    cancellation_link: cancellationLink,
-                    breakfast: newBooking.breakfast,
-                    arrival_time: newBooking.arrivalTime,
-                    departure_time: newBooking.departureTime
-                };
 
                 try {
+                    await db.collection('bookings').add(newBooking);
+
+                    const cancellationLink = `${window.location.origin}${window.location.pathname}?cancelId=${newBooking.cancellationId}`;
+                    const templateParams = {
+                        from_name: newBooking.name,
+                        to_email: newBooking.email,
+                        admin_email: ADMIN_EMAIL,
+                        start_date: newBooking.startDate,
+                        end_date: newBooking.endDate,
+                        persons: newBooking.persons,
+                        cancellation_link: cancellationLink,
+                        breakfast: newBooking.breakfast,
+                        arrival_time: newBooking.arrivalTime,
+                        departure_time: newBooking.departureTime,
+                        _subject: `Neue Buchung von ${newBooking.name}`
+                    };
+
+                    // E-Mail an den Admin senden
                     await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_ADMIN, templateParams, EMAILJS_PUBLIC_KEY);
+
+                    // E-Mail an den Gast senden
+                    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_FRIEND, templateParams, EMAILJS_PUBLIC_KEY);
+
                     alert("Buchung erfolgreich gespeichert und Bestätigung gesendet!");
+                    resetBookingForm();
+                    renderYearlyCalendar(currentYear);
                 } catch (error) {
                     console.error("Fehler beim Senden der E-Mail:", error);
                     alert("Buchung erfolgreich, aber E-Mail konnte nicht gesendet werden. Bitte kontaktiere den Admin.");
                 }
-
-                resetBookingForm();
-                renderYearlyCalendar(currentYear);
             });
 
             // -------------------
@@ -993,7 +1003,7 @@
             async function deleteBookingWithNotification(booking, isAdminAction) {
                 try {
                     await deleteBooking(booking.id);
-                    
+
                     const templateParams = {
                         to_email: booking.email,
                         admin_email: ADMIN_EMAIL,
@@ -1004,7 +1014,7 @@
 
                     await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_CANCEL, templateParams, EMAILJS_PUBLIC_KEY);
                     alert(`Buchung von ${booking.name} erfolgreich storniert. Bestätigung wurde per E-Mail gesendet.`);
-                    
+
                     renderAdminBookings();
                     renderYearlyCalendar(currentYear);
                 } catch (error) {
@@ -1026,7 +1036,7 @@
                 const endDate = formatDate(selectedStartDate <= selectedEndDate ? selectedEndDate : selectedStartDate);
 
                 const bookings = await fetchBookings();
-                
+
                 const rangeStart = dateFromStr(startDate);
                 const rangeEnd = dateFromStr(endDate);
                 let day = new Date(rangeStart);
@@ -1046,20 +1056,20 @@
                 renderAdminBookings();
                 renderYearlyCalendar(currentYear);
             });
-            
+
             document.getElementById("btn-unblock-selected").addEventListener('click', async () => {
                 if (!selectedStartDate || !selectedEndDate) {
                     alert("Bitte wähle zuerst einen Zeitraum im Kalender aus.");
                     return;
                 }
-                
+
                 const startDate = formatDate(selectedStartDate <= selectedEndDate ? selectedStartDate : selectedEndDate);
                 const endDate = formatDate(selectedStartDate <= selectedEndDate ? selectedEndDate : selectedStartDate);
 
                 if (confirm(`Sollen die Tage von ${startDate} bis ${endDate} wirklich freigegeben werden?`)) {
                     const blocks = await fetchBlocks();
                     let blocksToRemove = blocks.filter(block => checkOverlap(block.startDate, block.endDate, startDate, endDate));
-                    
+
                     if (blocksToRemove.length > 0) {
                         const batch = db.batch();
                         blocksToRemove.forEach(block => {
@@ -1091,7 +1101,7 @@
 
                 const csvRows = [];
                 const headers = ["Name", "E-Mail", "Personen", "Frühstück", "Anreisezeit", "Abreisezeit", "Startdatum", "Enddatum"];
-                csvRows.push(headers.join(';')); 
+                csvRows.push(headers.join(';'));
 
                 for (const booking of bookings) {
                     const row = [
@@ -1114,7 +1124,7 @@
                 link.download = `Freunde_Buchungen_${new Date().toISOString().slice(0, 10)}.csv`;
                 link.click();
             }
-            
+
             document.getElementById("btn-export-csv").addEventListener('click', exportBookingsToCsv);
 
             // -------------------
@@ -1128,7 +1138,7 @@
 
                 buttonsDiv.style.display = 'none';
                 detailsDiv.innerHTML = '';
-                
+
                 const bookingsRef = db.collection('bookings').where('cancellationId', '==', cancellationId);
                 const querySnapshot = await bookingsRef.get();
 
