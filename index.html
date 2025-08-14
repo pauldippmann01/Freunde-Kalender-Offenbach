@@ -447,7 +447,10 @@
                 <h3 data-lang-de="Buchung erfolgreich!" data-lang-en="Booking successful!">Buchung erfolgreich!</h3>
                 <p data-lang-de="Ihre Buchungsdetails wurden gespeichert. Sie erhalten in Kürze eine Bestätigung per E-Mail." data-lang-en="Your booking details have been saved. You will receive a confirmation email shortly.">Ihre Buchungsdetails wurden gespeichert. Sie erhalten in Kürze eine Bestätigung per E-Mail.</p>
                 <div id="success-details" style="text-align: left;"></div>
-                <button id="btn-new-booking" data-lang-de="Neue Buchung" data-lang-en="New Booking">Neue Buchung</button>
+                <div style="margin-top: 20px;">
+                    <button id="btn-new-booking" data-lang-de="Neue Buchung" data-lang-en="New Booking">Neue Buchung</button>
+                    <button id="btn-return-home-from-booking" data-lang-de="Zurück zur Startseite" data-lang-en="Back to Homepage">Zurück zur Startseite</button>
+                </div>
             </div>
         </section>
 
@@ -642,6 +645,7 @@
                     'Buchung erfolgreich!': 'Buchung erfolgreich!',
                     'Ihre Buchungsdetails wurden gespeichert. Sie erhalten in Kürze eine Bestätigung per E-Mail.': 'Ihre Buchungsdetails wurden gespeichert. Sie erhalten in Kürze eine Bestätigung per E-Mail.',
                     'Neue Buchung': 'Neue Buchung',
+                    'Zurück zur Startseite': 'Zurück zur Startseite',
                     'Admin Passwort': 'Admin Passwort',
                     'Falsches Admin-Passwort!': 'Falsches Admin-Passwort!',
                     'Jahreskalender (Admin-Ansicht)': 'Jahreskalender (Admin-Ansicht)',
@@ -697,7 +701,15 @@
                     'Ja': 'Ja',
                     'Nein': 'Nein',
                     'Ein Fehler ist aufgetreten. Die Buchung konnte nicht storniert werden.': 'Ein Fehler ist aufgetreten. Die Buchung konnte nicht storniert werden.',
-                    'Dieser Tag ist nicht verfügbar.': 'Dieser Tag ist nicht verfügbar.'
+                    'Dieser Tag ist nicht verfügbar.': 'Dieser Tag ist nicht verfügbar.',
+                    'Buchung erfolgreich, aber E-Mail konnte nicht gesendet werden. Bitte kontaktiere den Admin.': 'Buchung erfolgreich, aber E-Mail konnte nicht gesendet werden. Bitte kontaktiere den Admin.',
+                    'Buchung wirklich stornieren?': 'Buchung wirklich stornieren?',
+                    'Buchung wirklich löschen?': 'Buchung wirklich löschen?',
+                    'Buchung erfolgreich gelöscht.': 'Buchung erfolgreich gelöscht.',
+                    'Blockierung wirklich entfernen?': 'Blockierung wirklich entfernen?',
+                    'Blockierung erfolgreich entfernt.': 'Blockierung erfolgreich entfernt.',
+                    'Das Enddatum darf nicht vor dem Startdatum liegen.': 'Das Enddatum darf nicht vor dem Startdatum liegen.',
+                    'Zeitraum': 'Zeitraum'
                 },
                 en: {
                     'Willkommen in Offenbach!': 'Welcome to Offenbach!',
@@ -743,6 +755,7 @@
                     'Buchung erfolgreich!': 'Booking successful!',
                     'Ihre Buchungsdetails wurden gespeichert. Sie erhalten in Kürze eine Bestätigung per E-Mail.': 'Your booking details have been saved. You will receive a confirmation email shortly.',
                     'Neue Buchung': 'New Booking',
+                    'Zurück zur Startseite': 'Back to Homepage',
                     'Admin Passwort': 'Admin Password',
                     'Falsches Admin-Passwort!': 'Wrong admin password!',
                     'Jahreskalender (Admin-Ansicht)': 'Yearly Calendar (Admin View)',
@@ -798,7 +811,15 @@
                     'Ja': 'Yes',
                     'Nein': 'No',
                     'Ein Fehler ist aufgetreten. Die Buchung konnte nicht storniert werden.': 'An error occurred. The booking could not be cancelled.',
-                    'Dieser Tag ist nicht verfügbar.': 'This day is not available.'
+                    'Dieser Tag ist nicht verfügbar.': 'This day is not available.',
+                    'Buchung erfolgreich, aber E-Mail konnte nicht gesendet werden. Bitte kontaktiere den Admin.': 'Booking successful, but email could not be sent. Please contact the admin.',
+                    'Buchung wirklich stornieren?': 'Are you sure you want to cancel this booking?',
+                    'Buchung wirklich löschen?': 'Are you sure you want to delete this booking?',
+                    'Buchung erfolgreich gelöscht.': 'Booking successfully deleted.',
+                    'Blockierung wirklich entfernen?': 'Are you sure you want to remove this blocking?',
+                    'Blockierung erfolgreich entfernt.': 'Blocking successfully removed.',
+                    'Das Enddatum darf nicht vor dem Startdatum liegen.': 'The end date cannot be before the start date.',
+                    'Zeitraum': 'Period'
                 }
             };
 
@@ -932,6 +953,9 @@
             });
 
             document.getElementById("btn-to-start").addEventListener('click', () => {
+                window.location.href = window.location.origin + window.location.pathname;
+            });
+            document.getElementById("btn-return-home-from-booking").addEventListener('click', () => {
                 window.location.href = window.location.origin + window.location.pathname;
             });
 
@@ -1204,11 +1228,6 @@
                 bookingSuccess.style.display = "none";
                 bookingError.textContent = "";
                 bookingForm.reset && bookingForm.reset();
-                
-                // Fields re-enabled here
-                document.querySelectorAll('#booking-form input, #booking-form select, #booking-form textarea').forEach(field => {
-                    field.disabled = false;
-                });
             }
 
             document.getElementById("btn-cancel-booking-form").addEventListener('click', () => {
@@ -1278,10 +1297,6 @@
                 try {
                     const docRef = await db.collection('bookings').add(newBooking);
                     
-                    document.querySelectorAll('#booking-form input, #booking-form select, #booking-form textarea').forEach(field => {
-                        field.disabled = true;
-                    });
-
                     const cancellationLink = `${window.location.origin}${window.location.pathname}?cancelId=${newBooking.cancellationId}`;
                     const templateParams = {
                         from_name: newBooking.name,
