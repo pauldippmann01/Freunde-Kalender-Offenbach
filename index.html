@@ -1,1755 +1,1274 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Gast Kalender Offenbach</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVK+jJdG7y6Dq2T2n6m3hU7I6t0y7sC6XFvA6X/m0Pz06x3Vq5tA7M7O4x4E4S4C7x7D6y8A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
-    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+<script>
+    (() => {
+        const FRIEND_PASSWORD = "ÜinOffenbach!";
+        const ADMIN_PASSWORD = "Romulus2025?!";
+        const ADMIN_EMAIL = "pauldippmann@gmail.com";
+        const EMAILJS_SERVICE_ID = 'service_9vdk8p2';
+        const EMAILJS_TEMPLATE_ID_BOOKING = 'template_exo2yi1';
+        const EMAILJS_TEMPLATE_ID_CANCEL = 'template_9azx5z9';
+        const EMAILJS_TEMPLATE_ID_REMINDER = 'template_9azx5z9';
+        const EMAILJS_PUBLIC_KEY = 'OXLiZSAem79gPP-Wl';
 
-    <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-            font-family: 'Roboto', sans-serif;
-            background-color: #f4f7f6;
-            color: #333;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            scroll-behavior: smooth;
-        }
-        main {
-            flex-grow: 1;
-            padding: 20px;
-            overflow-y: auto;
-        }
-        h1, h2, h3 {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        nav {
-            background-color: #3f51b5;
-            padding: 10px;
-            text-align: center;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        nav button {
-            background-color: #5c6bc0;
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            margin: 5px;
-            border-radius: 5px;
-            cursor: pointer;
-            white-space: nowrap;
-        }
-        nav button:hover {
-            background-color: #7986cb;
-        }
-        .container {
-            max-width: 900px;
-            margin: 20px auto;
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        .calendar-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        .month-nav button {
-            background-color: #eee;
-            border: 1px solid #ccc;
-            padding: 5px 10px;
-            cursor: pointer;
-        }
-        table.calendar {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 12px;
-            table-layout: fixed;
-        }
-        table.calendar th, table.calendar td {
-            padding: 8px;
-            text-align: center;
-            border: 1px solid #ddd;
-            height: 30px;
-            box-sizing: border-box;
-        }
-        table.calendar th {
-            background-color: #f2f2f2;
-        }
-        table.calendar td {
-            background-color: #fff;
-            cursor: pointer;
-        }
-        table.calendar td.inactive {
-            color: #ccc;
-            background-color: #f9f9f9;
-            cursor: default;
-        }
-        table.calendar td.booked {
-            background-color: #ff5252;
-            color: white;
-        }
-        table.calendar td.cancelled {
-            background-color: #d1c4e9;
-            color: white;
-        }
-        table.calendar td.blocked {
-            background-color: #757575;
-            color: white;
-        }
-        table.calendar td.selected-start,
-        table.calendar td.selected-end,
-        table.calendar td.selected-range {
-            background-color: #81c784 !important;
-        }
+        const firebaseConfig = {
+            apiKey: "AIzaSyAu9hXGYbgD-_pz0LHN5VgUcV9mRNkU98",
+            authDomain: "freunde-kalender-offenbach.firebaseapp.com",
+            projectId: "freunde-kalender-offenbach",
+            storageBucket: "freunde-kalender-offenbach.firebasestorage.app",
+            messagingSenderId: "753671032354",
+            appId: "1:753671032354:web:a154b43ccdfcc491c4c47b"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
 
-        #calendar-legend {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 10px;
-            font-size: 0.9em;
-            flex-wrap: wrap;
-        }
-        .legend-item {
-            display: flex;
-            align-items: center;
-        }
-        .legend-color {
-            width: 15px;
-            height: 15px;
-            margin-right: 5px;
-            border: 1px solid #ddd;
-        }
-        #legend-color-available { background-color: white; }
-        #legend-color-booked { background-color: #ff5252; border-color: #ff5252; }
-        #legend-color-cancelled { background-color: #d1c4e9; border-color: #d1c4e9; }
-        #legend-color-blocked { background-color: #757575; border-color: #757575; }
-        #legend-color-selected { background-color: #81c784; border-color: #81c784; }
+        const CAL_START_YEAR = 2025;
+        const CAL_END_YEAR = 2040;
+        let currentYear;
+        let selectedStartDate = null;
+        let selectedEndDate = null;
+        let currentView = 'friend';
+        let currentLang = 'de';
+        let bookings = [];
+        let blockedDates = [];
+        let waitlist = [];
+        let cancelledBookings = [];
 
-        #yearly-calendar-content, #admin-yearly-calendar-content {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-        }
-        #yearly-calendar-content .calendar, #admin-yearly-calendar-content .calendar {
-            font-size: 10px;
-        }
-        #yearly-calendar-content .calendar td, #admin-yearly-calendar-content .calendar td {
-            padding: 5px;
-            height: 25px;
-            line-height: 15px;
-        }
-        #yearly-calendar-content .calendar td.tooltip, #admin-yearly-calendar-content .calendar td.tooltip {
-            padding: 0;
-            height: 25px;
-            line-height: 25px;
-        }
-        #yearly-calendar-content .calendar .tooltiptext, #admin-yearly-calendar-content .calendar .tooltiptext {
-            width: 80px;
-            left: 50%;
-            margin-left: -40px;
-        }
-        #admin-booking-form-container {
-            max-width: 500px;
-            margin: 20px auto;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            background-color: #f9f9f9;
-        }
+        const sections = {
+            start: document.getElementById("start-page"),
+            friendArea: document.getElementById("friend-area"),
+            adminLogin: document.getElementById("admin-login"),
+            adminArea: document.getElementById("admin-area"),
+            cancel: document.getElementById("cancel-page")
+        };
 
-        form {
-            max-width: 500px;
-            margin: 20px auto;
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        input, select, textarea {
-            width: 100%;
-            padding: 8px;
-            margin-bottom: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box;
-            resize: vertical;
-        }
-        input[type="checkbox"] {
-            width: auto;
-            margin-right: 5px;
-        }
-        button {
-            background-color: #3f51b5;
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #5c6bc0;
-        }
-        .error-msg {
-            color: red;
-            text-align: center;
-            margin-top: -10px;
-            margin-bottom: 10px;
-        }
-        .info-msg {
-            color: green;
-            text-align: center;
-            margin-top: -10px;
-            margin-bottom: 10px;
-        }
-        #login-box {
-            max-width: 400px;
-            margin: 40px auto;
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-        #login-box input {
-            font-size: 1.2em;
-            padding: 12px;
-        }
-        #login-box button {
-            font-size: 1.2em;
-            padding: 12px 20px;
-        }
-        #admin-bookings-list {
-            max-height: 300px;
-            overflow-y: auto;
-            border: 1px solid #ccc;
-            margin-bottom: 20px;
-        }
-        #admin-bookings-list table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        #admin-bookings-list th, #admin-bookings-list td {
-            padding: 8px;
-            border: 1px solid #ccc;
-            text-align: center;
-        }
-        #admin-bookings-list th {
-            background-color: #f2f2f2;
-        }
-        .icon {
-            margin-right: 5px;
-        }
-
-        .tooltip {
-          position: relative;
-          display: block;
-          width: 100%;
-          height: 100%;
-          pointer-events: none;
-        }
-        .tooltiptext {
-          visibility: hidden;
-          width: 120px;
-          background-color: #555;
-          color: #fff;
-          text-align: center;
-          border-radius: 6px;
-          padding: 5px 0;
-          position: absolute;
-          z-index: 1;
-          bottom: 125%;
-          left: 50%;
-          margin-left: -60px;
-          opacity: 0;
-          transition: opacity 0.3s;
-          pointer-events: none;
-        }
-        td:hover .tooltiptext {
-          visibility: visible;
-          opacity: 1;
-        }
-        .tooltiptext::after {
-          content: "";
-          position: absolute;
-          top: 100%;
-          left: 50%;
-          margin-left: -5px;
-          border-width: 5px;
-          border-style: solid;
-          border-color: #555 transparent transparent transparent;
-        }
-        #notification-box {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background-color: #4CAF50;
-            color: white;
-            padding: 15px;
-            border-radius: 5px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            z-index: 1000;
-            display: none;
-            max-width: 300px;
-            animation: fadein 0.5s, fadeout 0.5s 2.5s;
-        }
-        #notification-box.error { background-color: #f44336; }
-        @keyframes fadein { from { opacity: 0; top: 0; } to { opacity: 1; top: 20px; } }
-        @keyframes fadeout { from { opacity: 1; top: 20px; } to { opacity: 0; top: 0; } }
-
-        @media (max-width: 600px) {
-            #yearly-calendar-content, #admin-yearly-calendar-content {
-                grid-template-columns: repeat(2, 1fr);
+        const translations = {
+            de: {
+                'Willkommen in Offenbach!': 'Willkommen in Offenbach!',
+                'Ich freue mich auf deinen Besuch! Über den Kalender kannst du als Gast bequem eine Übernachtung buchen. Oder du meldest dich als Admin an, um den Kalender zu verwalten.': 'Ich freue mich auf deinen Besuch! Über den Kalender kannst du als Gast bequem eine Übernachtung buchen. Oder du meldest dich als Admin an, um den Kalender zu verwalten.',
+                'Hier geht es zur Buchung': 'Hier geht es zur Buchung',
+                'Admin Login': 'Admin Login',
+                'Startseite': 'Startseite',
+                'Bitte Passwort eingeben:': 'Bitte Passwort eingeben:',
+                'Passwort': 'Passwort',
+                'Einloggen': 'Einloggen',
+                'Falsches Passwort!': 'Falsches Passwort!',
+                'Jahreskalender (Gast-Ansicht)': 'Jahreskalender (Gast-Ansicht)',
+                '&lt; Vorjahr': '&lt; Vorjahr',
+                'Nächstes Jahr &gt;': 'Nächstes Jahr &gt;',
+                'Freie Tage': 'Freie Tage',
+                'Gebuchte Tage': 'Gebuchte Tage',
+                'Blockierte Tage': 'Blockierte Tage',
+                'Ausgewählter Zeitraum': 'Ausgewählter Zeitraum',
+                'Buchungsdetails': 'Buchungsdetails',
+                'Buchung von': 'Buchung von',
+                'bis': 'bis',
+                'Name *': 'Name *',
+                'E-Mail-Adresse *': 'E-Mail-Adresse *',
+                'Mobilfunknummer *': 'Mobilfunknummer *',
+                'Anzahl Personen * (max. 3)': 'Anzahl Personen * (max. 3)',
+                'Anreisetag *': 'Anreisetag *',
+                'Abreisetag *': 'Abreisetag *',
+                'Frühstück benötigt? *': 'Frühstück benötigt? *',
+                'Ja': 'Ja',
+                'Nein': 'Nein',
+                'Anreise Uhrzeit (optional)': 'Anreise Uhrzeit (optional)',
+                'Abreise Uhrzeit (optional)': 'Abreise Uhrzeit (optional)',
+                'Bemerkungen (optional, max. 200 Zeichen)': 'Bemerkungen (optional, max. 200 Zeichen)',
+                'Parkplatz benötigt?': 'Parkplatz benötigt?',
+                'Buchung abschicken': 'Buchung abschicken',
+                'Abbrechen': 'Abbrechen',
+                'Warteliste': 'Warteliste',
+                'Der ausgewählte Zeitraum ist bereits belegt. Tragen Sie sich in die Warteliste ein, um benachrichtigt zu werden, wenn der Zeitraum frei wird.': 'Der ausgewählte Zeitraum ist bereits belegt. Tragen Sie sich in die Warteliste ein, um benachrichtigt zu werden, wenn der Zeitraum frei wird.',
+                'Auf Warteliste setzen': 'Auf Warteliste setzen',
+                'Buchung erfolgreich!': 'Buchung erfolgreich!',
+                'Ihre Buchungsdetails wurden gespeichert. Sie erhalten in Kürze eine Bestätigung per E-Mail.': 'Ihre Buchungsdetails wurden gespeichert. Sie erhalten in Kürze eine Bestätigung per E-Mail.',
+                'Kalender-Datei herunterladen': 'Kalender-Datei herunterladen',
+                'Neue Buchung': 'Neue Buchung',
+                'Zurück zur Startseite': 'Zurück zur Startseite',
+                'Admin Logout': 'Admin Logout',
+                'Exportiere Buchungen (CSV)': 'Exportiere Buchungen (CSV)',
+                'Admin-Kalender (iCal-Link)': 'Admin-Kalender (iCal-Link)',
+                'Ausgewählte Tage blockieren': 'Ausgewählte Tage blockieren',
+                'Ausgewählte Tage freigeben': 'Ausgewählte Tage freigeben',
+                'Admin-Buchung oder Blockierung': 'Admin-Buchung oder Blockierung',
+                'Name': 'Name',
+                'E-Mail': 'E-Mail',
+                'Startdatum': 'Startdatum',
+                'Enddatum': 'Enddatum',
+                'Buchung eintragen': 'Buchung eintragen',
+                'Buchung bearbeiten': 'Buchung bearbeiten',
+                'Mobilfunknummer': 'Mobilfunknummer',
+                'Anzahl Personen': 'Anzahl Personen',
+                'Frühstück': 'Frühstück',
+                'Bemerkungen': 'Bemerkungen',
+                'Änderungen speichern': 'Änderungen speichern',
+                'Belegte und Blockierte Tage': 'Belegte und Blockierte Tage',
+                'Wartelisten-Anfragen': 'Wartelisten-Anfragen',
+                'Statistiken': 'Statistiken',
+                'Anzahl Buchungen (aktiv):': 'Anzahl Buchungen (aktiv):',
+                'Anzahl stornierter Buchungen:': 'Anzahl stornierter Buchungen:',
+                'Durchschnittliche Aufenthaltsdauer:': 'Durchschnittliche Aufenthaltsdauer:',
+                'Tage': 'Tage',
+                'Auslastung im aktuellen Jahr:': 'Auslastung im aktuellen Jahr:',
+                'Buchung stornieren': 'Buchung stornieren',
+                'Stornierungslink wird überprüft...': 'Stornierungslink wird überprüft...',
+                'Buchung bestätigen & stornieren': 'Buchung bestätigen & stornieren',
+                'Zurück zur Homepage': 'Zurück zur Startseite',
+                'Falscher Login-Passwort!': 'Falscher Login-Passwort!',
+                'Ein Fehler ist aufgetreten': 'Ein Fehler ist aufgetreten',
+                'Bitte geben Sie ein gültiges Datum ein.': 'Bitte geben Sie ein gültiges Datum ein.',
+                'Bitte wählen Sie einen Zeitraum aus.': 'Bitte wählen Sie einen Zeitraum aus.',
+                'Buchungszeitraum muss in der Zukunft liegen.': 'Buchungszeitraum muss in der Zukunft liegen.',
+                'Der ausgewählte Zeitraum ist nicht vollständig verfügbar.': 'Der ausgewählte Zeitraum ist nicht vollständig verfügbar.',
+                'Ihre Buchung wurde erfolgreich storniert.': 'Ihre Buchung wurde erfolgreich storniert.',
+                'Buchung nicht gefunden oder bereits storniert.': 'Buchung nicht gefunden oder bereits storniert.',
+                'Alle Felder müssen ausgefüllt werden.': 'Alle Felder müssen ausgefüllt werden.',
+                'Bitte füllen Sie alle erforderlichen Felder aus.': 'Bitte füllen Sie alle erforderlichen Felder aus.',
+                'Mindestens ein Tag im ausgewählten Zeitraum ist ein Wochenende (Samstag oder Sonntag). Buchungen müssen mit dem Besitzer abgestimmt werden.': 'Mindestens ein Tag im ausgewählten Zeitraum ist ein Wochenende (Samstag oder Sonntag). Buchungen müssen mit dem Besitzer abgestimmt werden.',
+                'Wartelistenanfrage erfolgreich gesendet!': 'Wartelistenanfrage erfolgreich gesendet!',
+                'Wartelistenanfrage konnte nicht gesendet werden.': 'Wartelistenanfrage konnte nicht gesendet werden.',
+                'Wartelistenanfrage erfolgreich gelöscht.': 'Wartelistenanfrage erfolgreich gelöscht.',
+                'Fehler beim Löschen der Wartelistenanfrage.': 'Fehler beim Löschen der Wartelistenanfrage.',
+                'Bitte wählen Sie einen Tag aus, um eine Buchung zu erstellen.': 'Bitte wählen Sie einen Tag aus, um eine Buchung zu erstellen.',
+                'Startdatum kann nicht nach Enddatum liegen.': 'Startdatum kann nicht nach Enddatum liegen.',
+                'Buchung erfolgreich in der Datenbank eingetragen.': 'Buchung erfolgreich in der Datenbank eingetragen.',
+                'Fehler beim Eintragen der Buchung.': 'Fehler beim Eintragen der Buchung.',
+                'Buchung erfolgreich aktualisiert.': 'Buchung erfolgreich aktualisiert.',
+                'Fehler beim Aktualisieren der Buchung.': 'Fehler beim Aktualisieren der Buchung.',
+                'Möchten Sie diese Buchung wirklich löschen?': 'Möchten Sie diese Buchung wirklich löschen?',
+                'Buchung erfolgreich gelöscht.': 'Buchung erfolgreich gelöscht.',
+                'Fehler beim Löschen der Buchung.': 'Fehler beim Löschen der Buchung.',
+                'Bitte wählen Sie einen oder mehrere Tage aus.': 'Bitte wählen Sie einen oder mehrere Tage aus.',
+                'Wartelistenanfrage wurde erfolgreich bearbeitet und gelöscht.': 'Wartelistenanfrage wurde erfolgreich bearbeitet und gelöscht.',
+                'Fehler bei der Bearbeitung der Wartelistenanfrage.': 'Fehler bei der Bearbeitung der Wartelistenanfrage.',
+                'Bitte wählen Sie zuerst einen Zeitraum aus.': 'Bitte wählen Sie zuerst einen Zeitraum aus.',
+                'Fehler beim Blockieren der Tage.': 'Fehler beim Blockieren der Tage.',
+                'Tage erfolgreich blockiert.': 'Tage erfolgreich blockiert.',
+                'Fehler beim Freigeben der Tage.': 'Fehler beim Freigeben der Tage.',
+                'Tage erfolgreich freigegeben.': 'Tage erfolgreich freigegeben.',
+                'Der ausgewählte Zeitraum muss mindestens eine Übernachtung enthalten.': 'Der ausgewählte Zeitraum muss mindestens eine Übernachtung enthalten.',
+                'Der ausgewählte Zeitraum überschreitet die maximal erlaubte Länge von 14 Tagen.': 'Der ausgewählte Zeitraum überschreitet die maximal erlaubte Länge von 14 Tagen.',
+                'Wochentage': 'Wochentage',
+                'Storniert': 'Storniert',
+                'Download calendar file': 'Kalender-Datei herunterladen',
+                'Zurück zur Startseite': 'Zurück zur Startseite'
+            },
+            en: {
+                'Willkommen in Offenbach!': 'Welcome to Offenbach!',
+                'Ich freue mich auf deinen Besuch! Über den Kalender kannst du als Gast bequem eine Übernachtung buchen. Oder du meldest dich als Admin an, um den Kalender zu verwalten.': 'I\'m looking forward to your visit! You can book an overnight stay as a guest via the calendar. Or you can log in as an admin to manage the calendar.',
+                'Hier geht es zur Buchung': 'Click here to book',
+                'Admin Login': 'Admin Login',
+                'Startseite': 'Homepage',
+                'Bitte Passwort eingeben:': 'Please enter your password:',
+                'Passwort': 'Password',
+                'Einloggen': 'Login',
+                'Falsches Passwort!': 'Wrong password!',
+                'Jahreskalender (Gast-Ansicht)': 'Yearly Calendar (Guest View)',
+                '&lt; Vorjahr': '&lt; Previous Year',
+                'Nächstes Jahr &gt;': 'Next Year &gt;',
+                'Freie Tage': 'Available Days',
+                'Gebuchte Tage': 'Booked Days',
+                'Blockierte Tage': 'Blocked Days',
+                'Ausgewählter Zeitraum': 'Selected Period',
+                'Buchungsdetails': 'Booking Details',
+                'Buchung von': 'Booking from',
+                'bis': 'to',
+                'Name *': 'Name *',
+                'E-Mail-Adresse *': 'E-Mail Address *',
+                'Mobilfunknummer *': 'Mobile number *',
+                'Anzahl Personen * (max. 3)': 'Number of people * (max. 3)',
+                'Anreisetag *': 'Arrival Date *',
+                'Abreisetag *': 'Departure Date *',
+                'Frühstück benötigt? *': 'Breakfast needed? *',
+                'Ja': 'Yes',
+                'Nein': 'No',
+                'Anreise Uhrzeit (optional)': 'Arrival Time (optional)',
+                'Abreise Uhrzeit (optional)': 'Departure Time (optional)',
+                'Bemerkungen (optional, max. 200 Zeichen)': 'Comments (optional, max. 200 characters)',
+                'Parkplatz benötigt?': 'Parking space needed?',
+                'Buchung abschicken': 'Submit Booking',
+                'Abbrechen': 'Cancel',
+                'Warteliste': 'Waitlist',
+                'Der ausgewählte Zeitraum ist bereits belegt. Tragen Sie sich in die Warteliste ein, um benachrichtigt zu werden, wenn der Zeitraum frei wird.': 'The selected period is already booked. Join the waitlist to be notified if the period becomes available.',
+                'Auf Warteliste setzen': 'Join Waitlist',
+                'Buchung erfolgreich!': 'Booking successful!',
+                'Ihre Buchungsdetails wurden gespeichert. Sie erhalten in Kürze eine Bestätigung per E-Mail.': 'Your booking details have been saved. You will receive a confirmation email shortly.',
+                'Kalender-Datei herunterladen': 'Download calendar file',
+                'Neue Buchung': 'New Booking',
+                'Zurück zur Startseite': 'Back to Homepage',
+                'Admin Logout': 'Admin Logout',
+                'Exportiere Buchungen (CSV)': 'Export Bookings (CSV)',
+                'Admin-Kalender (iCal-Link)': 'Admin Calendar (iCal link)',
+                'Ausgewählte Tage blockieren': 'Block Selected Days',
+                'Ausgewählte Tage freigeben': 'Unblock Selected Days',
+                'Admin-Buchung oder Blockierung': 'Admin Booking or Blocking',
+                'Name': 'Name',
+                'E-Mail': 'Email',
+                'Startdatum': 'Start Date',
+                'Enddatum': 'End Date',
+                'Buchung eintragen': 'Add Booking',
+                'Buchung bearbeiten': 'Edit Booking',
+                'Mobilfunknummer': 'Mobile Number',
+                'Anzahl Personen': 'Number of people',
+                'Frühstück': 'Breakfast',
+                'Bemerkungen': 'Comments',
+                'Änderungen speichern': 'Save Changes',
+                'Belegte und Blockierte Tage': 'Booked and Blocked Days',
+                'Wartelisten-Anfragen': 'Waitlist Requests',
+                'Statistiken': 'Statistics',
+                'Anzahl Buchungen (aktiv):': 'Number of active bookings:',
+                'Anzahl stornierter Buchungen:': 'Number of cancelled bookings:',
+                'Durchschnittliche Aufenthaltsdauer:': 'Average stay duration:',
+                'Tage': 'days',
+                'Auslastung im aktuellen Jahr:': 'Occupancy in current year:',
+                'Buchung stornieren': 'Cancel Booking',
+                'Stornierungslink wird überprüft...': 'Cancellation link is being checked...',
+                'Buchung bestätigen & stornieren': 'Confirm & Cancel Booking',
+                'Zurück zur Homepage': 'Back to homepage',
+                'Falscher Login-Passwort!': 'Wrong login password!',
+                'Ein Fehler ist aufgetreten': 'An error occurred',
+                'Bitte geben Sie ein gültiges Datum ein.': 'Please enter a valid date.',
+                'Bitte wählen Sie einen Zeitraum aus.': 'Please select a period.',
+                'Buchungszeitraum muss in der Zukunft liegen.': 'Booking period must be in the future.',
+                'Der ausgewählte Zeitraum ist nicht vollständig verfügbar.': 'The selected period is not fully available.',
+                'Ihre Buchung wurde erfolgreich storniert.': 'Your booking has been successfully cancelled.',
+                'Buchung nicht gefunden oder bereits storniert.': 'Booking not found or already cancelled.',
+                'Alle Felder müssen ausgefüllt werden.': 'All fields must be filled out.',
+                'Bitte füllen Sie alle erforderlichen Felder aus.': 'Please fill in all required fields.',
+                'Mindestens ein Tag im ausgewählten Zeitraum ist ein Wochenende (Samstag oder Sonntag). Buchungen müssen mit dem Besitzer abgestimmt werden.': 'At least one day in the selected period is a weekend (Saturday or Sunday). Bookings must be arranged with the owner.',
+                'Wartelistenanfrage erfolgreich gesendet!': 'Waitlist request sent successfully!',
+                'Wartelistenanfrage konnte nicht gesendet werden.': 'Waitlist request could not be sent.',
+                'Wartelistenanfrage erfolgreich gelöscht.': 'Waitlist request deleted successfully.',
+                'Fehler beim Löschen der Wartelistenanfrage.': 'Error deleting waitlist request.',
+                'Bitte wählen Sie einen Tag aus, um eine Buchung zu erstellen.': 'Please select a day to create a booking.',
+                'Startdatum kann nicht nach Enddatum liegen.': 'Start date cannot be after end date.',
+                'Buchung erfolgreich in der Datenbank eingetragen.': 'Booking successfully added to the database.',
+                'Fehler beim Eintragen der Buchung.': 'Error adding booking to the database.',
+                'Buchung erfolgreich aktualisiert.': 'Booking successfully updated.',
+                'Fehler beim Aktualisieren der Buchung.': 'Error updating booking.',
+                'Möchten Sie diese Buchung wirklich löschen?': 'Do you really want to delete this booking?',
+                'Buchung erfolgreich gelöscht.': 'Booking successfully deleted.',
+                'Fehler beim Löschen der Buchung.': 'Error deleting booking.',
+                'Bitte wählen Sie einen oder mehrere Tage aus.': 'Please select one or more days.',
+                'Wartelistenanfrage wurde erfolgreich bearbeitet und gelöscht.': 'Waitlist request successfully processed and deleted.',
+                'Fehler bei der Bearbeitung der Wartelistenanfrage.': 'Error processing waitlist request.',
+                'Bitte wählen Sie zuerst einen Zeitraum aus.': 'Please select a period first.',
+                'Fehler beim Blockieren der Tage.': 'Error blocking days.',
+                'Tage erfolgreich blockiert.': 'Days successfully blocked.',
+                'Fehler beim Freigeben der Tage.': 'Error unblocking days.',
+                'Tage erfolgreich unblocked.',
+                'Der ausgewählte Zeitraum muss mindestens eine Übernachtung enthalten.': 'The selected period must contain at least one overnight stay.',
+                'Der ausgewählte Zeitraum überschreitet die maximal erlaubte Länge von 14 Tagen.': 'The selected period exceeds the maximum allowed length of 14 days.',
+                'Wochentage': 'Weekdays',
+                'Storniert': 'Cancelled',
+                'Download calendar file': 'Download calendar file',
+                'Zurück zur Startseite': 'Back to Homepage'
             }
-            table.calendar th, table.calendar td {
-                padding: 3px;
-                font-size: 8px;
+        };
+
+        const weekdays = ['So', 'Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa'];
+
+        emailjs.init(EMAILJS_PUBLIC_KEY);
+
+        function showSection(sectionId) {
+            for (const key in sections) {
+                sections[key].style.display = 'none';
             }
-            .container {
-                padding: 10px;
-            }
-            nav {
-                flex-direction: column;
-            }
-            nav button {
-                width: 90%;
-            }
+            sections[sectionId].style.display = 'block';
         }
-    </style>
-</head>
-<body>
-    <nav>
-        <button id="lang-de"><i class="fas fa-flag icon"></i> DE</button>
-        <button id="lang-en"><i class="fas fa-flag icon"></i> EN</button>
-        <button id="btn-to-start" style="display:none;"><i class="fas fa-home icon"></i> Startseite</button>
-        <button id="btn-show-admin-login"><i class="fas fa-user-shield icon"></i> Admin Login</button>
-    </nav>
 
-    <div id="notification-box"></div>
+        function showNotification(message, isError = false) {
+            const notificationBox = document.getElementById('notification-box');
+            notificationBox.textContent = message;
+            notificationBox.className = 'notification-box';
+            if (isError) {
+                notificationBox.classList.add('error');
+            } else {
+                notificationBox.classList.add('success');
+            }
+            notificationBox.style.display = 'block';
+            setTimeout(() => {
+                notificationBox.style.display = 'none';
+            }, 3000);
+        }
 
-    <main>
-        <section id="start-page">
-            <div class="container">
-                <h1 data-lang-de="Willkommen in Offenbach!" data-lang-en="Welcome to Offenbach!">Willkommen in Offenbach!</h1>
-                <p style="text-align:center;" data-lang-de="Ich freue mich auf deinen Besuch! Über den Kalender kannst du als Gast bequem eine Übernachtung buchen. Oder du meldest dich als Admin an, um den Kalender zu verwalten." data-lang-en="I'm looking forward to your visit! You can book an overnight stay as a guest via the calendar. Or you can log in as an admin to manage the calendar.">
-                    Ich freue mich auf deinen Besuch! Über den Kalender kannst du als Gast bequem eine Übernachtung buchen. Oder du meldest dich als Admin an, um den Kalender zu verwalten.
-                </p>
-            </div>
-            
-            <div id="login-box">
-                <h2 data-lang-de="Hier geht es zur Buchung" data-lang-en="Click here to book">Hier geht es zur Buchung</h2>
-                <p data-lang-de="Bitte Passwort eingeben:" data-lang-en="Please enter your password:">Bitte Passwort eingeben:</p>
-                <input type="password" id="friend-password" placeholder="Passwort" data-lang-placeholder-de="Passwort" data-lang-placeholder-en="Password" />
-                <div id="friend-login-error" class="error-msg"></div>
-                <button id="friend-login-btn" data-lang-de="Einloggen" data-lang-en="Login">Einloggen</button>
-            </div>
-        </section>
+        function updateLanguage(lang) {
+            currentLang = lang;
+            const elements = document.querySelectorAll('[data-lang-de], [data-lang-en], [data-lang-placeholder-de], [data-lang-placeholder-en]');
+            elements.forEach(el => {
+                const de = el.dataset.langDe;
+                const en = el.dataset.langEn;
+                const dePlaceholder = el.dataset.langPlaceholderDe;
+                const enPlaceholder = el.dataset.langPlaceholderEn;
 
-        <section id="friend-area" style="display:none;">
-            <div class="container">
-                <h2 data-lang-de="Jahreskalender (Gast-Ansicht)" data-lang-en="Yearly Calendar (Guest View)">Jahreskalender (Gast-Ansicht)</h2>
-                <div style="text-align:center; margin-bottom: 10px;">
-                    <button id="year-prev" data-lang-de="&lt; Vorjahr" data-lang-en="&lt; Previous Year">&lt; Vorjahr</button>
-                    <span id="year-display" style="font-weight: 700; margin: 0 15px; font-size: 1.2em;"></span>
-                    <button id="year-next" data-lang-de="Nächstes Jahr &gt;" data-lang-en="Next Year &gt;">Nächstes Jahr &gt;</button>
-                </div>
-
-                <div id="calendar-legend">
-                    <div class="legend-item">
-                        <div class="legend-color" id="legend-color-available"></div>
-                        <span data-lang-de="Freie Tage" data-lang-en="Available Days">Freie Tage</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color" id="legend-color-booked"></div>
-                        <span data-lang-de="Gebuchte Tage" data-lang-en="Booked Days">Gebuchte Tage</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color" id="legend-color-blocked"></div>
-                        <span data-lang-de="Blockierte Tage" data-lang-en="Blocked Days">Blockierte Tage</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color" id="legend-color-selected"></div>
-                        <span data-lang-de="Ausgewählter Zeitraum" data-lang-en="Selected Period">Ausgewählter Zeitraum</span>
-                    </div>
-                </div>
-
-                <div id="yearly-calendar-content"></div>
-            </div>
-
-            <form id="booking-form" style="display:none;">
-                <h3 style="margin-top: 0;" data-lang-de="Buchungsdetails" data-lang-en="Booking Details">Buchungsdetails</h3>
-                <div id="booking-summary-text" style="text-align:center; margin-bottom: 15px; font-weight:bold;"></div>
-                <div>
-                    <label for="book-name" data-lang-de="Name *" data-lang-en="Name *">Name *</label>
-                    <input type="text" id="book-name" required />
-                </div>
-                <div>
-                    <label for="book-email" data-lang-de="E-Mail-Adresse *" data-lang-en="E-Mail Address *">E-Mail-Adresse *</label>
-                    <input type="email" id="book-email" required />
-                </div>
-                <div>
-                    <label for="book-persons" data-lang-de="Anzahl Personen * (max. 3)" data-lang-en="Number of people * (max. 3)">Anzahl Personen * (max. 3)</label>
-                    <input type="number" id="book-persons" min="1" max="3" required />
-                </div>
-                <div>
-                    <label for="book-start-date" data-lang-de="Startdatum *" data-lang-en="Start Date *">Startdatum *</label>
-                    <input type="date" id="book-start-date" required />
-                </div>
-                <div>
-                    <label for="book-end-date" data-lang-de="Enddatum *" data-lang-en="End Date *">Enddatum *</label>
-                    <input type="date" id="book-end-date" required />
-                </div>
-                <div>
-                    <label for="book-breakfast" data-lang-de="Frühstück benötigt? *" data-lang-en="Breakfast needed? *">Frühstück benötigt? *</label>
-                    <select id="book-breakfast" required>
-                        <option value="ja" data-lang-de="Ja" data-lang-en="Yes">Ja</option>
-                        <option value="nein" selected data-lang-de="Nein" data-lang-en="No">Nein</option>
-                    </select>
-                </div>
-                <div>
-                    <label for="book-arrival-time" data-lang-de="Anreise Uhrzeit (optional)" data-lang-en="Arrival Time (optional)">Anreise Uhrzeit (optional)</label>
-                    <input type="time" id="book-arrival-time" />
-                </div>
-                <div>
-                    <label for="book-departure-time" data-lang-de="Abreise Uhrzeit (optional)" data-lang-en="Departure Time (optional)">Abreise Uhrzeit (optional)</label>
-                    <input type="time" id="book-departure-time" />
-                </div>
-                <div>
-                    <label for="book-comment" data-lang-de="Bemerkungen (optional, max. 200 Zeichen)" data-lang-en="Comments (optional, max. 200 characters)">Bemerkungen (optional, max. 200 Zeichen)</label>
-                    <textarea id="book-comment" maxlength="200"></textarea>
-                </div>
-                <div>
-                    <label for="book-parking">
-                        <input type="checkbox" id="book-parking"> <span data-lang-de="Parkplatz benötigt?" data-lang-en="Parking space needed?">Parkplatz benötigt?</span>
-                    </label>
-                </div>
-                <div id="booking-error" class="error-msg"></div>
-                <button type="submit" style="background-color: #4CAF50;" data-lang-de="Buchung abschicken" data-lang-en="Submit Booking">Buchung abschicken</button>
-                <button type="button" id="btn-cancel-booking-form" style="background-color: #f44336;" data-lang-de="Abbrechen" data-lang-en="Cancel">Abbrechen</button>
-            </form>
-            <div id="booking-success" class="container" style="display:none;">
-                <h3 data-lang-de="Buchung erfolgreich!" data-lang-en="Booking successful!">Buchung erfolgreich!</h3>
-                <p data-lang-de="Ihre Buchungsdetails wurden gespeichert. Sie erhalten in Kürze eine Bestätigung per E-Mail." data-lang-en="Your booking details have been saved. You will receive a confirmation email shortly.">Ihre Buchungsdetails wurden gespeichert. Sie erhalten in Kürze eine Bestätigung per E-Mail.</p>
-                <div id="success-details" style="text-align: left;"></div>
-                <div style="margin-top: 20px;">
-                    <button id="btn-new-booking" data-lang-de="Neue Buchung" data-lang-en="New Booking">Neue Buchung</button>
-                    <button id="btn-return-home-from-booking" data-lang-de="Zurück zur Startseite" data-lang-en="Back to Homepage">Zurück zur Startseite</button>
-                </div>
-            </div>
-        </section>
-
-        <section id="admin-login" style="display:none;">
-            <div id="login-box">
-                <h2 data-lang-de="Admin Login" data-lang-en="Admin Login">Admin Login</h2>
-                <p data-lang-de="Bitte Admin-Passwort eingeben:" data-lang-en="Please enter the admin password:">Bitte Admin-Passwort eingeben:</p>
-                <input type="password" id="admin-password" placeholder="Admin Passwort" data-lang-placeholder-de="Admin Passwort" data-lang-placeholder-en="Admin Password" />
-                <div id="admin-login-error" class="error-msg"></div>
-                <button id="admin-login-btn" data-lang-de="Einloggen" data-lang-en="Login">Einloggen</button>
-            </div>
-        </section>
-
-        <section id="admin-area" style="display:none;">
-            <div class="container">
-                <h2 data-lang-de="Jahreskalender (Admin-Ansicht)" data-lang-en="Yearly Calendar (Admin View)">Jahreskalender (Admin-Ansicht)</h2>
-                <div style="margin-bottom: 20px; text-align: center;">
-                    <button id="btn-logout-admin" style="background-color: #f44336;"><i class="fas fa-sign-out-alt icon"></i> <span data-lang-de="Admin Logout" data-lang-en="Admin Logout">Admin Logout</span></button>
-                    <button id="btn-export-csv"><i class="fas fa-file-csv icon"></i> <span data-lang-de="Exportiere Buchungen (CSV)" data-lang-en="Export Bookings (CSV)">Exportiere Buchungen (CSV)</span></button>
-                </div>
-                <div style="text-align:center; margin-bottom: 10px;">
-                    <button id="admin-year-prev" data-lang-de="&lt; Vorjahr" data-lang-en="&lt; Previous Year">&lt; Vorjahr</button>
-                    <span id="admin-year-display" style="font-weight: 700; margin: 0 15px; font-size: 1.2em;"></span>
-                    <button id="admin-year-next" data-lang-de="Nächstes Jahr &gt;" data-lang-en="Next Year &gt;">Nächstes Jahr &gt;</button>
-                </div>
-
-                <div id="calendar-legend">
-                    <div class="legend-item">
-                        <div class="legend-color" id="legend-color-available"></div>
-                        <span data-lang-de="Freie Tage" data-lang-en="Available Days">Freie Tage</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color" id="legend-color-booked"></div>
-                        <span data-lang-de="Gebuchte Tage" data-lang-en="Booked Days">Gebuchte Tage</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color" id="legend-color-cancelled"></div>
-                        <span data-lang-de="Storniert" data-lang-en="Cancelled">Storniert</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color" id="legend-color-blocked"></div>
-                        <span data-lang-de="Blockierte Tage" data-lang-en="Blocked Days">Blockierte Tage</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color" id="legend-color-selected"></div>
-                        <span data-lang-de="Ausgewählter Zeitraum" data-lang-en="Selected Period">Ausgewählter Zeitraum</span>
-                    </div>
-                </div>
-
-                <div id="admin-yearly-calendar-content"></div>
-
-                <div style="text-align: center; margin-top: 10px;">
-                    <button id="btn-block-selected" style="background-color: #757575;" data-lang-de="Ausgewählte Tage blockieren" data-lang-en="Block Selected Days">Ausgewählte Tage blockieren</button>
-                    <button id="btn-unblock-selected" style="background-color: #f44336;" data-lang-de="Ausgewählte Tage freigeben" data-lang-en="Unblock Selected Days">Ausgewählte Tage freigeben</button>
-                </div>
-                
-                <div id="admin-booking-form-container" style="display:none;">
-                    <h3 data-lang-de="Admin-Buchung oder Blockierung" data-lang-en="Admin Booking or Blocking">Admin-Buchung oder Blockierung</h3>
-                    <form id="admin-booking-form">
-                        <div>
-                            <label for="admin-book-name" data-lang-de="Name" data-lang-en="Name">Name</label>
-                            <input type="text" id="admin-book-name" required />
-                        </div>
-                        <div>
-                            <label for="admin-book-email" data-lang-de="E-Mail" data-lang-en="Email">E-Mail</label>
-                            <input type="email" id="admin-book-email" required />
-                        </div>
-                        <div>
-                            <label for="admin-book-start-date" data-lang-de="Startdatum" data-lang-en="Start Date">Startdatum</label>
-                            <input type="date" id="admin-book-start-date" required />
-                        </div>
-                        <div>
-                            <label for="admin-book-end-date" data-lang-de="Enddatum" data-lang-en="End Date">Enddatum</label>
-                            <input type="date" id="admin-book-end-date" required />
-                        </div>
-                        <button type="submit" data-lang-de="Buchung eintragen" data-lang-en="Add Booking">Buchung eintragen</button>
-                        <button type="button" id="btn-cancel-admin-form" style="background-color: #f44336;" data-lang-de="Abbrechen" data-lang-en="Cancel">Abbrechen</button>
-                    </form>
-                </div>
-
-
-                <h3 data-lang-de="Belegte und Blockierte Tage" data-lang-en="Booked and Blocked Days">Belegte und Blockierte Tage</h3>
-                <div id="admin-bookings-list"></div>
-
-                <h3 data-lang-de="Statistiken" data-lang-en="Statistics">Statistiken</h3>
-                <div id="stats-container" class="container">
-                    <p><strong data-lang-de="Anzahl Buchungen (aktiv):" data-lang-en="Number of active bookings:">Anzahl Buchungen (aktiv):</strong> <span id="stat-active-bookings">0</span></p>
-                    <p><strong data-lang-de="Anzahl stornierter Buchungen:" data-lang-en="Number of cancelled bookings:">Anzahl stornierter Buchungen:</strong> <span id="stat-cancelled-bookings">0</span></p>
-                    <p><strong data-lang-de="Durchschnittliche Aufenthaltsdauer:" data-lang-en="Average stay duration:">Durchschnittliche Aufenthaltsdauer:</strong> <span id="stat-avg-stay">0</span> <span data-lang-de="Tage" data-lang-en="days">Tage</span></p>
-                    <p><strong data-lang-de="Auslastung im aktuellen Jahr:" data-lang-en="Occupancy in current year:">Auslastung im aktuellen Jahr:</strong> <span id="stat-occupancy">0%</span></p>
-                </div>
-            </div>
-        </section>
-
-        <section id="cancel-page" style="display:none; text-align: center; padding: 50px;">
-            <div class="container">
-                <h2 data-lang-de="Buchung stornieren" data-lang-en="Cancel Booking">Buchung stornieren</h2>
-                <p id="cancel-status-text" data-lang-de="Stornierungslink wird überprüft..." data-lang-en="Cancellation link is being checked...">Stornierungslink wird überprüft...</p>
-                <div id="cancel-details" style="margin-top: 20px; text-align: left; max-width: 400px; margin: 20px auto;"></div>
-                <div id="cancel-buttons" style="margin-top: 20px;">
-                    <button id="btn-confirm-cancellation" style="background-color: #f44336;" data-lang-de="Buchung bestätigen & stornieren" data-lang-en="Confirm & Cancel Booking">Buchung bestätigen & stornieren</button>
-                    <button id="btn-return-home" data-lang-de="Zurück zur Startseite" data-lang-en="Back to homepage">Zurück zur Startseite</button>
-                </div>
-            </div>
-        </section>
-
-    </main>
-
-    <script>
-        (() => {
-            const FRIEND_PASSWORD = "ÜinOffenbach!";
-            const ADMIN_PASSWORD = "Romulus2025?!";
-            const ADMIN_EMAIL = "pauldippmann@gmail.com";
-
-            const EMAILJS_SERVICE_ID = 'service_9vdk8p2';
-            const EMAILJS_TEMPLATE_ID_BOOKING = 'template_exo2yi1';
-            const EMAILJS_TEMPLATE_ID_CANCEL = 'template_9azx5z9';
-            const EMAILJS_TEMPLATE_ID_REMINDER = 'template_9azx5z9';
-            const EMAILJS_PUBLIC_KEY = 'OXLiZSAem79gPP-Wl';
-
-            const firebaseConfig = {
-                apiKey: "AIzaSyAu9hXGYbgmD-_pz0LHN5VgUcV9mRNkU98",
-                authDomain: "freunde-kalender-offenbach.firebaseapp.com",
-                projectId: "freunde-kalender-offenbach",
-                storageBucket: "freunde-kalender-offenbach.firebasestorage.app",
-                messagingSenderId: "753671032354",
-                appId: "1:753671032354:web:a154b43ccdfcc491c4c47b"
-            };
-
-            firebase.initializeApp(firebaseConfig);
-            const db = firebase.firestore();
-
-            const CAL_START_YEAR = 2025;
-            const CAL_END_YEAR = 2040;
-
-            let currentYear;
-            let selectedStartDate = null;
-            let selectedEndDate = null;
-            let currentView = 'friend';
-            let currentLang = 'de';
-
-            const sections = {
-                start: document.getElementById("start-page"),
-                friendArea: document.getElementById("friend-area"),
-                adminLogin: document.getElementById("admin-login"),
-                adminArea: document.getElementById("admin-area"),
-                cancel: document.getElementById("cancel-page")
-            };
-
-            const translations = {
-                de: {
-                    'Willkommen in Offenbach!': 'Willkommen in Offenbach!',
-                    'Ich freue mich auf deinen Besuch! Über den Kalender kannst du als Gast bequem eine Übernachtung buchen. Oder du meldest dich als Admin an, um den Kalender zu verwalten.': 'Ich freue mich auf deinen Besuch! Über den Kalender kannst du als Gast bequem eine Übernachtung buchen. Oder du meldest dich als Admin an, um den Kalender zu verwalten.',
-                    'Hier geht es zur Buchung': 'Hier geht es zur Buchung',
-                    'Admin Login': 'Admin Login',
-                    'Startseite': 'Startseite',
-                    'Bitte Passwort eingeben:': 'Bitte Passwort eingeben:',
-                    'Passwort': 'Passwort',
-                    'Einloggen': 'Einloggen',
-                    'Falsches Passwort!': 'Falsches Passwort!',
-                    'Jahreskalender (Gast-Ansicht)': 'Jahreskalender (Gast-Ansicht)',
-                    '&lt; Vorjahr': '&lt; Vorjahr',
-                    'Nächstes Jahr &gt;': 'Nächstes Jahr &gt;',
-                    'Freie Tage': 'Freie Tage',
-                    'Gebuchte Tage': 'Gebuchte Tage',
-                    'Blockierte Tage': 'Blockierte Tage',
-                    'Ausgewählter Zeitraum': 'Ausgewählter Zeitraum',
-                    'Buchungsdetails': 'Buchungsdetails',
-                    'Buchung von': 'Buchung von',
-                    'bis': 'bis',
-                    'Name *': 'Name *',
-                    'E-Mail-Adresse *': 'E-Mail-Adresse *',
-                    'Anzahl Personen * (max. 3)': 'Anzahl Personen * (max. 3)',
-                    'Startdatum *': 'Startdatum *',
-                    'Enddatum *': 'Enddatum *',
-                    'Frühstück benötigt? *': 'Frühstück benötigt? *',
-                    'Ja': 'Ja',
-                    'Nein': 'Nein',
-                    'Anreise Uhrzeit (optional)': 'Anreise Uhrzeit (optional)',
-                    'Abreise Uhrzeit (optional)': 'Abreise Uhrzeit (optional)',
-                    'Bemerkungen (optional, max. 200 Zeichen)': 'Bemerkungen (optional, max. 200 Zeichen)',
-                    'Parkplatz benötigt?': 'Parkplatz benötigt?',
-                    'Buchung abschicken': 'Buchung abschicken',
-                    'Abbrechen': 'Abbrechen',
-                    'Bitte einen Namen eingeben.': 'Bitte einen Namen eingeben.',
-                    'Bitte eine gültige E-Mail-Adresse eingeben.': 'Bitte eine gültige E-Mail-Adresse eingeben.',
-                    'Bitte gültige Anzahl Personen eingeben (max. 3).': 'Bitte gültige Anzahl Personen eingeben (max. 3).',
-                    'Bitte gültige Start- und Enddaten eingeben.': 'Bitte gültige Start- und Enddaten eingeben.',
-                    'Enddatum darf nicht vor Startdatum liegen.': 'Enddatum darf nicht vor Startdatum liegen.',
-                    'Der ausgewählte Zeitraum überschneidet sich mit einem blockierten Zeitraum.': 'Der ausgewählte Zeitraum überschneidet sich mit einem blockierten Zeitraum.',
-                    'Der ausgewählte Zeitraum überschneidet sich mit einer bestehenden Buchung.': 'Der ausgewählte Zeitraum überschneidet sich mit einer bestehenden Buchung.',
-                    'Buchung erfolgreich!': 'Buchung erfolgreich!',
-                    'Ihre Buchungsdetails wurden gespeichert. Sie erhalten in Kürze eine Bestätigung per E-Mail.': 'Ihre Buchungsdetails wurden gespeichert. Sie erhalten in Kürze eine Bestätigung per E-Mail.',
-                    'Neue Buchung': 'Neue Buchung',
-                    'Zurück zur Startseite': 'Zurück zur Startseite',
-                    'Admin Passwort': 'Admin Passwort',
-                    'Falsches Admin-Passwort!': 'Falsches Admin-Passwort!',
-                    'Jahreskalender (Admin-Ansicht)': 'Jahreskalender (Admin-Ansicht)',
-                    'Admin Logout': 'Admin Logout',
-                    'Exportiere Buchungen (CSV)': 'Exportiere Buchungen (CSV)',
-                    'Storniert': 'Storniert',
-                    'Ausgewählte Tage blockieren': 'Ausgewählte Tage blockieren',
-                    'Ausgewählte Tage freigeben': 'Ausgewählte Tage freigeben',
-                    'Admin-Buchung oder Blockierung': 'Admin-Buchung oder Blockierung',
-                    'Name': 'Name',
-                    'E-Mail': 'E-Mail',
-                    'Startdatum': 'Startdatum',
-                    'Enddatum': 'Enddatum',
-                    'Buchung eintragen': 'Buchung eintragen',
-                    'Bitte wähle zuerst einen Zeitraum im Kalender aus.': 'Bitte wähle zuerst einen Zeitraum im Kalender aus.',
-                    'Zeitraum von %s bis %s erfolgreich blockiert.': 'Zeitraum von %s bis %s erfolgreich blockiert.',
-                    'Sollen die Tage von %s bis %s wirklich freigegeben werden?': 'Sollen die Tage von %s bis %s wirklich freigegeben werden?',
-                    'Tage erfolgreich freigegeben!': 'Tage erfolgreich freigegeben!',
-                    'Keine Blockierung im ausgewählten Zeitraum gefunden.': 'Keine Blockierung im ausgewählten Zeitraum gefunden.',
-                    'Belegte und Blockierte Tage': 'Belegte und Blockierte Tage',
-                    'Statistiken': 'Statistiken',
-                    'Anzahl Buchungen (aktiv):': 'Anzahl Buchungen (aktiv):',
-                    'Anzahl stornierter Buchungen:': 'Anzahl stornierter Buchungen:',
-                    'Durchschnittliche Aufenthaltsdauer:' : 'Durchschnittliche Aufenthaltsdauer:',
-                    'Auslastung im aktuellen Jahr:' : 'Auslastung im aktuellen Jahr:',
-                    'Tage': 'Tage',
-                    'Buchung stornieren': 'Buchung stornieren',
-                    'Stornierungslink wird überprüft...': 'Stornierungslink wird überprüft...',
-                    'Ungültiger oder bereits stornierter Buchungslink.': 'Ungültiger oder bereits stornierter Buchungslink.',
-                    'Buchungsdetails:': 'Buchungsdetails:',
-                    'Confirm & Cancel Booking': 'Buchung bestätigen & stornieren',
-                    'Back to homepage': 'Zurück zur Startseite',
-                    'Soll die Buchung von %s wirklich storniert werden?': 'Soll die Buchung von %s wirklich storniert werden?',
-                    'Ihre Buchung wurde erfolgreich storniert.': 'Ihre Buchung wurde erfolgreich storniert.',
-                    'Fehler beim Stornieren der Buchung:': 'Fehler beim Stornieren der Buchung:',
-                    'Buchung von %s erfolgreich storniert. Bestätigung wurde per E-Mail gesendet.': 'Buchung von %s erfolgreich storniert. Bestätigung wurde per E-Mail gesendet.',
-                    'Fehler! E-Mail konnte nicht gesendet werden.': 'Fehler! E-Mail konnte nicht gesendet werden.',
-                    'Keine Buchungen zum Exportieren vorhanden.': 'Keine Buchungen zum Exportieren vorhanden.',
-                    'Manuelle Buchung von %s bis %s erfolgreich hinzugefügt!': 'Manuelle Buchung von %s bis %s erfolgreich hinzugefügt!',
-                    'Wohnung nicht verfügbar': 'Wohnung nicht verfügbar',
-                    'Aktion': 'Aktion',
-                    'Typ': 'Typ',
-                    'Buchung': 'Buchung',
-                    'Stornieren': 'Stornieren',
-                    'Löschen': 'Löschen',
-                    'Freigeben': 'Freigeben',
-                    'Erinnerung': 'Erinnerung',
-                    'Diese Buchung ist bereits storniert.': 'Diese Buchung ist bereits storniert.',
-                    'Erinnerung an Ihre bevorstehende Buchung': 'Erinnerung an Ihre bevorstehende Buchung',
-                    'Erinnerungs-E-Mail erfolgreich gesendet!': 'Erinnerungs-E-Mail erfolgreich gesendet!',
-                    'Fehler beim Senden der Erinnerungs-E-Mail.': 'Fehler beim Senden der Erinnerungs-E-Mail.',
-                    'Ihre Buchung wurde storniert': 'Ihre Buchung wurde storniert',
-                    'Ja': 'Ja',
-                    'Nein': 'Nein',
-                    'Ein Fehler ist aufgetreten. Die Buchung konnte nicht storniert werden.': 'Ein Fehler ist aufgetreten. Die Buchung konnte nicht storniert werden.',
-                    'Dieser Tag ist nicht verfügbar.': 'Dieser Tag ist nicht verfügbar.',
-                    'Buchung erfolgreich, aber E-Mail konnte nicht gesendet werden. Bitte kontaktiere den Admin.': 'Buchung erfolgreich, aber E-Mail konnte nicht gesendet werden. Bitte kontaktiere den Admin.',
-                    'Buchung wirklich stornieren?': 'Buchung wirklich stornieren?',
-                    'Buchung wirklich löschen?': 'Buchung wirklich löschen?',
-                    'Buchung erfolgreich gelöscht.': 'Buchung erfolgreich gelöscht.',
-                    'Blockierung wirklich entfernen?': 'Blockierung wirklich entfernen?',
-                    'Blockierung erfolgreich entfernt.': 'Blockierung erfolgreich entfernt.',
-                    'Das Enddatum darf nicht vor dem Startdatum liegen.': 'Das Enddatum darf nicht vor dem Startdatum liegen.',
-                    'Zeitraum': 'Zeitraum'
-                },
-                en: {
-                    'Willkommen in Offenbach!': 'Welcome to Offenbach!',
-                    'Ich freue mich auf deinen Besuch! Über den Kalender kannst du als Gast bequem eine Übernachtung buchen. Oder du meldest dich als Admin an, um den Kalender zu verwalten.': 'I\'m looking forward to your visit! You can book an overnight stay as a guest via the calendar. Or you can log in as an admin to manage the calendar.',
-                    'Hier geht es zur Buchung': 'Click here to book',
-                    'Admin Login': 'Admin Login',
-                    'Startseite': 'Homepage',
-                    'Bitte Passwort eingeben:': 'Please enter your password:',
-                    'Passwort': 'Password',
-                    'Einloggen': 'Login',
-                    'Falsches Passwort!': 'Wrong password!',
-                    'Jahreskalender (Gast-Ansicht)': 'Yearly Calendar (Guest View)',
-                    '&lt; Vorjahr': '&lt; Previous Year',
-                    'Nächstes Jahr &gt;': 'Next Year &gt;',
-                    'Freie Tage': 'Available Days',
-                    'Gebuchte Tage': 'Booked Days',
-                    'Blockierte Tage': 'Blocked Days',
-                    'Ausgewählter Zeitraum': 'Selected Period',
-                    'Buchungsdetails': 'Booking Details',
-                    'Buchung von': 'Booking from',
-                    'bis': 'to',
-                    'Name *': 'Name *',
-                    'E-Mail-Adresse *': 'E-mail Address *',
-                    'Anzahl Personen * (max. 3)': 'Number of people * (max. 3)',
-                    'Startdatum *': 'Start Date *',
-                    'Enddatum *': 'End Date *',
-                    'Frühstück benötigt? *': 'Breakfast needed? *',
-                    'Ja': 'Yes',
-                    'Nein': 'No',
-                    'Anreise Uhrzeit (optional)': 'Arrival Time (optional)',
-                    'Abreise Uhrzeit (optional)': 'Departure Time (optional)',
-                    'Bemerkungen (optional, max. 200 Zeichen)': 'Comments (optional, max. 200 characters)',
-                    'Parkplatz benötigt?': 'Parking space needed?',
-                    'Buchung abschicken': 'Submit Booking',
-                    'Abbrechen': 'Cancel',
-                    'Bitte einen Namen eingeben.': 'Please enter a name.',
-                    'Bitte eine gültige E-Mail-Adresse eingeben.': 'Please enter a valid email address.',
-                    'Bitte gültige Anzahl Personen eingeben (max. 3).': 'Please enter a valid number of people (max. 3).',
-                    'Bitte gültige Start- und Enddaten eingeben.': 'Please enter valid start and end dates.',
-                    'Enddatum darf nicht vor Startdatum liegen.': 'End date cannot be before the start date.',
-                    'Der ausgewählte Zeitraum überschneidet sich mit einem blockierten Zeitraum.': 'The selected period overlaps with a blocked period.',
-                    'Der ausgewählte Zeitraum überschneidet sich mit einer bestehenden Buchung.': 'The selected period overlaps with an existing booking.',
-                    'Buchung erfolgreich!': 'Booking successful!',
-                    'Ihre Buchungsdetails wurden gespeichert. Sie erhalten in Kürze eine Bestätigung per E-Mail.': 'Your booking details have been saved. You will receive a confirmation email shortly.',
-                    'Neue Buchung': 'New Booking',
-                    'Zurück zur Startseite': 'Back to Homepage',
-                    'Admin Passwort': 'Admin Password',
-                    'Falsches Admin-Passwort!': 'Wrong admin password!',
-                    'Jahreskalender (Admin-Ansicht)': 'Yearly Calendar (Admin View)',
-                    'Admin Logout': 'Admin Logout',
-                    'Exportiere Buchungen (CSV)': 'Export Bookings (CSV)',
-                    'Storniert': 'Cancelled',
-                    'Ausgewählte Tage blockieren': 'Block Selected Days',
-                    'Ausgewählte Tage freigeben': 'Unblock Selected Days',
-                    'Admin-Buchung oder Blockierung': 'Admin Booking or Blocking',
-                    'Name': 'Name',
-                    'E-Mail': 'Email',
-                    'Startdatum': 'Start Date',
-                    'Enddatum': 'End Date',
-                    'Buchung eintragen': 'Add Booking',
-                    'Bitte wähle zuerst einen Zeitraum im Kalender aus.': 'Please select a period in the calendar first.',
-                    'Zeitraum von %s bis %s erfolgreich blockiert.': 'The period from %s to %s was successfully blocked.',
-                    'Sollen die Tage von %s bis %s wirklich freigegeben werden?': 'Are you sure you want to unblock the days from %s to %s?',
-                    'Tage erfolgreich freigegeben!': 'Days successfully unblocked!',
-                    'Keine Blockierung im ausgewählten Zeitraum gefunden.': 'No blocking found in the selected period.',
-                    'Belegte und Blockierte Tage': 'Booked and Blocked Days',
-                    'Statistiken': 'Statistics',
-                    'Anzahl Buchungen (aktiv):': 'Number of active bookings:',
-                    'Anzahl stornierter Buchungen:': 'Number of cancelled bookings:',
-                    'Durchschnittliche Aufenthaltsdauer:': 'Average stay duration:',
-                    'Auslastung im aktuellen Jahr:': 'Occupancy in current year:',
-                    'Tage': 'days',
-                    'Buchung stornieren': 'Cancel Booking',
-                    'Stornierungslink wird überprüft...': 'Cancellation link is being checked...',
-                    'Ungültiger oder bereits stornierter Buchungslink.': 'Invalid or already cancelled booking link.',
-                    'Buchungsdetails:': 'Booking Details:',
-                    'Confirm & Cancel Booking': 'Confirm & Cancel Booking',
-                    'Back to homepage': 'Back to homepage',
-                    'Soll die Buchung von %s wirklich storniert werden?': 'Are you sure you want to cancel the booking from %s?',
-                    'Ihre Buchung wurde erfolgreich storniert.': 'Your booking has been successfully cancelled.',
-                    'Fehler beim Stornieren der Buchung:': 'Error cancelling the booking:',
-                    'Buchung von %s erfolgreich storniert. Bestätigung wurde per E-Mail gesendet.': 'A booking from %s has been successfully cancelled. A confirmation has been sent by email.',
-                    'Fehler! E-Mail konnte nicht gesendet werden.': 'Error! The email could not be sent.',
-                    'Keine Buchungen zum Exportieren vorhanden.': 'No bookings available for export.',
-                    'Manuelle Buchung von %s bis %s erfolgreich hinzugefügt!': 'Manual booking from %s to %s was added successfully!',
-                    'Wohnung nicht verfügbar': 'Apartment not available',
-                    'Aktion': 'Action',
-                    'Typ': 'Type',
-                    'Buchung': 'Booking',
-                    'Stornieren': 'Cancel',
-                    'Löschen': 'Delete',
-                    'Freigeben': 'Unblock',
-                    'Erinnerung': 'Reminder',
-                    'Diese Buchung ist bereits storniert.': 'This booking is already cancelled.',
-                    'Erinnerung an Ihre bevorstehende Buchung': 'Reminder about your upcoming booking',
-                    'Erinnerungs-E-Mail erfolgreich gesendet!': 'Reminder email successfully sent!',
-                    'Fehler beim Senden der Erinnerungs-E-Mail.': 'Error sending reminder email.',
-                    'Ihre Buchung wurde storniert': 'Your booking has been cancelled',
-                    'Ja': 'Yes',
-                    'Nein': 'No',
-                    'Ein Fehler ist aufgetreten. Die Buchung konnte nicht storniert werden.': 'An error occurred. The booking could not be cancelled.',
-                    'Dieser Tag ist nicht verfügbar.': 'This day is not available.',
-                    'Buchung erfolgreich, aber E-Mail konnte nicht gesendet werden. Bitte kontaktiere den Admin.': 'Booking successful, but email could not be sent. Please contact the admin.',
-                    'Buchung wirklich stornieren?': 'Are you sure you want to cancel this booking?',
-                    'Buchung wirklich löschen?': 'Are you sure you want to delete this booking?',
-                    'Buchung erfolgreich gelöscht.': 'Booking successfully deleted.',
-                    'Blockierung wirklich entfernen?': 'Are you sure you want to remove this blocking?',
-                    'Blockierung erfolgreich entfernt.': 'Blocking successfully removed.',
-                    'Das Enddatum darf nicht vor dem Startdatum liegen.': 'The end date cannot be before the start date.',
-                    'Zeitraum': 'Period'
+                if (de && en) {
+                    el.textContent = lang === 'de' ? de : en;
                 }
-            };
+                if (dePlaceholder && enPlaceholder) {
+                    el.placeholder = lang === 'de' ? dePlaceholder : enPlaceholder;
+                }
+            });
+            updateCalendarHeaders();
+        }
 
-            function translatePage(lang) {
-                document.querySelectorAll('[data-lang-de]').forEach(el => {
-                    const deText = el.getAttribute('data-lang-de');
-                    const enText = el.getAttribute('data-lang-en');
-                    el.textContent = lang === 'de' ? deText : enText;
-                });
-                document.querySelectorAll('[data-lang-placeholder-de]').forEach(el => {
-                    const deText = el.getAttribute('data-lang-placeholder-de');
-                    const enText = el.getAttribute('data-lang-placeholder-en');
-                    el.placeholder = lang === 'de' ? deText : enText;
-                });
-                document.querySelectorAll('span[data-lang-de]').forEach(el => {
-                    const deText = el.getAttribute('data-lang-de');
-                    const enText = el.getAttribute('data-lang-en');
-                    el.textContent = lang === 'de' ? deText : enText;
-                });
-                document.querySelectorAll('option').forEach(el => {
-                    const deValue = el.getAttribute('data-lang-de');
-                    if (deValue) {
-                        const enValue = el.getAttribute('data-lang-en');
-                        el.textContent = lang === 'de' ? deValue : enValue;
+        function translate(key) {
+            return translations[currentLang][key] || key;
+        }
+
+        function formatDate(date) {
+            const d = new Date(date);
+            const year = d.getFullYear();
+            const month = (d.getMonth() + 1).toString().padStart(2, '0');
+            const day = d.getDate().toString().padStart(2, '0');
+            return `${day}.${month}.${year}`;
+        }
+
+        function getBookingStatusForDay(date, view) {
+            const dateStr = date.toISOString().split('T')[0];
+
+            const isBlocked = blockedDates.some(block => {
+                const blockStart = new Date(block.startDate);
+                const blockEnd = new Date(block.endDate);
+                return date >= blockStart && date <= blockEnd;
+            });
+            if (isBlocked) {
+                return 'blocked';
+            }
+
+            const activeBookings = bookings.filter(b => b.status === 'booked' || b.status === 'confirmed');
+            const isBooked = activeBookings.some(booking => {
+                const bookingStart = new Date(booking.startDate);
+                const bookingEnd = new Date(booking.endDate);
+                return date >= bookingStart && date < bookingEnd;
+            });
+            if (isBooked) {
+                return 'booked';
+            }
+
+            const isCancelled = cancelledBookings.some(booking => {
+                const bookingStart = new Date(booking.startDate);
+                const bookingEnd = new Date(booking.endDate);
+                return date >= bookingStart && date < bookingEnd;
+            });
+            if (isCancelled && view === 'admin') {
+                return 'cancelled';
+            }
+            return 'available';
+        }
+
+        function isDaySelectable(date, isGuestView = true) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            if (date < today) {
+                return false;
+            }
+
+            const status = getBookingStatusForDay(date, isGuestView ? 'guest' : 'admin');
+            return status === 'available';
+        }
+
+        function isRangeAvailable(start, end) {
+            const currentDate = new Date(start);
+            while (currentDate <= end) {
+                if (!isDaySelectable(currentDate)) {
+                    return false;
+                }
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+            return true;
+        }
+
+        function clearSelectedDays() {
+            const selectedDays = document.querySelectorAll('.selected');
+            selectedDays.forEach(day => day.classList.remove('selected', 'selected-first', 'selected-last'));
+            selectedStartDate = null;
+            selectedEndDate = null;
+        }
+
+        function updateSelectedDays(start, end) {
+            clearSelectedDays();
+            if (!start || !end) return;
+
+            const days = document.querySelectorAll('td');
+            let isFirst = true;
+
+            const endDateExclusive = new Date(end);
+            endDateExclusive.setDate(endDateExclusive.getDate() - 1);
+
+            days.forEach(day => {
+                if (!day.dataset.date) return;
+                const dayDate = new Date(day.dataset.date);
+                if (dayDate >= start && dayDate <= endDateExclusive) {
+                    day.classList.add('selected');
+                    if (isFirst) {
+                        day.classList.add('selected-first');
+                        isFirst = false;
                     }
-                });
-            }
-
-            document.getElementById('lang-de').addEventListener('click', () => {
-                currentLang = 'de';
-                translatePage('de');
-                if (currentView === 'friend') {
-                    if(document.getElementById('friend-area').style.display !== 'none') {
-                        renderYearlyCalendar(currentYear);
-                    }
-                } else if (currentView === 'admin') {
-                    renderYearlyCalendar(currentYear);
-                    renderAdminBookings();
-                }
-                updateBookingFormSummary();
-            });
-            document.getElementById('lang-en').addEventListener('click', () => {
-                currentLang = 'en';
-                translatePage('en');
-                if (currentView === 'friend') {
-                    if(document.getElementById('friend-area').style.display !== 'none') {
-                        renderYearlyCalendar(currentYear);
-                    }
-                } else if (currentView === 'admin') {
-                    renderYearlyCalendar(currentYear);
-                    renderAdminBookings();
-                }
-                updateBookingFormSummary();
-            });
-
-
-            function formatDate(d) {
-                const year = d.getFullYear();
-                const month = (d.getMonth() + 1).toString().padStart(2, '0');
-                const day = d.getDate().toString().padStart(2, '0');
-                return `${year}-${month}-${day}`;
-            }
-            function dateFromStr(s) {
-                if (!s) return null;
-                const [year, month, day] = s.split('-').map(Number);
-                return new Date(year, month - 1, day);
-            }
-            function checkOverlap(startA, endA, startB, endB) {
-                return !(endA < startB || startA > endB);
-            }
-            function generateCancellationId() {
-                return 'cancel_' + Math.random().toString(36).substr(2, 9);
-            }
-            function getDaysBetween(start, end) {
-                const startDate = dateFromStr(start);
-                const endDate = dateFromStr(end);
-                const diffTime = Math.abs(endDate - startDate);
-                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-                return diffDays;
-            }
-
-            function showNotification(message, isError = false) {
-                const box = document.getElementById('notification-box');
-                box.textContent = message;
-                box.className = isError ? 'error' : '';
-                box.style.display = 'block';
-                setTimeout(() => {
-                    box.style.display = 'none';
-                }, 3000);
-            }
-
-            async function fetchBookings() {
-                const snapshot = await db.collection('bookings').get();
-                const bookings = [];
-                snapshot.forEach(doc => {
-                    bookings.push({ id: doc.id, ...doc.data() });
-                });
-                return bookings;
-            }
-            async function fetchBlocks() {
-                const snapshot = await db.collection('blocks').get();
-                const blocks = [];
-                snapshot.forEach(doc => {
-                    blocks.push({ id: doc.id, ...doc.data() });
-                });
-                return blocks;
-            }
-            async function deleteBlock(blockId) {
-                await db.collection('blocks').doc(blockId).delete();
-            }
-            async function updateBookingStatus(bookingId, status) {
-                await db.collection('bookings').doc(bookingId).update({ status });
-            }
-
-            function showSection(name) {
-                Object.values(sections).forEach(sec => sec.style.display = "none");
-                sections[name].style.display = "block";
-
-                const btnToStart = document.getElementById("btn-to-start");
-                if(name !== "start") {
-                    btnToStart.style.display = "inline-block";
-                } else {
-                    btnToStart.style.display = "none";
-                }
-            }
-
-            document.getElementById("btn-show-admin-login").addEventListener('click', () => {
-                document.getElementById("admin-login-error").textContent = "";
-                document.getElementById("admin-password").value = "";
-                showSection("adminLogin");
-            });
-
-            document.getElementById("btn-to-start").addEventListener('click', () => {
-                window.location.href = window.location.origin + window.location.pathname;
-            });
-            document.getElementById("btn-return-home-from-booking").addEventListener('click', () => {
-                window.location.href = window.location.origin + window.location.pathname;
-            });
-
-            document.getElementById("friend-login-btn").addEventListener('click', () => {
-                const pw = document.getElementById("friend-password").value;
-                if(pw === FRIEND_PASSWORD) {
-                    currentView = 'friend';
-                    showSection("friendArea");
-                    resetBookingForm();
-                    renderYearlyCalendar(currentYear);
-                } else {
-                    document.getElementById("friend-login-error").textContent = translations[currentLang]['Falsches Passwort!'];
                 }
             });
 
-            document.getElementById("admin-login-btn").addEventListener('click', async () => {
-                const pw = document.getElementById("admin-password").value;
-                if(pw === ADMIN_PASSWORD) {
-                    currentView = 'admin';
-                    showSection("adminArea");
-                    renderYearlyCalendar(currentYear);
-                    renderAdminBookings();
-                    renderStats();
-                } else {
-                    document.getElementById("admin-login-error").textContent = translations[currentLang]['Falsches Admin-Passwort!'];
-                }
-            });
+            const lastSelectedDay = document.querySelector(`.calendar td[data-date="${endDateExclusive.toISOString().split('T')[0]}"]`);
+            if (lastSelectedDay) {
+                lastSelectedDay.classList.add('selected-last');
+            }
+        }
 
-            document.getElementById("btn-logout-admin").addEventListener('click', () => {
-                showSection("start");
-            });
+        function handleDayClick(dayElement, date) {
+            const dateStr = date.toISOString().split('T')[0];
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
 
-            document.getElementById("year-prev").addEventListener('click', () => {
-                if(currentYear > CAL_START_YEAR) {
-                    currentYear--;
-                    renderYearlyCalendar(currentYear);
-                }
-            });
-            document.getElementById("year-next").addEventListener('click', () => {
-                if(currentYear < CAL_END_YEAR) {
-                    currentYear++;
-                    renderYearlyCalendar(currentYear);
-                }
-            });
-            document.getElementById("admin-year-prev").addEventListener('click', () => {
-                if(currentYear > CAL_START_YEAR) {
-                    currentYear--;
-                    renderYearlyCalendar(currentYear);
-                    renderStats();
-                }
-            });
-            document.getElementById("admin-year-next").addEventListener('click', () => {
-                if(currentYear < CAL_END_YEAR) {
-                    currentYear++;
-                    renderYearlyCalendar(currentYear);
-                    renderStats();
-                }
-            });
+            const isGuestView = currentView === 'friend';
 
-            async function renderYearlyCalendar(year) {
-                const calendarContent = currentView === 'friend' ? document.getElementById("yearly-calendar-content") : document.getElementById("admin-yearly-calendar-content");
-                const yearDisplay = currentView === 'friend' ? document.getElementById("year-display") : document.getElementById("admin-year-display");
-
-                yearDisplay.textContent = year;
-                calendarContent.innerHTML = "";
-
-                const [bookings, blocks] = await Promise.all([fetchBookings(), fetchBlocks()]);
-
-                const monthNames = [
-                    "Januar","Februar","März","April","Mai","Juni",
-                    "Juli","August","September","Oktober","November","Dezember"
-                ];
-
-                for(let m=0; m<12; m++) {
-                    const firstDay = new Date(year, m, 1);
-                    const lastDay = new Date(year, m+1, 0);
-                    const daysInMonth = lastDay.getDate();
-
-                    let monthHtml = `<table class="calendar" data-month="${m}" data-year="${year}">`;
-                    monthHtml += `<thead><tr><th colspan="7">${monthNames[m]}</th></tr>`;
-                    monthHtml += `<tr><th>M</th><th>D</th><th>M</th><th>D</th><th>F</th><th>S</th><th>S</th></tr></thead><tbody><tr>`;
-
-                    const startWeekday = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
-                    for(let i=0; i<startWeekday; i++) {
-                        monthHtml += `<td class="inactive"></td>`;
-                    }
-                    for(let day=1; day<=daysInMonth; day++) {
-                        const date = new Date(year, m, day);
-                        const dateStr = formatDate(date);
-                        let classes = "";
-                        let tooltip = "";
-
-                        const bookedEntry = bookings.find(bk => bk.status === 'active' && checkOverlap(dateStr, dateStr, bk.startDate, bk.endDate));
-                        const cancelledEntry = bookings.find(bk => bk.status === 'cancelled' && checkOverlap(dateStr, dateStr, bk.startDate, bk.endDate));
-                        const blockedEntry = blocks.find(bl => checkOverlap(dateStr, dateStr, bl.startDate, bl.endDate));
-
-                        if(blockedEntry) {
-                            classes = "blocked";
-                            tooltip = translations[currentLang]['Wohnung nicht verfügbar'];
-                        } else if(bookedEntry) {
-                            classes = "booked";
-                            tooltip = bookedEntry.name;
-                        } else if(cancelledEntry && currentView === 'admin') {
-                            classes = "cancelled";
-                            tooltip = `${cancelledEntry.name} (${translations[currentLang]['Storniert']})`;
-                        }
-
-                        let cellContent = day;
-                        if (tooltip) {
-                            monthHtml += `<td class="${classes}" data-date="${dateStr}"><div class="tooltip"><span>${cellContent}</span><span class="tooltiptext">${tooltip}</span></div></td>`;
-                        } else {
-                            monthHtml += `<td class="${classes}" data-date="${dateStr}"><span>${cellContent}</span></td>`;
-                        }
-
-                        if((startWeekday + day) % 7 === 0) {
-                            monthHtml += "</tr><tr>";
-                        }
-                    }
-                    monthHtml += "</tr></tbody></table>";
-                    calendarContent.insertAdjacentHTML("beforeend", monthHtml);
-                }
-                attachDateClickHandlers();
-                updateSelectedDays();
+            if (isGuestView && date < today) {
+                return;
             }
 
-            function updateSelectedDays() {
-                const calendarSection = currentView === 'friend' ? document.getElementById("yearly-calendar-content") : document.getElementById("admin-yearly-calendar-content");
-                const allCells = calendarSection.querySelectorAll("td");
-                allCells.forEach(cell => {
-                    cell.classList.remove('selected-start', 'selected-end', 'selected-range');
-                    if(!cell.classList.contains('booked') && !cell.classList.contains('blocked') && !cell.classList.contains('inactive') && !cell.classList.contains('cancelled')) {
-                        cell.style.backgroundColor = 'white';
-                    }
-                });
+            const dayStatus = getBookingStatusForDay(date, isGuestView ? 'guest' : 'admin');
 
-                if (!selectedStartDate) {
-                    if (currentView === 'friend') {
-                        bookingForm.style.display = "none";
+            if (isGuestView && dayStatus !== 'available') {
+                selectedStartDate = date;
+                const endDate = new Date(date);
+                endDate.setDate(endDate.getDate() + 1);
+                selectedEndDate = endDate;
+                document.getElementById('waitlist-summary-text').textContent = `${translate('Buchung von')} ${formatDate(selectedStartDate)} ${translate('bis')} ${formatDate(selectedEndDate)}`;
+                document.getElementById('waitlist-form').style.display = 'block';
+                document.getElementById('booking-form').style.display = 'none';
+                clearSelectedDays();
+                return;
+            }
+
+            if (!selectedStartDate) {
+                selectedStartDate = date;
+                selectedEndDate = new Date(date);
+                selectedEndDate.setDate(selectedEndDate.getDate() + 1);
+            } else {
+                const newDate = date;
+                const start = new Date(Math.min(selectedStartDate.getTime(), newDate.getTime()));
+                const end = new Date(Math.max(selectedStartDate.getTime(), newDate.getTime()));
+                end.setDate(end.getDate() + 1);
+
+                selectedStartDate = start;
+                selectedEndDate = end;
+
+                const rangeDays = (selectedEndDate.getTime() - selectedStartDate.getTime()) / (1000 * 3600 * 24);
+
+                if (rangeDays < 1) {
+                    showNotification(translate('Der ausgewählte Zeitraum muss mindestens eine Übernachtung enthalten.'), true);
+                    clearSelectedDays();
+                    return;
+                }
+                if (rangeDays > 14 && isGuestView) {
+                    showNotification(translate('Der ausgewählte Zeitraum überschreitet die maximal erlaubte Länge von 14 Tagen.'), true);
+                    clearSelectedDays();
+                    return;
+                }
+
+                if (!isRangeAvailable(selectedStartDate, new Date(selectedEndDate.getTime() - 1))) {
+                    if (isGuestView) {
+                         document.getElementById('waitlist-summary-text').textContent = `${translate('Buchung von')} ${formatDate(selectedStartDate)} ${translate('bis')} ${formatDate(selectedEndDate)}`;
+                        document.getElementById('waitlist-form').style.display = 'block';
+                        document.getElementById('booking-form').style.display = 'none';
+                        clearSelectedDays();
+                        return;
                     } else {
-                        document.getElementById('admin-booking-form-container').style.display = 'none';
+                        showNotification(translate('Der ausgewählte Zeitraum ist nicht vollständig verfügbar.'), true);
+                        clearSelectedDays();
+                        return;
                     }
-                    return;
                 }
 
-                const sDate = dateFromStr(formatDate(selectedStartDate));
-                let eDate = selectedEndDate ? dateFromStr(formatDate(selectedEndDate)) : sDate;
-
-                const start = sDate <= eDate ? sDate : eDate;
-                const end = sDate <= eDate ? eDate : sDate;
-                
-                if (currentView === 'friend' && selectedStartDate && selectedEndDate) {
-                    showBookingForm();
-                } else if (currentView === 'admin' && selectedStartDate && selectedEndDate) {
-                    showAdminBookingForm();
-                }
-                
-                let currentDate = new Date(start);
-                while (currentDate <= end) {
-                    const dateStr = formatDate(currentDate);
-                    const cell = calendarSection.querySelector(`td[data-date="${dateStr}"]`);
-                    if (cell) {
-                        cell.style.backgroundColor = '#81c784';
-                        if (formatDate(currentDate) === formatDate(start)) {
-                            cell.classList.add('selected-start');
-                        } else if (formatDate(currentDate) === formatDate(end)) {
-                            cell.classList.add('selected-end');
-                        } else {
-                            cell.classList.add('selected-range');
-                        }
-                    }
-                    currentDate.setDate(currentDate.getDate() + 1);
+                if (isGuestView) {
+                    document.getElementById('book-start-date').value = selectedStartDate.toISOString().split('T')[0];
+                    document.getElementById('book-end-date').value = selectedEndDate.toISOString().split('T')[0];
+                    document.getElementById('booking-summary-text').textContent = `${translate('Buchung von')} ${formatDate(selectedStartDate)} ${translate('bis')} ${formatDate(selectedEndDate)}`;
+                    document.getElementById('booking-form').style.display = 'block';
+                    document.getElementById('waitlist-form').style.display = 'none';
                 }
             }
+            updateSelectedDays(selectedStartDate, selectedEndDate);
 
-            function attachDateClickHandlers() {
-                const calendarSection = currentView === 'friend' ? document.getElementById("yearly-calendar-content") : document.getElementById("admin-yearly-calendar-content");
-                const cells = calendarSection.querySelectorAll("td:not(.inactive)");
+            if (!isGuestView) {
+                document.getElementById('admin-booking-form-container').style.display = 'block';
+                document.getElementById('admin-book-start-date').value = selectedStartDate.toISOString().split('T')[0];
+                document.getElementById('admin-book-end-date').value = selectedEndDate.toISOString().split('T')[0];
+            }
+        }
 
-                cells.forEach(cell => {
-                    cell.style.cursor = "pointer";
-                    cell.addEventListener('click', async (e) => {
-                        const clickedCell = e.target.closest('td');
-                        if (!clickedCell) return;
 
-                        const dateStr = clickedCell.getAttribute("data-date");
-                        const date = dateFromStr(dateStr);
-                        
-                        if(clickedCell.classList.contains('booked') || clickedCell.classList.contains('blocked')) {
-                            selectedStartDate = null;
-                            selectedEndDate = null;
-                            updateSelectedDays();
-                            showNotification(translations[currentLang]['Dieser Tag ist nicht verfügbar.'], true);
-                            return;
-                        }
+        function renderDay(cell, date, bookingsForMonth, is_admin) {
+            cell.dataset.date = date.toISOString().split('T')[0];
+            cell.classList.remove('inactive', 'booked', 'blocked', 'cancelled', 'half-booked-am', 'half-booked-pm', 'half-blocked-am', 'half-blocked-pm');
 
-                        if(!selectedStartDate || (selectedStartDate && selectedEndDate)) {
-                            selectedStartDate = date;
-                            selectedEndDate = null;
-                        } else {
-                            const tempStart = selectedStartDate;
-                            const tempEnd = date;
-                            
-                            const [bookings, blocks] = await Promise.all([fetchBookings(), fetchBlocks()]);
-                            
-                            const rangeStart = tempStart <= tempEnd ? tempStart : tempEnd;
-                            const rangeEnd = tempStart <= tempEnd ? tempEnd : tempStart;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
 
-                            let isSelectionValid = true;
-                            let tempDate = new Date(rangeStart);
-                            while (tempDate <= rangeEnd) {
-                                const dayStr = formatDate(tempDate);
-                                if(bookings.some(b => b.status === 'active' && checkOverlap(dayStr, dayStr, b.startDate, b.endDate)) ||
-                                   blocks.some(b => checkOverlap(dayStr, dayStr, b.startDate, b.endDate))) {
-                                    isSelectionValid = false;
-                                    break;
-                                }
-                                tempDate.setDate(tempDate.getDate() + 1);
-                            }
+            if (date.getMonth() !== bookingsForMonth[0].getMonth() || (!is_admin && date < today)) {
+                cell.classList.add('inactive');
+                return;
+            }
 
-                            if (!isSelectionValid) {
-                                showNotification(translations[currentLang]['Der ausgewählte Zeitraum überschneidet sich mit einer bestehenden Buchung.'], true);
-                                selectedStartDate = null;
-                                selectedEndDate = null;
-                                updateSelectedDays();
-                                return;
-                            }
-                            selectedEndDate = date;
-                        }
-                        updateSelectedDays();
+            const status = getBookingStatusForDay(date, is_admin ? 'admin' : 'guest');
+            if (status !== 'available') {
+                cell.classList.add(status);
+                if (!is_admin) {
+                     cell.classList.add('tooltip');
+                     const tooltip = document.createElement('span');
+                     tooltip.className = 'tooltiptext';
+                     tooltip.textContent = translate('Gebuchte Tage');
+                     cell.appendChild(tooltip);
+                } else if (is_admin && status === 'booked') {
+                    const booking = bookings.find(b => {
+                        const b_start = new Date(b.startDate);
+                        const b_end = new Date(b.endDate);
+                        return date >= b_start && date < b_end && (b.status === 'booked' || b.status === 'confirmed');
                     });
-                });
-            }
-
-            const bookingForm = document.getElementById("booking-form");
-            const bookStartInput = document.getElementById("book-start-date");
-            const bookEndInput = document.getElementById("book-end-date");
-            const bookingError = document.getElementById("booking-error");
-            const bookingSuccess = document.getElementById("booking-success");
-            const bookingSummaryText = document.getElementById("booking-summary-text");
-
-            function updateBookingFormSummary() {
-                if (selectedStartDate && selectedEndDate) {
-                    const start = formatDate(selectedStartDate);
-                    const end = formatDate(selectedEndDate);
-                    bookingSummaryText.textContent = `${translations[currentLang]['Buchung von']} ${start} ${translations[currentLang]['bis']} ${end}`;
-                } else {
-                    bookingSummaryText.textContent = '';
-                }
-            }
-
-            function showBookingForm() {
-                if(!selectedStartDate || !selectedEndDate) {
-                    bookingForm.style.display = "none";
-                    return;
-                }
-                bookStartInput.value = formatDate(selectedStartDate);
-                bookEndInput.value = formatDate(selectedEndDate);
-                bookingError.textContent = "";
-                bookingForm.style.display = "block";
-                updateBookingFormSummary();
-                bookingForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                document.getElementById("book-name").focus();
-            }
-            function resetBookingForm() {
-                selectedStartDate = null;
-                selectedEndDate = null;
-                updateSelectedDays();
-                bookingForm.style.display = "none";
-                bookingSuccess.style.display = "none";
-                bookingError.textContent = "";
-                bookingForm.reset && bookingForm.reset();
-            }
-
-            document.getElementById("btn-cancel-booking-form").addEventListener('click', () => {
-                resetBookingForm();
-            });
-
-            document.getElementById("btn-new-booking").addEventListener('click', () => {
-                resetBookingForm();
-                renderYearlyCalendar(currentYear);
-            });
-
-            bookingForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const name = document.getElementById("book-name").value.trim();
-                const email = document.getElementById("book-email").value.trim();
-                const persons = parseInt(document.getElementById("book-persons").value);
-                const breakfast = document.getElementById("book-breakfast").value;
-                const parking = document.getElementById("book-parking").checked;
-                const arrival = document.getElementById("book-arrival-time").value || null;
-                const departure = document.getElementById("book-departure-time").value || null;
-                const comment = document.getElementById("book-comment").value.trim();
-                const startDate = bookStartInput.value;
-                const endDate = bookEndInput.value;
-
-                bookingError.textContent = "";
-
-                if(!name) { bookingError.textContent = translations[currentLang]['Bitte einen Namen eingeben.']; return; }
-                if(!email) { bookingError.textContent = translations[currentLang]['Bitte eine gültige E-Mail-Adresse eingeben.']; return; }
-                if(!persons || persons < 1 || persons > 3) { bookingError.textContent = translations[currentLang]['Bitte gültige Anzahl Personen eingeben (max. 3).']; return; }
-                if(!startDate || !endDate) { bookingError.textContent = translations[currentLang]['Bitte gültige Start- und Enddaten eingeben.']; return; }
-                if(endDate < startDate) { bookingError.textContent = translations[currentLang]['Enddatum darf nicht vor Startdatum liegen.']; return; }
-
-                const bookings = await fetchBookings();
-                const blocks = await fetchBlocks();
-
-                const rangeStart = dateFromStr(startDate);
-                const rangeEnd = dateFromStr(endDate);
-                let day = new Date(rangeStart);
-                while (day <= rangeEnd) {
-                    const dayStr = formatDate(day);
-                    if (blocks.some(b => checkOverlap(dayStr, dayStr, b.startDate, b.endDate))) {
-                        bookingError.textContent = translations[currentLang]['Der ausgewählte Zeitraum überschneidet sich mit einem blockierten Zeitraum.'];
-                        return;
-                    }
-                    if (bookings.some(b => b.status === 'active' && checkOverlap(dayStr, dayStr, b.startDate, b.endDate))) {
-                        bookingError.textContent = translations[currentLang]['Der ausgewählte Zeitraum überschneidet sich mit einer bestehenden Buchung.'];
-                        return;
-                    }
-                    day.setDate(day.getDate() + 1);
-                }
-
-                const newBooking = {
-                    name,
-                    email,
-                    persons,
-                    breakfast,
-                    parking,
-                    arrivalTime: arrival,
-                    departureTime: departure,
-                    comment: comment,
-                    startDate,
-                    endDate,
-                    cancellationId: generateCancellationId(),
-                    status: 'active'
-                };
-
-                try {
-                    await db.collection('bookings').add(newBooking);
-                    
-                    bookingForm.style.display = "none";
-                    bookingSuccess.style.display = "block";
-                    document.getElementById('success-details').innerHTML = `
-                        <p><strong>${translations[currentLang]['Name']}:</strong> ${newBooking.name}</p>
-                        <p><strong>${translations[currentLang]['E-Mail']}:</strong> ${newBooking.email}</p>
-                        <p><strong>${translations[currentLang]['Startdatum']}:</strong> ${newBooking.startDate}</p>
-                        <p><strong>${translations[currentLang]['Enddatum']}:</strong> ${newBooking.endDate}</p>
-                        <p><strong>${translations[currentLang]['Anzahl Personen * (max. 3)']}:</strong> ${newBooking.persons}</p>
-                        <p><strong>${translations[currentLang]['Frühstück benötigt? *']}:</strong> ${newBooking.breakfast}</p>
-                        <p><strong>${translations[currentLang]['Parkplatz benötigt?']}:</strong> ${newBooking.parking ? translations[currentLang]['Ja'] : translations[currentLang]['Nein']}</p>
-                        <p><strong>${translations[currentLang]['Bemerkungen (optional, max. 200 Zeichen)']}:</strong> ${newBooking.comment || '-'}</p>
-                    `;
-                    bookingSuccess.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-                    selectedStartDate = null;
-                    selectedEndDate = null;
-                    renderYearlyCalendar(currentYear);
-                    bookingForm.reset();
-
-                    try {
-                        const cancellationLink = `${window.location.origin}${window.location.pathname}?cancelId=${newBooking.cancellationId}`;
-                        const templateParams = {
-                            from_name: newBooking.name,
-                            to_email: newBooking.email,
-                            admin_email: ADMIN_EMAIL,
-                            start_date: newBooking.startDate,
-                            end_date: newBooking.endDate,
-                            persons: newBooking.persons,
-                            cancellation_link: cancellationLink,
-                            breakfast: newBooking.breakfast,
-                            parking: newBooking.parking ? 'Ja' : 'Nein',
-                            arrival_time: newBooking.arrivalTime,
-                            departure_time: newBooking.departureTime,
-                            comment: newBooking.comment,
-                            _subject: translations[currentLang]['Buchung von'] + ' ' + newBooking.name
+                    if (booking) {
+                        cell.classList.add('tooltip');
+                        const tooltip = document.createElement('span');
+                        tooltip.className = 'tooltiptext';
+                        tooltip.textContent = `${booking.name} (${formatDate(date)})`;
+                        cell.appendChild(tooltip);
+                        cell.onclick = (e) => {
+                            e.stopPropagation();
+                            showEditForm(booking);
                         };
-                        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_BOOKING, templateParams, EMAILJS_PUBLIC_KEY);
-                    } catch (emailError) {
-                        console.error("Fehler beim Senden der E-Mail:", emailError);
-                        showNotification(translations[currentLang]['Buchung erfolgreich, aber E-Mail konnte nicht gesendet werden. Bitte kontaktiere den Admin.'], true);
                     }
-                } catch (error) {
-                    console.error("Fehler beim Hinzufügen der Buchung:", error);
-                    bookingError.textContent = translations[currentLang]['Ein Fehler ist aufgetreten. Die Buchung konnte nicht hinzugefügt werden.'];
+                } else if (is_admin && status === 'blocked') {
+                    cell.classList.add('tooltip');
+                    const tooltip = document.createElement('span');
+                    tooltip.className = 'tooltiptext';
+                    tooltip.textContent = translate('Blockierte Tage');
+                    cell.appendChild(tooltip);
+                } else if (is_admin && status === 'cancelled') {
+                    cell.classList.add('tooltip');
+                    const tooltip = document.createElement('span');
+                    tooltip.className = 'tooltiptext';
+                    tooltip.textContent = translate('Storniert');
+                    cell.appendChild(tooltip);
                 }
-            });
-
-
-            const adminBookingsList = document.getElementById("admin-bookings-list");
-            const adminBookingFormContainer = document.getElementById('admin-booking-form-container');
-
-            function showAdminBookingForm() {
-                if(!selectedStartDate || !selectedEndDate) return;
-                document.getElementById('admin-book-start-date').value = formatDate(selectedStartDate);
-                document.getElementById('admin-book-end-date').value = formatDate(selectedEndDate);
-                adminBookingFormContainer.style.display = 'block';
-                adminBookingFormContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }
-
-            document.getElementById('admin-booking-form').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const name = document.getElementById("admin-book-name").value.trim();
-                const email = document.getElementById("admin-book-email").value.trim();
-                const startDate = document.getElementById("admin-book-start-date").value;
-                const endDate = document.getElementById("admin-book-end-date").value;
-
-                if (!name) { showNotification(translations[currentLang]['Bitte einen Namen eingeben.'], true); return; }
-                if (!email) { showNotification(translations[currentLang]['Bitte eine gültige E-Mail-Adresse eingeben.'], true); return; }
-                if (endDate < startDate) { showNotification(translations[currentLang]['Das Enddatum darf nicht vor dem Startdatum liegen.'], true); return; }
-
-                const newBooking = {
-                    name,
-                    email,
-                    startDate,
-                    endDate,
-                    cancellationId: generateCancellationId(),
-                    status: 'active'
+            } else {
+                cell.onclick = (e) => {
+                    e.stopPropagation();
+                    handleDayClick(cell, date);
                 };
-                await db.collection('bookings').add(newBooking);
-                showNotification(translations[currentLang]['Manuelle Buchung von %s bis %s erfolgreich hinzugefügt!'].replace('%s', startDate).replace('%s', endDate));
-                adminBookingFormContainer.style.display = 'none';
-                document.getElementById('admin-booking-form').reset();
-                selectedStartDate = null;
-                selectedEndDate = null;
-                renderYearlyCalendar(currentYear);
-                renderAdminBookings();
-                renderStats();
+            }
+        }
+
+        function renderCalendar(targetId, date, bookingsForMonth, is_admin) {
+            const calendarEl = document.getElementById(targetId);
+            calendarEl.innerHTML = '';
+            const monthNames = [
+                "Januar", "Februar", "März", "April", "Mai", "Juni",
+                "Juli", "August", "September", "Oktober", "November", "Dezember"
+            ];
+            const month = date.getMonth();
+            const year = date.getFullYear();
+
+            const monthContainer = document.createElement('div');
+            monthContainer.className = 'calendar-month';
+            const h3 = document.createElement('h3');
+            h3.textContent = `${monthNames[month]} ${year}`;
+            monthContainer.appendChild(h3);
+
+            const table = document.createElement('table');
+            table.className = 'calendar';
+            const thead = document.createElement('thead');
+            const tbody = document.createElement('tbody');
+
+            const headerRow = document.createElement('tr');
+            weekdays.forEach(day => {
+                const th = document.createElement('th');
+                th.textContent = day;
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+
+            const firstDayOfMonth = new Date(year, month, 1);
+            const startingDay = firstDayOfMonth.getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            let day = 1;
+            for (let i = 0; i < 6; i++) {
+                const row = document.createElement('tr');
+                for (let j = 0; j < 7; j++) {
+                    const cell = document.createElement('td');
+                    if (i === 0 && j < startingDay) {
+                        cell.classList.add('inactive');
+                    } else if (day > daysInMonth) {
+                        cell.classList.add('inactive');
+                    } else {
+                        const cellDate = new Date(year, month, day);
+                        cell.textContent = day;
+                        renderDay(cell, cellDate, bookingsForMonth, is_admin);
+                        day++;
+                    }
+                    row.appendChild(cell);
+                }
+                tbody.appendChild(row);
+                if (day > daysInMonth) break;
+            }
+            table.appendChild(tbody);
+            monthContainer.appendChild(table);
+            calendarEl.appendChild(monthContainer);
+        }
+
+        function renderYearlyCalendar(targetId, year, is_admin) {
+            const yearlyCalendarEl = document.getElementById(targetId);
+            yearlyCalendarEl.innerHTML = '';
+            for (let i = 0; i < 12; i++) {
+                const date = new Date(year, i, 1);
+                renderCalendar(targetId, date, bookings, is_admin);
+            }
+            updateSelectedDays(selectedStartDate, selectedEndDate);
+        }
+
+        function updateCalendarHeaders() {
+            document.getElementById('year-display').textContent = currentYear;
+            document.getElementById('admin-year-display').textContent = currentYear;
+        }
+
+        function fetchDataAndRender() {
+            Promise.all([
+                db.collection('bookings').get(),
+                db.collection('blocked').get(),
+                db.collection('waitlist').get()
+            ]).then(([bookingSnapshot, blockedSnapshot, waitlistSnapshot]) => {
+                bookings = bookingSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                blockedDates = blockedSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                waitlist = waitlistSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                cancelledBookings = bookings.filter(b => b.status === 'cancelled');
+
+                if (currentView === 'friend') {
+                    renderYearlyCalendar('yearly-calendar-content', currentYear, false);
+                } else if (currentView === 'admin') {
+                    renderYearlyCalendar('admin-yearly-calendar-content', currentYear, true);
+                    renderBookingsList();
+                    renderWaitlist();
+                    updateStats();
+                }
+            }).catch(error => {
+                console.error("Error fetching data: ", error);
+                showNotification(translate('Ein Fehler ist aufgetreten'), true);
+            });
+        }
+
+
+        function startApp() {
+            const today = new Date();
+            currentYear = today.getFullYear();
+            const urlParams = new URLSearchParams(window.location.search);
+            const cancelId = urlParams.get('cancel');
+
+            if (cancelId) {
+                showSection('cancel');
+                handleCancellation(cancelId);
+            } else {
+                showSection('start');
+            }
+            updateLanguage(currentLang);
+        }
+
+        document.getElementById('friend-login-btn').addEventListener('click', () => {
+            const password = document.getElementById('friend-password').value;
+            if (password === FRIEND_PASSWORD) {
+                currentView = 'friend';
+                showSection('friendArea');
+                fetchDataAndRender();
+                document.getElementById('btn-to-start').style.display = 'block';
+            } else {
+                document.getElementById('friend-login-error').textContent = translate('Falsches Passwort!');
+            }
+        });
+
+        document.getElementById('admin-login-btn').addEventListener('click', () => {
+            const password = document.getElementById('admin-password').value;
+            if (password === ADMIN_PASSWORD) {
+                currentView = 'admin';
+                showSection('adminArea');
+                fetchDataAndRender();
+                document.getElementById('btn-to-start').style.display = 'block';
+            } else {
+                document.getElementById('admin-login-error').textContent = translate('Falsches Passwort!');
+            }
+        });
+
+        document.getElementById('btn-show-admin-login').addEventListener('click', () => {
+            showSection('adminLogin');
+            document.getElementById('btn-to-start').style.display = 'block';
+            document.getElementById('admin-password').value = '';
+            document.getElementById('admin-login-error').textContent = '';
+        });
+
+        document.getElementById('btn-to-start').addEventListener('click', () => {
+            showSection('start');
+            document.getElementById('btn-to-start').style.display = 'none';
+            document.getElementById('friend-password').value = '';
+            document.getElementById('friend-login-error').textContent = '';
+            clearSelectedDays();
+        });
+
+        document.getElementById('year-prev').addEventListener('click', () => {
+            currentYear--;
+            fetchDataAndRender();
+        });
+
+        document.getElementById('year-next').addEventListener('click', () => {
+            currentYear++;
+            fetchDataAndRender();
+        });
+
+        document.getElementById('admin-year-prev').addEventListener('click', () => {
+            currentYear--;
+            fetchDataAndRender();
+        });
+
+        document.getElementById('admin-year-next').addEventListener('click', () => {
+            currentYear++;
+            fetchDataAndRender();
+        });
+
+        document.getElementById('booking-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = document.getElementById('book-name').value;
+            const email = document.getElementById('book-email').value;
+            const phone = document.getElementById('book-phone').value;
+            const persons = document.getElementById('book-persons').value;
+            const startDate = document.getElementById('book-start-date').value;
+            const endDate = document.getElementById('book-end-date').value;
+            const breakfast = document.getElementById('book-breakfast').value;
+            const arrivalTime = document.getElementById('book-arrival-time').value;
+            const departureTime = document.getElementById('book-departure-time').value;
+            const comment = document.getElementById('book-comment').value;
+            const parking = document.getElementById('book-parking').checked;
+
+            if (!name || !email || !phone || !persons || !startDate || !endDate) {
+                document.getElementById('booking-error').textContent = translate('Bitte füllen Sie alle erforderlichen Felder aus.');
+                return;
+            }
+
+            const bookingData = {
+                name,
+                email,
+                phone,
+                persons: parseInt(persons, 10),
+                startDate,
+                endDate,
+                breakfast,
+                arrivalTime,
+                departureTime,
+                comment,
+                parking,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                status: 'booked'
+            };
+
+            db.collection('bookings').add(bookingData)
+                .then((docRef) => {
+                    sendBookingEmail(bookingData, docRef.id);
+                    document.getElementById('booking-success').style.display = 'block';
+                    document.getElementById('booking-form').style.display = 'none';
+                    clearSelectedDays();
+                    fetchDataAndRender();
+                })
+                .catch((error) => {
+                    console.error("Error adding document: ", error);
+                    showNotification(translate('Fehler beim Eintragen der Buchung.'), true);
+                });
+        });
+
+        document.getElementById('btn-cancel-booking-form').addEventListener('click', (e) => {
+             e.preventDefault();
+             document.getElementById('booking-form').style.display = 'none';
+             clearSelectedDays();
+        });
+
+        document.getElementById('waitlist-request-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = document.getElementById('waitlist-name').value;
+            const email = document.getElementById('waitlist-email').value;
+            if (!name || !email) {
+                 document.getElementById('waitlist-error').textContent = translate('Bitte füllen Sie alle erforderlichen Felder aus.');
+                return;
+            }
+             const waitlistData = {
+                name,
+                email,
+                startDate: selectedStartDate.toISOString().split('T')[0],
+                endDate: selectedEndDate.toISOString().split('T')[0],
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+            db.collection('waitlist').add(waitlistData)
+                 .then(() => {
+                    showNotification(translate('Wartelistenanfrage erfolgreich gesendet!'));
+                    document.getElementById('waitlist-form').style.display = 'none';
+                    document.getElementById('waitlist-request-form').reset();
+                })
+                .catch((error) => {
+                    console.error("Error adding to waitlist: ", error);
+                    showNotification(translate('Wartelistenanfrage konnte nicht gesendet werden.'), true);
+                });
+        });
+
+        document.getElementById('btn-cancel-waitlist-form').addEventListener('click', (e) => {
+            e.preventDefault();
+            document.getElementById('waitlist-form').style.display = 'none';
+            clearSelectedDays();
+        });
+
+        function sendBookingEmail(booking, id) {
+            const templateParams = {
+                to_email: booking.email,
+                from_name: 'Deine Gastgeber',
+                to_name: booking.name,
+                startDate: formatDate(new Date(booking.startDate)),
+                endDate: formatDate(new Date(booking.endDate)),
+                cancellation_link: `${window.location.origin}${window.location.pathname}?cancel=${id}`,
+                persons: booking.persons,
+                breakfast: booking.breakfast,
+                comment: booking.comment || 'Keine Bemerkungen',
+                phone: booking.phone
+            };
+            emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_BOOKING, templateParams, EMAILJS_PUBLIC_KEY)
+                .then(() => {
+                    console.log('Email sent successfully!');
+                }, (error) => {
+                    console.error('Email sending failed:', error);
+                });
+        }
+
+        document.getElementById('btn-download-ical').addEventListener('click', () => {
+            const booking = {
+                 name: document.getElementById('book-name').value,
+                 startDate: document.getElementById('book-start-date').value,
+                 endDate: document.getElementById('book-end-date').value,
+                 comment: document.getElementById('book-comment').value
+            };
+            createAndDownloadIcal(booking);
+        });
+
+        function createAndDownloadIcal(booking) {
+            const calendar = ical();
+            const event = calendar.createEvent({
+                start: new Date(booking.startDate),
+                end: new Date(booking.endDate),
+                summary: `Buchung von ${booking.name}`,
+                description: booking.comment,
+                location: 'Offenbach, Deutschland'
             });
 
-            document.getElementById('btn-cancel-admin-form').addEventListener('click', () => {
-                adminBookingFormContainer.style.display = 'none';
-                document.getElementById('admin-booking-form').reset();
-                selectedStartDate = null;
-                selectedEndDate = null;
-                updateSelectedDays();
-            });
+            const link = document.createElement('a');
+            link.href = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(calendar.toString());
+            link.download = `Buchung_Offenbach_${booking.startDate}.ics`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
 
-            async function renderAdminBookings() {
-                const bookings = await fetchBookings();
-                const blocks = await fetchBlocks();
+        document.getElementById('btn-new-booking').addEventListener('click', () => {
+            document.getElementById('booking-success').style.display = 'none';
+            document.getElementById('friend-password').value = '';
+            document.getElementById('friend-login-btn').click();
+        });
 
-                const bookingTableHeaders = [
-                    translations[currentLang]['Typ'],
-                    translations[currentLang]['Name'],
-                    translations[currentLang]['E-Mail'],
-                    translations[currentLang]['Bemerkungen'],
-                    translations[currentLang]['Startdatum'],
-                    translations[currentLang]['Enddatum'],
-                    translations[currentLang]['Aktion']
-                ];
+        document.getElementById('btn-return-home-from-booking').addEventListener('click', () => {
+            showSection('start');
+            document.getElementById('booking-success').style.display = 'none';
+            document.getElementById('btn-to-start').style.display = 'none';
+        });
 
-                let html = `<table><thead><tr><th>${bookingTableHeaders.join('</th><th>')}</th></tr></thead><tbody>`;
+        function handleCancellation(cancelId) {
+            const cancelStatusText = document.getElementById('cancel-status-text');
+            const cancelDetails = document.getElementById('cancel-details');
+            const cancelButtons = document.getElementById('cancel-buttons');
 
-                bookings.sort((a,b) => new Date(a.startDate) - new Date(b.startDate));
-                blocks.sort((a,b) => new Date(a.startDate) - new Date(b.startDate));
-
-                const combinedList = [...bookings.map(b => ({ ...b, type: 'booking' })), ...blocks.map(b => ({ ...b, type: 'block' }))]
-                    .sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
-
-                combinedList.forEach(item => {
-                    let typeText;
-                    let actionBtn;
-
-                    if (item.type === 'booking') {
-                        typeText = item.status === 'active' ? translations[currentLang]['Buchung'] : translations[currentLang]['Storniert'];
-                        if (item.status === 'active') {
-                            actionBtn = `<button class="btn-cancel-booking" data-id="${item.id}" style="background-color: #f44336; padding:5px 10px;">${translations[currentLang]['Stornieren']}</button>
-                                         <button class="btn-send-reminder" data-id="${item.id}" style="background-color: #3f51b5; padding:5px 10px;">${translations[currentLang]['Erinnerung']}</button>`;
-                        } else {
-                            actionBtn = `<button class="btn-delete-booking" data-id="${item.id}" style="background-color: #757575; padding:5px 10px;">${translations[currentLang]['Löschen']}</button>`;
-                        }
-                    } else if (item.type === 'block') {
-                        typeText = translations[currentLang]['Blockiert'];
-                        actionBtn = `<button class="btn-delete-block" data-id="${item.id}" style="background-color: #757575; padding:5px 10px;">${translations[currentLang]['Freigeben']}</button>`;
+            db.collection('bookings').doc(cancelId).get()
+                .then(doc => {
+                    if (!doc.exists) {
+                        cancelStatusText.textContent = translate('Buchung nicht gefunden oder bereits storniert.');
+                        cancelButtons.style.display = 'none';
+                    } else {
+                        const bookingData = doc.data();
+                        cancelStatusText.textContent = translate('Möchten Sie diese Buchung wirklich stornieren?');
+                        cancelDetails.innerHTML = `
+                            <p><strong>${translate('Name')}:</strong> ${bookingData.name}</p>
+                            <p><strong>${translate('E-Mail')}:</strong> ${bookingData.email}</p>
+                            <p><strong>${translate('Zeitraum')}:</strong> ${formatDate(new Date(bookingData.startDate))} - ${formatDate(new Date(bookingData.endDate))}</p>
+                        `;
+                        document.getElementById('btn-confirm-cancellation').dataset.id = cancelId;
+                        cancelButtons.style.display = 'block';
                     }
+                })
+                .catch(error => {
+                    console.error("Error getting document:", error);
+                    cancelStatusText.textContent = translate('Ein Fehler ist aufgetreten');
+                    cancelButtons.style.display = 'none';
+                });
+        }
 
-                    html += `<tr>
-                        <td>${typeText}</td>
-                        <td>${item.name || '-'}</td>
-                        <td>${item.email || '-'}</td>
-                        <td>${item.comment || '-'}</td>
-                        <td>${item.startDate}</td>
-                        <td>${item.endDate}</td>
-                        <td>${actionBtn}</td>
-                    </tr>`;
+        document.getElementById('btn-confirm-cancellation').addEventListener('click', (e) => {
+            const id = e.target.dataset.id;
+            db.collection('bookings').doc(id).update({
+                status: 'cancelled',
+                cancellationDate: firebase.firestore.FieldValue.serverTimestamp()
+            })
+                .then(() => {
+                    showNotification(translate('Ihre Buchung wurde erfolgreich storniert.'));
+                    document.getElementById('cancel-status-text').textContent = translate('Ihre Buchung wurde erfolgreich storniert.');
+                    document.getElementById('cancel-buttons').style.display = 'none';
+                })
+                .catch(error => {
+                    console.error("Error updating document:", error);
+                    showNotification(translate('Ein Fehler ist aufgetreten'), true);
                 });
+        });
 
-                html += "</tbody></table>";
-                adminBookingsList.innerHTML = html;
+        document.getElementById('btn-return-home').addEventListener('click', () => {
+            window.location.href = window.location.origin + window.location.pathname;
+        });
 
-                document.querySelectorAll(".btn-cancel-booking").forEach(btn => {
-                    btn.addEventListener('click', async () => {
-                        if(confirm(translations[currentLang]['Buchung wirklich stornieren?'])) {
-                            const id = btn.getAttribute("data-id");
-                            const bookingToCancel = bookings.find(b => b.id === id);
-                            if (bookingToCancel) {
-                                await cancelBookingWithNotification(bookingToCancel, true);
-                            }
-                        }
-                    });
-                });
-                document.querySelectorAll(".btn-delete-booking").forEach(btn => {
-                    btn.addEventListener('click', async () => {
-                        if(confirm(translations[currentLang]['Buchung wirklich löschen?'])) {
-                            const id = btn.getAttribute("data-id");
-                            await db.collection('bookings').doc(id).delete();
-                            showNotification(translations[currentLang]['Buchung erfolgreich gelöscht.']);
-                            renderAdminBookings();
-                            renderYearlyCalendar(currentYear);
-                            renderStats();
-                        }
-                    });
-                });
-                document.querySelectorAll(".btn-delete-block").forEach(btn => {
-                    btn.addEventListener('click', async () => {
-                        if(confirm(translations[currentLang]['Blockierung wirklich entfernen?'])) {
-                            const id = btn.getAttribute("data-id");
-                            await deleteBlock(id);
-                            showNotification(translations[currentLang]['Blockierung erfolgreich entfernt.']);
-                            renderAdminBookings();
-                            renderYearlyCalendar(currentYear);
-                            renderStats();
-                        }
-                    });
-                });
-                document.querySelectorAll(".btn-send-reminder").forEach(btn => {
-                    btn.addEventListener('click', async () => {
-                        const id = btn.getAttribute("data-id");
-                        const booking = bookings.find(b => b.id === id);
-                        if (booking) {
-                            if (booking.status === 'cancelled') {
-                                showNotification(translations[currentLang]['Diese Buchung ist bereits storniert.'], true);
-                                return;
-                            }
-                            try {
-                                const templateParams = {
-                                    from_name: 'Admin',
-                                    to_email: booking.email,
-                                    admin_email: ADMIN_EMAIL,
-                                    start_date: booking.startDate,
-                                    end_date: booking.endDate,
-                                    _subject: translations[currentLang]['Erinnerung an Ihre bevorstehende Buchung']
-                                };
-                                await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_REMINDER, templateParams, EMAILJS_PUBLIC_KEY);
-                                showNotification(translations[currentLang]['Erinnerungs-E-Mail erfolgreich gesendet!']);
-                            } catch (error) {
-                                console.error("Fehler beim Senden der Erinnerungs-E-Mail:", error);
-                                showNotification(translations[currentLang]['Fehler beim Senden der Erinnerungs-E-Mail.'], true);
-                            }
-                        }
-                    });
-                });
+        document.getElementById('btn-logout-admin').addEventListener('click', () => {
+            currentView = 'start';
+            showSection('start');
+            document.getElementById('btn-to-start').style.display = 'none';
+        });
+
+        document.getElementById('btn-block-selected').addEventListener('click', () => {
+            if (!selectedStartDate || !selectedEndDate) {
+                showNotification(translate('Bitte wählen Sie zuerst einen Zeitraum aus.'), true);
+                return;
             }
 
-            async function cancelBookingWithNotification(booking, isAdminAction) {
-                try {
-                    await updateBookingStatus(booking.id, 'cancelled');
-                    
-                    const templateParams = {
-                        to_email: booking.email,
-                        admin_email: ADMIN_EMAIL,
-                        start_date: booking.startDate,
-                        end_date: booking.endDate,
-                        admin_action: isAdminAction ? translations[currentLang]['Ja'] : translations[currentLang]['Nein'],
-                        _subject: translations[currentLang]['Ihre Buchung wurde storniert']
-                    };
+            const blockData = {
+                startDate: selectedStartDate.toISOString().split('T')[0],
+                endDate: selectedEndDate.toISOString().split('T')[0],
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
 
-                    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_CANCEL, templateParams, EMAILJS_PUBLIC_KEY);
-                    showNotification(translations[currentLang]['Buchung von %s erfolgreich storniert. Bestätigung wurde per E-Mail gesendet.'].replace('%s', booking.name));
-                    
-                    renderAdminBookings();
-                    renderYearlyCalendar(currentYear);
-                    renderStats();
-                } catch (error) {
-                    console.error("Fehler beim Stornieren der Buchung:", error);
-                    showNotification(translations[currentLang]['Ein Fehler ist aufgetreten. Die Buchung konnte nicht storniert werden.'], true);
-                }
+            db.collection('blocked').add(blockData)
+                .then(() => {
+                    showNotification(translate('Tage erfolgreich blockiert.'));
+                    fetchDataAndRender();
+                    clearSelectedDays();
+                })
+                .catch((error) => {
+                    console.error("Error blocking days: ", error);
+                    showNotification(translate('Fehler beim Blockieren der Tage.'), true);
+                });
+        });
+
+        document.getElementById('btn-unblock-selected').addEventListener('click', () => {
+            if (!selectedStartDate || !selectedEndDate) {
+                showNotification(translate('Bitte wählen Sie zuerst einen Zeitraum aus.'), true);
+                return;
             }
 
+            const startDateStr = selectedStartDate.toISOString().split('T')[0];
+            const endDateStr = selectedEndDate.toISOString().split('T')[0];
 
-            async function renderStats() {
-                const bookings = await fetchBookings();
-                const activeBookings = bookings.filter(b => b.status === 'active' && new Date(b.endDate).getFullYear() === currentYear);
-                const cancelledBookings = bookings.filter(b => b.status === 'cancelled' && new Date(b.endDate).getFullYear() === currentYear);
-                const blocks = await fetchBlocks();
-                const totalDaysInYear = 365;
-
-                const totalStayDays = activeBookings.reduce((sum, b) => sum + getDaysBetween(b.startDate, b.endDate), 0);
-                const avgStay = activeBookings.length > 0 ? (totalStayDays / activeBookings.length).toFixed(1) : 0;
-
-                const allOccupiedDays = new Set();
-                activeBookings.forEach(b => {
-                    let day = dateFromStr(b.startDate);
-                    while (day <= dateFromStr(b.endDate)) {
-                        if (day.getFullYear() === currentYear) {
-                            allOccupiedDays.add(formatDate(day));
-                        }
-                        day.setDate(day.getDate() + 1);
-                    }
-                });
-                blocks.forEach(b => {
-                    let day = dateFromStr(b.startDate);
-                    while (day <= dateFromStr(b.endDate)) {
-                        if (day.getFullYear() === currentYear) {
-                            allOccupiedDays.add(formatDate(day));
-                        }
-                        day.setDate(day.getDate() + 1);
-                    }
-                });
-
-                const occupancy = ((allOccupiedDays.size / totalDaysInYear) * 100).toFixed(1);
-
-                document.getElementById('stat-active-bookings').textContent = activeBookings.length;
-                document.getElementById('stat-cancelled-bookings').textContent = cancelledBookings.length;
-                document.getElementById('stat-avg-stay').textContent = avgStay;
-                document.getElementById('stat-occupancy').textContent = `${occupancy}%`;
-            }
-
-            document.getElementById("btn-block-selected").addEventListener('click', async () => {
-                if (!selectedStartDate || !selectedEndDate) {
-                    showNotification(translations[currentLang]['Bitte wähle zuerst einen Zeitraum im Kalender aus.'], true);
-                    return;
-                }
-
-                const startDate = formatDate(selectedStartDate <= selectedEndDate ? selectedStartDate : selectedEndDate);
-                const endDate = formatDate(selectedStartDate <= selectedEndDate ? selectedEndDate : selectedStartDate);
-
-                const bookings = await fetchBookings();
-
-                const rangeStart = dateFromStr(startDate);
-                const rangeEnd = dateFromStr(endDate);
-                let day = new Date(rangeStart);
-                while (day <= rangeEnd) {
-                    const dayStr = formatDate(day);
-                    if (bookings.some(b => b.status === 'active' && checkOverlap(dayStr, dayStr, b.startDate, b.endDate))) {
-                        showNotification(translations[currentLang]['Der ausgewählte Zeitraum überschneidet sich mit einer bestehenden Buchung.'], true);
+            db.collection('blocked')
+                .where('startDate', '==', startDateStr)
+                .where('endDate', '==', endDateStr)
+                .get()
+                .then(snapshot => {
+                    if (snapshot.empty) {
+                        showNotification(translate('Keine Blockierung für diesen Zeitraum gefunden.'), true);
                         return;
                     }
-                    day.setDate(day.getDate() + 1);
-                }
+                    const batch = db.batch();
+                    snapshot.forEach(doc => {
+                        batch.delete(doc.ref);
+                    });
+                    return batch.commit();
+                })
+                .then(() => {
+                    showNotification(translate('Tage erfolgreich freigegeben.'));
+                    fetchDataAndRender();
+                    clearSelectedDays();
+                })
+                .catch(error => {
+                    console.error("Error unblocking days:", error);
+                    showNotification(translate('Fehler beim Freigeben der Tage.'), true);
+                });
+        });
 
-                await db.collection('blocks').add({startDate, endDate});
-                showNotification(translations[currentLang]['Zeitraum von %s bis %s erfolgreich blockiert.'].replace('%s', startDate).replace('%s', endDate));
-                selectedStartDate = null;
-                selectedEndDate = null;
-                renderAdminBookings();
-                renderYearlyCalendar(currentYear);
-                renderStats();
-            });
-
-            document.getElementById("btn-unblock-selected").addEventListener('click', async () => {
-                if (!selectedStartDate || !selectedEndDate) {
-                    showNotification(translations[currentLang]['Bitte wähle zuerst einen Zeitraum im Kalender aus.'], true);
-                    return;
-                }
-
-                const startDate = formatDate(selectedStartDate <= selectedEndDate ? selectedStartDate : selectedEndDate);
-                const endDate = formatDate(selectedStartDate <= selectedEndDate ? selectedEndDate : selectedStartDate);
-
-                if (confirm(translations[currentLang]['Sollen die Tage von %s bis %s wirklich freigegeben werden?'].replace('%s', startDate).replace('%s', endDate))) {
-                    const blocks = await fetchBlocks();
-                    let blocksToRemove = blocks.filter(block => checkOverlap(block.startDate, block.endDate, startDate, endDate));
-
-                    if (blocksToRemove.length > 0) {
-                        const batch = db.batch();
-                        blocksToRemove.forEach(block => {
-                            const docRef = db.collection('blocks').doc(block.id);
-                            batch.delete(docRef);
-                        });
-                        await batch.commit();
-
-                        showNotification(translations[currentLang]['Tage erfolgreich freigegeben!']);
-                    } else {
-                        showNotification(translations[currentLang]['Keine Blockierung im ausgewählten Zeitraum gefunden.']);
-                    }
-
-                    selectedStartDate = null;
-                    selectedEndDate = null;
-                    renderAdminBookings();
-                    renderYearlyCalendar(currentYear);
-                    renderStats();
-                }
-            });
-
-
-            async function exportBookingsToCsv() {
-                const bookings = await fetchBookings();
-                if (bookings.length === 0) {
-                    showNotification(translations[currentLang]['Keine Buchungen zum Exportieren vorhanden.'], true);
-                    return;
-                }
-
-                const csvRows = [];
-                const headers = ["Name", "E-Mail", "Personen", "Frühstück", "Parkplatz", "Anreisezeit", "Abreisezeit", "Bemerkungen", "Startdatum", "Enddatum", "Status"];
-                csvRows.push(headers.join(';'));
-
-                for (const booking of bookings) {
-                    const row = [
-                        booking.name || "",
-                        booking.email || "",
-                        booking.persons || "",
-                        booking.breakfast || "",
-                        booking.parking ? translations[currentLang]['Ja'] : translations[currentLang]['Nein'],
-                        booking.arrivalTime || "",
-                        booking.departureTime || "",
-                        booking.comment || "",
-                        booking.startDate,
-                        booking.endDate,
-                        booking.status === 'active' ? translations[currentLang]['Buchung'] : translations[currentLang]['Storniert']
-                    ];
-                    csvRows.push(row.map(cell => `"${cell}"`).join(';'));
-                }
-
-                const csvString = csvRows.join('\n');
-                const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement("a");
-                link.href = URL.createObjectURL(blob);
-                link.download = `Freunde_Buchungen_${new Date().toISOString().slice(0, 10)}.csv`;
-                link.click();
+        document.getElementById('admin-booking-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = document.getElementById('admin-book-name').value;
+            const email = document.getElementById('admin-book-email').value;
+            const startDate = document.getElementById('admin-book-start-date').value;
+            const endDate = document.getElementById('admin-book-end-date').value;
+            if (!name || !email || !startDate || !endDate) {
+                showNotification(translate('Bitte füllen Sie alle erforderlichen Felder aus.'), true);
+                return;
             }
 
-            document.getElementById("btn-export-csv").addEventListener('click', exportBookingsToCsv);
+            db.collection('bookings').add({
+                name,
+                email,
+                startDate,
+                endDate,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                status: 'booked'
+            })
+                .then(() => {
+                    showNotification(translate('Buchung erfolgreich in der Datenbank eingetragen.'));
+                    document.getElementById('admin-booking-form-container').style.display = 'none';
+                    document.getElementById('admin-booking-form').reset();
+                    fetchDataAndRender();
+                    clearSelectedDays();
+                })
+                .catch(error => {
+                    console.error("Error adding admin booking: ", error);
+                    showNotification(translate('Fehler beim Eintragen der Buchung.'), true);
+                });
+        });
 
-            async function handleCancellationLink(cancellationId) {
-                showSection('cancel');
-                const statusText = document.getElementById('cancel-status-text');
-                const detailsDiv = document.getElementById('cancel-details');
-                const buttonsDiv = document.getElementById('cancel-buttons');
+        document.getElementById('btn-cancel-admin-form').addEventListener('click', (e) => {
+             e.preventDefault();
+             document.getElementById('admin-booking-form-container').style.display = 'none';
+             clearSelectedDays();
+        });
 
-                buttonsDiv.style.display = 'none';
-                detailsDiv.innerHTML = '';
+        document.getElementById('admin-edit-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const id = document.getElementById('edit-booking-id').value;
+            const name = document.getElementById('edit-name').value;
+            const email = document.getElementById('edit-email').value;
+            const phone = document.getElementById('edit-phone').value;
+            const persons = document.getElementById('edit-persons').value;
+            const startDate = document.getElementById('edit-start-date').value;
+            const endDate = document.getElementById('edit-end-date').value;
+            const breakfast = document.getElementById('edit-breakfast').value;
+            const comment = document.getElementById('edit-comment').value;
+            const status = document.getElementById('edit-status').value;
+            const parking = document.getElementById('edit-parking').checked;
 
-                const bookingsRef = db.collection('bookings').where('cancellationId', '==', cancellationId);
-                const querySnapshot = await bookingsRef.get();
+            db.collection('bookings').doc(id).update({
+                name,
+                email,
+                phone,
+                persons: parseInt(persons, 10),
+                startDate,
+                endDate,
+                breakfast,
+                comment,
+                status,
+                parking
+            })
+                .then(() => {
+                    showNotification(translate('Buchung erfolgreich aktualisiert.'));
+                    document.getElementById('admin-edit-form-container').style.display = 'none';
+                    fetchDataAndRender();
+                })
+                .catch(error => {
+                    console.error("Error updating booking: ", error);
+                    showNotification(translate('Fehler beim Aktualisieren der Buchung.'), true);
+                });
+        });
 
-                if (querySnapshot.empty) {
-                    statusText.textContent = translations[currentLang]['Ungültiger oder bereits stornierter Buchungslink.'];
-                    return;
-                }
+        document.getElementById('btn-cancel-edit-form').addEventListener('click', (e) => {
+             e.preventDefault();
+             document.getElementById('admin-edit-form-container').style.display = 'none';
+        });
 
-                const doc = querySnapshot.docs[0];
-                const booking = doc.data();
-                const bookingId = doc.id;
+        document.getElementById('btn-delete-booking').addEventListener('click', () => {
+            const id = document.getElementById('edit-booking-id').value;
+            if (confirm(translate('Möchten Sie diese Buchung wirklich löschen?'))) {
+                db.collection('bookings').doc(id).delete()
+                    .then(() => {
+                        showNotification(translate('Buchung erfolgreich gelöscht.'));
+                        document.getElementById('admin-edit-form-container').style.display = 'none';
+                        fetchDataAndRender();
+                    })
+                    .catch(error => {
+                    console.error("Error removing document: ", error);
+                    showNotification(translate('Fehler beim Löschen der Buchung.'), true);
+                });
+            }
+        });
 
-                if (booking.status === 'cancelled') {
-                    statusText.textContent = translations[currentLang]['Diese Buchung ist bereits storniert.'];
-                    return;
-                }
+        document.getElementById('btn-delete-waitlist-entry').addEventListener('click', () => {
+            const id = document.getElementById('edit-waitlist-id').value;
+            if (confirm(translate('Möchten Sie diese Wartelistenanfrage wirklich löschen?'))) {
+                db.collection('waitlist').doc(id).delete()
+                    .then(() => {
+                        showNotification(translate('Wartelistenanfrage erfolgreich gelöscht.'));
+                        document.getElementById('admin-waitlist-edit-form-container').style.display = 'none';
+                        fetchDataAndRender();
+                    })
+                    .catch(error => {
+                        console.error("Error removing document: ", error);
+                        showNotification(translate('Fehler beim Löschen der Wartelistenanfrage.'), true);
+                    });
+            }
+        });
 
-                statusText.textContent = translations[currentLang]['Buchungsdetails:'];
-                detailsDiv.innerHTML = `
-                    <p><strong>${translations[currentLang]['Name']}:</strong> ${booking.name}</p>
-                    <p><strong>${translations[currentLang]['E-Mail']}:</strong> ${booking.email}</p>
-                    <p><strong>${translations[currentLang]['Bemerkungen']}:</strong> ${booking.comment || '-'}</p>
-                    <p><strong>${translations[currentLang]['Zeitraum']}:</strong> ${booking.startDate} ${translations[currentLang]['bis']} ${booking.endDate}</p>
-                    <p><strong>${translations[currentLang]['Personen']}:</strong> ${booking.persons}</p>
+        function showEditForm(booking) {
+            document.getElementById('admin-booking-form-container').style.display = 'none';
+            const editFormContainer = document.getElementById('admin-edit-form-container');
+            editFormContainer.style.display = 'block';
+            document.getElementById('edit-booking-id').value = booking.id;
+            document.getElementById('edit-name').value = booking.name;
+            document.getElementById('edit-email').value = booking.email;
+            document.getElementById('edit-phone').value = booking.phone;
+            document.getElementById('edit-persons').value = booking.persons;
+            document.getElementById('edit-start-date').value = booking.startDate;
+            document.getElementById('edit-end-date').value = booking.endDate;
+            document.getElementById('edit-breakfast').value = booking.breakfast;
+            document.getElementById('edit-comment').value = booking.comment;
+            document.getElementById('edit-status').value = booking.status;
+            document.getElementById('edit-parking').checked = booking.parking;
+        }
+
+        function showWaitlistEditForm(waitlistEntry) {
+            document.getElementById('admin-waitlist-edit-form-container').style.display = 'block';
+            document.getElementById('edit-waitlist-id').value = waitlistEntry.id;
+            document.getElementById('edit-waitlist-name').value = waitlistEntry.name;
+            document.getElementById('edit-waitlist-email').value = waitlistEntry.email;
+            document.getElementById('edit-waitlist-start-date').value = waitlistEntry.startDate;
+            document.getElementById('edit-waitlist-end-date').value = waitlistEntry.endDate;
+        }
+
+        function renderBookingsList() {
+            const listEl = document.getElementById('admin-bookings-list');
+            listEl.innerHTML = '';
+            const table = document.createElement('table');
+            table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>${translate('Name')}</th>
+                        <th>${translate('E-Mail')}</th>
+                        <th>${translate('Startdatum')}</th>
+                        <th>${translate('Enddatum')}</th>
+                        <th>Status</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            `;
+            const tbody = table.querySelector('tbody');
+            bookings.forEach(booking => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${booking.name}</td>
+                    <td>${booking.email}</td>
+                    <td>${booking.startDate}</td>
+                    <td>${booking.endDate}</td>
+                    <td>${booking.status}</td>
+                    <td><button class="edit-booking-btn" data-id="${booking.id}">${translate('Bearbeiten')}</button></td>
                 `;
-                buttonsDiv.style.display = 'block';
+                tbody.appendChild(tr);
+            });
+            listEl.appendChild(table);
 
-                document.getElementById('btn-confirm-cancellation').onclick = async () => {
-                    if (confirm(translations[currentLang]['Soll die Buchung von %s wirklich storniert werden?'].replace('%s', booking.name))) {
-                        await cancelBookingWithNotification({id: bookingId, ...booking}, false);
-                        statusText.textContent = translations[currentLang]['Ihre Buchung wurde erfolgreich storniert.'];
-                        buttonsDiv.style.display = 'none';
+            document.querySelectorAll('.edit-booking-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const bookingId = e.target.dataset.id;
+                    const bookingToEdit = bookings.find(b => b.id === bookingId);
+                    if (bookingToEdit) {
+                        showEditForm(bookingToEdit);
                     }
-                };
-                document.getElementById('btn-return-home').onclick = () => {
-                    window.location.href = window.location.origin + window.location.pathname;
-                };
-            }
+                });
+            });
+        }
 
-            function initialize() {
-                const today = new Date();
-                currentYear = today.getFullYear();
+        function renderWaitlist() {
+             const listEl = document.getElementById('admin-waitlist-list');
+             listEl.innerHTML = '';
+             const table = document.createElement('table');
+             table.innerHTML = `
+                <thead>
+                    <tr>
+                        <th>${translate('Name')}</th>
+                        <th>${translate('E-Mail')}</th>
+                        <th>${translate('Startdatum')}</th>
+                        <th>${translate('Enddatum')}</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+             `;
+             const tbody = table.querySelector('tbody');
+             waitlist.forEach(entry => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${entry.name}</td>
+                    <td>${entry.email}</td>
+                    <td>${entry.startDate}</td>
+                    <td>${entry.endDate}</td>
+                    <td><button class="edit-waitlist-btn" data-id="${entry.id}">${translate('Bearbeiten')}</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+            listEl.appendChild(table);
 
-                if (currentYear < CAL_START_YEAR) {
-                    currentYear = CAL_START_YEAR;
-                } else if (currentYear > CAL_END_YEAR) {
-                    currentYear = CAL_END_YEAR;
-                }
+            document.querySelectorAll('.edit-waitlist-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const waitlistId = e.target.dataset.id;
+                    const waitlistEntryToEdit = waitlist.find(w => w.id === waitlistId);
+                    if (waitlistEntryToEdit) {
+                        showWaitlistEditForm(waitlistEntryToEdit);
+                    }
+                });
+            });
+        }
 
-                const urlParams = new URLSearchParams(window.location.search);
-                const cancellationId = urlParams.get('cancelId');
+        function updateStats() {
+            const activeBookingsCount = bookings.filter(b => b.status === 'booked' || b.status === 'confirmed').length;
+            const cancelledBookingsCount = bookings.filter(b => b.status === 'cancelled').length;
+            const totalDaysBooked = bookings.reduce((sum, b) => {
+                const start = new Date(b.startDate);
+                const end = new Date(b.endDate);
+                const diffTime = Math.abs(end - start);
+                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                return sum + diffDays;
+            }, 0);
+            const avgStay = activeBookingsCount > 0 ? (totalDaysBooked / activeBookingsCount).toFixed(1) : 0;
+            const daysInYear = (new Date(currentYear, 11, 31) - new Date(currentYear, 0, 0)) / (1000 * 60 * 60 * 24);
+            const occupancy = daysInYear > 0 ? ((totalDaysBooked / daysInYear) * 100).toFixed(1) : 0;
 
-                if (cancellationId) {
-                    handleCancellationLink(cancellationId);
-                } else {
-                    showSection("start");
-                    translatePage(currentLang);
-                }
-            }
+            document.getElementById('stat-active-bookings').textContent = activeBookingsCount;
+            document.getElementById('stat-cancelled-bookings').textContent = cancelledBookingsCount;
+            document.getElementById('stat-avg-stay').textContent = avgStay;
+            document.getElementById('stat-occupancy').textContent = `${occupancy}%`;
+        }
 
-            initialize();
-        })();
-    </script>
-</body>
-</html>
+        document.getElementById('btn-export-csv').addEventListener('click', () => {
+            const headers = ["ID", "Name", "Email", "Telefon", "Personen", "Startdatum", "Enddatum", "Frühstück", "Anreisezeit", "Abreisezeit", "Bemerkungen", "Parkplatz", "Status", "Erstellt am", "Storniert am"];
+            let csv = headers.join(";") + "\n";
+            bookings.forEach(booking => {
+                const row = [
+                    booking.id,
+                    `"${booking.name}"`,
+                    `"${booking.email}"`,
+                    `"${booking.phone || ''}"`,
+                    booking.persons || '',
+                    booking.startDate,
+                    booking.endDate,
+                    booking.breakfast,
+                    booking.arrivalTime || '',
+                    booking.departureTime || '',
+                    `"${booking.comment || ''}"`,
+                    booking.parking,
+                    booking.status,
+                    booking.createdAt.toDate().toLocaleString(),
+                    booking.cancellationDate ? booking.cancellationDate.toDate().toLocaleString() : ''
+                ].join(";");
+                csv += row + "\n";
+            });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `bookings_${currentYear}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+
+        startApp();
+    })();
+</script>
