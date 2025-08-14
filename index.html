@@ -455,8 +455,7 @@
 
             // SICHERHEITSHINWEIS: EmailJS-Konfiguration im Client-Side-Code ist unsicher.
             const EMAILJS_SERVICE_ID = 'service_9vdk8p2';
-            const EMAILJS_TEMPLATE_ID_ADMIN = 'template_exo2yi1';
-            const EMAILJS_TEMPLATE_ID_FRIEND = 'template_exo2yi1';
+            const EMAILJS_TEMPLATE_ID_BOOKING = 'template_exo2yi1'; // Einzelne Vorlage für beide Empfänger
             const EMAILJS_TEMPLATE_ID_CANCEL = 'template_9azx5z9';
             const EMAILJS_PUBLIC_KEY = 'OXLiZSAem79gPP-Wl';
 
@@ -926,11 +925,8 @@
                         _subject: `Neue Buchung von ${newBooking.name}`
                     };
 
-                    // E-Mail an den Admin senden
-                    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_ADMIN, templateParams, EMAILJS_PUBLIC_KEY);
-
-                    // E-Mail an den Gast senden
-                    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_FRIEND, templateParams, EMAILJS_PUBLIC_KEY);
+                    // E-Mail an beide Empfänger (Admin und Gast) senden
+                    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_BOOKING, templateParams, EMAILJS_PUBLIC_KEY);
 
                     alert("Buchung erfolgreich gespeichert und Bestätigung gesendet!");
                     resetBookingForm();
