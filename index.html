@@ -1311,7 +1311,10 @@
                     `;
                     bookingSuccess.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
+                    selectedStartDate = null;
+                    selectedEndDate = null;
                     renderYearlyCalendar(currentYear);
+                    bookingForm.reset();
 
                     try {
                         const cancellationLink = `${window.location.origin}${window.location.pathname}?cancelId=${newBooking.cancellationId}`;
