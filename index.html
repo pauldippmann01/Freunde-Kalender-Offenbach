@@ -163,13 +163,14 @@
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-        input, select {
+        input, select, textarea {
             width: 100%;
             padding: 8px;
             margin-bottom: 10px;
             border: 1px solid #ccc;
             border-radius: 4px;
             box-sizing: border-box;
+            resize: vertical;
         }
         button {
             background-color: #3f51b5;
@@ -367,6 +368,10 @@
                     <label for="book-departure-time">Abreise Uhrzeit (optional)</label>
                     <input type="time" id="book-departure-time" />
                 </div>
+                <div>
+                    <label for="book-comment">Bemerkungen (optional, max. 200 Zeichen)</label>
+                    <textarea id="book-comment" maxlength="200"></textarea>
+                </div>
                 <div id="booking-error" class="error-msg"></div>
                 <button type="submit" style="background-color: #4CAF50;">Buchung abschicken</button>
                 <button type="button" id="btn-cancel-booking-form" style="background-color: #f44336;">Abbrechen</button>
@@ -444,15 +449,11 @@
     <script>
         (() => {
             // SICHERHEITSHINWEIS: Passwörter im Client-Side-Code sind unsicher!
-            // Jeder Nutzer kann den Code einsehen und sich die Passwörter herauskopieren.
-            // Diese sollten stattdessen sicher auf einem Backend-Server verwaltet werden.
             const FRIEND_PASSWORD = "ÜinOffenbach!";
             const ADMIN_PASSWORD = "Romulus2025?!";
-            const ADMIN_EMAIL = "deine-admin-email@example.com";
+            const ADMIN_EMAIL = "pauldippmann@gmail.com";
 
             // SICHERHEITSHINWEIS: EmailJS-Konfiguration im Client-Side-Code ist unsicher.
-            // Ein Angreifer könnte diese Daten nutzen, um E-Mails über Ihre Dienste zu senden.
-            // Verwenden Sie eine sichere Backend-Lösung, um E-Mails zu versenden.
             const EMAILJS_SERVICE_ID = 'service_9vdk8p2';
             const EMAILJS_TEMPLATE_ID_ADMIN = 'template_exo2yi1';
             const EMAILJS_TEMPLATE_ID_FRIEND = 'template_exo2yi1';
@@ -460,8 +461,6 @@
             const EMAILJS_PUBLIC_KEY = 'OXLiZSAem79gPP-Wl';
 
             // SICHERHEITSHINWEIS: Firebase-Konfiguration im Client-Side-Code.
-            // Dies ist zwar üblich, aber stellen Sie sicher, dass Ihre Firestore-Regeln
-            // streng genug sind, um unbefugte Schreibvorgänge zu verhindern.
             const firebaseConfig = {
                 apiKey: "AIzaSyAu9hXGYbgmD-_pz0LHN5VgUcV9mRNkU98",
                 authDomain: "freunde-kalender-offenbach.firebaseapp.com",
@@ -849,6 +848,7 @@
                 const breakfast = document.getElementById("book-breakfast").value;
                 const arrival = document.getElementById("book-arrival-time").value || null;
                 const departure = document.getElementById("book-departure-time").value || null;
+                const comment = document.getElementById("book-comment").value.trim();
                 const startDate = bookStartInput.value;
                 const endDate = bookEndInput.value;
 
@@ -901,6 +901,7 @@
                     breakfast,
                     arrivalTime: arrival,
                     departureTime: departure,
+                    comment: comment,
                     startDate,
                     endDate,
                     cancellationId: generateCancellationId()
@@ -921,6 +922,7 @@
                         breakfast: newBooking.breakfast,
                         arrival_time: newBooking.arrivalTime,
                         departure_time: newBooking.departureTime,
+                        comment: newBooking.comment,
                         _subject: `Neue Buchung von ${newBooking.name}`
                     };
 
@@ -948,13 +950,14 @@
                 const bookings = await fetchBookings();
                 const blocks = await fetchBlocks();
 
-                let html = `<table><thead><tr><th>Typ</th><th>Name</th><th>E-Mail</th><th>Personen</th><th>Frühstück</th><th>Startdatum</th><th>Enddatum</th><th>Aktion</th></tr></thead><tbody>`;
+                let html = `<table><thead><tr><th>Typ</th><th>Name</th><th>E-Mail</th><th>Bemerkungen</th><th>Personen</th><th>Frühstück</th><th>Startdatum</th><th>Enddatum</th><th>Aktion</th></tr></thead><tbody>`;
 
                 bookings.forEach(bk => {
                     html += `<tr>
                         <td>Buchung</td>
                         <td>${bk.name}</td>
                         <td>${bk.email}</td>
+                        <td>${bk.comment || '-'}</td>
                         <td>${bk.persons}</td>
                         <td>${bk.breakfast}</td>
                         <td>${bk.startDate}</td>
@@ -1100,7 +1103,7 @@
                 }
 
                 const csvRows = [];
-                const headers = ["Name", "E-Mail", "Personen", "Frühstück", "Anreisezeit", "Abreisezeit", "Startdatum", "Enddatum"];
+                const headers = ["Name", "E-Mail", "Personen", "Frühstück", "Anreisezeit", "Abreisezeit", "Bemerkungen", "Startdatum", "Enddatum"];
                 csvRows.push(headers.join(';'));
 
                 for (const booking of bookings) {
@@ -1111,6 +1114,7 @@
                         booking.breakfast,
                         booking.arrivalTime || "",
                         booking.departureTime || "",
+                        booking.comment || "",
                         booking.startDate,
                         booking.endDate
                     ];
@@ -1155,6 +1159,7 @@
                 detailsDiv.innerHTML = `
                     <p><strong>Name:</strong> ${booking.name}</p>
                     <p><strong>E-Mail:</strong> ${booking.email}</p>
+                    <p><strong>Bemerkungen:</strong> ${booking.comment || '-'}</p>
                     <p><strong>Zeitraum:</strong> ${booking.startDate} bis ${booking.endDate}</p>
                     <p><strong>Personen:</strong> ${booking.persons}</p>
                 `;
