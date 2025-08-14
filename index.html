@@ -1295,27 +1295,8 @@
                 };
 
                 try {
-                    const docRef = await db.collection('bookings').add(newBooking);
+                    await db.collection('bookings').add(newBooking);
                     
-                    const cancellationLink = `${window.location.origin}${window.location.pathname}?cancelId=${newBooking.cancellationId}`;
-                    const templateParams = {
-                        from_name: newBooking.name,
-                        to_email: newBooking.email,
-                        admin_email: ADMIN_EMAIL,
-                        start_date: newBooking.startDate,
-                        end_date: newBooking.endDate,
-                        persons: newBooking.persons,
-                        cancellation_link: cancellationLink,
-                        breakfast: newBooking.breakfast,
-                        parking: newBooking.parking ? 'Ja' : 'Nein',
-                        arrival_time: newBooking.arrivalTime,
-                        departure_time: newBooking.departureTime,
-                        comment: newBooking.comment,
-                        _subject: translations[currentLang]['Buchung von'] + ' ' + newBooking.name
-                    };
-
-                    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_BOOKING, templateParams, EMAILJS_PUBLIC_KEY);
-
                     bookingForm.style.display = "none";
                     bookingSuccess.style.display = "block";
                     document.getElementById('success-details').innerHTML = `
@@ -1331,11 +1312,35 @@
                     bookingSuccess.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
                     renderYearlyCalendar(currentYear);
+
+                    try {
+                        const cancellationLink = `${window.location.origin}${window.location.pathname}?cancelId=${newBooking.cancellationId}`;
+                        const templateParams = {
+                            from_name: newBooking.name,
+                            to_email: newBooking.email,
+                            admin_email: ADMIN_EMAIL,
+                            start_date: newBooking.startDate,
+                            end_date: newBooking.endDate,
+                            persons: newBooking.persons,
+                            cancellation_link: cancellationLink,
+                            breakfast: newBooking.breakfast,
+                            parking: newBooking.parking ? 'Ja' : 'Nein',
+                            arrival_time: newBooking.arrivalTime,
+                            departure_time: newBooking.departureTime,
+                            comment: newBooking.comment,
+                            _subject: translations[currentLang]['Buchung von'] + ' ' + newBooking.name
+                        };
+                        await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_BOOKING, templateParams, EMAILJS_PUBLIC_KEY);
+                    } catch (emailError) {
+                        console.error("Fehler beim Senden der E-Mail:", emailError);
+                        showNotification(translations[currentLang]['Buchung erfolgreich, aber E-Mail konnte nicht gesendet werden. Bitte kontaktiere den Admin.'], true);
+                    }
                 } catch (error) {
-                    console.error("Fehler beim Senden der E-Mail:", error);
-                    showNotification(translations[currentLang]['Buchung erfolgreich, aber E-Mail konnte nicht gesendet werden. Bitte kontaktiere den Admin.'], true);
+                    console.error("Fehler beim Hinzufügen der Buchung:", error);
+                    bookingError.textContent = translations[currentLang]['Ein Fehler ist aufgetreten. Die Buchung konnte nicht hinzugefügt werden.'];
                 }
             });
+
 
             const adminBookingsList = document.getElementById("admin-bookings-list");
             const adminBookingFormContainer = document.getElementById('admin-booking-form-container');
