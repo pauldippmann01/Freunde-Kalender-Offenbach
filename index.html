@@ -685,6 +685,7 @@
                     'Aktion': 'Aktion',
                     'Typ': 'Typ',
                     'Buchung': 'Buchung',
+                    'Stornieren': 'Stornieren',
                     'Löschen': 'Löschen',
                     'Freigeben': 'Freigeben',
                     'Erinnerung': 'Erinnerung',
@@ -785,6 +786,7 @@
                     'Aktion': 'Action',
                     'Typ': 'Type',
                     'Buchung': 'Booking',
+                    'Stornieren': 'Cancel',
                     'Löschen': 'Delete',
                     'Freigeben': 'Unblock',
                     'Erinnerung': 'Reminder',
@@ -1202,6 +1204,11 @@
                 bookingSuccess.style.display = "none";
                 bookingError.textContent = "";
                 bookingForm.reset && bookingForm.reset();
+                
+                // Fields re-enabled here
+                document.querySelectorAll('#booking-form input, #booking-form select, #booking-form textarea').forEach(field => {
+                    field.disabled = false;
+                });
             }
 
             document.getElementById("btn-cancel-booking-form").addEventListener('click', () => {
@@ -1270,6 +1277,10 @@
 
                 try {
                     const docRef = await db.collection('bookings').add(newBooking);
+                    
+                    document.querySelectorAll('#booking-form input, #booking-form select, #booking-form textarea').forEach(field => {
+                        field.disabled = true;
+                    });
 
                     const cancellationLink = `${window.location.origin}${window.location.pathname}?cancelId=${newBooking.cancellationId}`;
                     const templateParams = {
@@ -1379,33 +1390,34 @@
                 bookings.sort((a,b) => new Date(a.startDate) - new Date(b.startDate));
                 blocks.sort((a,b) => new Date(a.startDate) - new Date(b.startDate));
 
-                bookings.forEach(bk => {
-                    const statusText = bk.status === 'active' ? translations[currentLang]['Buchung'] : translations[currentLang]['Storniert'];
-                    const actionBtn = bk.status === 'active'
-                        ? `<button class="btn-cancel-booking" data-id="${bk.id}" style="background-color: #f44336; padding:5px 10px;">${translations[currentLang]['Stornieren']}</button>
-                           <button class="btn-send-reminder" data-id="${bk.id}" style="background-color: #3f51b5; padding:5px 10px;">${translations[currentLang]['Erinnerung']}</button>`
-                        : `<button class="btn-delete-booking" data-id="${bk.id}" style="background-color: #757575; padding:5px 10px;">${translations[currentLang]['Löschen']}</button>`;
+                const combinedList = [...bookings.map(b => ({ ...b, type: 'booking' })), ...blocks.map(b => ({ ...b, type: 'block' }))]
+                    .sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+
+                combinedList.forEach(item => {
+                    let typeText;
+                    let actionBtn;
+
+                    if (item.type === 'booking') {
+                        typeText = item.status === 'active' ? translations[currentLang]['Buchung'] : translations[currentLang]['Storniert'];
+                        if (item.status === 'active') {
+                            actionBtn = `<button class="btn-cancel-booking" data-id="${item.id}" style="background-color: #f44336; padding:5px 10px;">${translations[currentLang]['Stornieren']}</button>
+                                         <button class="btn-send-reminder" data-id="${item.id}" style="background-color: #3f51b5; padding:5px 10px;">${translations[currentLang]['Erinnerung']}</button>`;
+                        } else {
+                            actionBtn = `<button class="btn-delete-booking" data-id="${item.id}" style="background-color: #757575; padding:5px 10px;">${translations[currentLang]['Löschen']}</button>`;
+                        }
+                    } else if (item.type === 'block') {
+                        typeText = translations[currentLang]['Blockiert'];
+                        actionBtn = `<button class="btn-delete-block" data-id="${item.id}" style="background-color: #757575; padding:5px 10px;">${translations[currentLang]['Freigeben']}</button>`;
+                    }
 
                     html += `<tr>
-                        <td>${statusText}</td>
-                        <td>${bk.name || '-'}</td>
-                        <td>${bk.email || '-'}</td>
-                        <td>${bk.comment || '-'}</td>
-                        <td>${bk.startDate}</td>
-                        <td>${bk.endDate}</td>
+                        <td>${typeText}</td>
+                        <td>${item.name || '-'}</td>
+                        <td>${item.email || '-'}</td>
+                        <td>${item.comment || '-'}</td>
+                        <td>${item.startDate}</td>
+                        <td>${item.endDate}</td>
                         <td>${actionBtn}</td>
-                    </tr>`;
-                });
-
-                blocks.forEach(bl => {
-                    html += `<tr>
-                        <td>${translations[currentLang]['Blockiert']}</td>
-                        <td>-</td>
-                        <td>-</td>
-                        <td>-</td>
-                        <td>${bl.startDate}</td>
-                        <td>${bl.endDate}</td>
-                        <td><button class="btn-delete-block" data-id="${bl.id}" style="background-color: #757575; padding:5px 10px;">${translations[currentLang]['Freigeben']}</button></td>
                     </tr>`;
                 });
 
