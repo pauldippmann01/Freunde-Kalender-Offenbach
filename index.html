@@ -219,13 +219,21 @@
             margin-bottom: 10px;
         }
         #login-box {
-            max-width: 300px;
+            max-width: 400px;
             margin: 40px auto;
             background-color: white;
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             text-align: center;
+        }
+        #login-box input {
+            font-size: 1.2em;
+            padding: 12px;
+        }
+        #login-box button {
+            font-size: 1.2em;
+            padding: 12px 20px;
         }
         #admin-bookings-list {
             max-height: 300px;
@@ -330,7 +338,6 @@
         <button id="lang-de"><i class="fas fa-flag icon"></i> DE</button>
         <button id="lang-en"><i class="fas fa-flag icon"></i> EN</button>
         <button id="btn-to-start" style="display:none;"><i class="fas fa-home icon"></i> Startseite</button>
-        <button id="btn-show-friend-login"><i class="fas fa-user-friends icon"></i> Gast-Login</button>
         <button id="btn-show-admin-login"><i class="fas fa-user-shield icon"></i> Admin Login</button>
     </nav>
 
@@ -344,11 +351,9 @@
                     Ich freue mich auf deinen Besuch! Über den Kalender kannst du als Gast bequem eine Übernachtung buchen. Oder du meldest dich als Admin an, um den Kalender zu verwalten.
                 </p>
             </div>
-        </section>
-
-        <section id="friend-login" style="display:none;">
+            
             <div id="login-box">
-                <h2 data-lang-de="Gast Login" data-lang-en="Guest Login">Gast Login</h2>
+                <h2 data-lang-de="Hier geht es zur Buchung" data-lang-en="Click here to book">Hier geht es zur Buchung</h2>
                 <p data-lang-de="Bitte Passwort eingeben:" data-lang-en="Please enter your password:">Bitte Passwort eingeben:</p>
                 <input type="password" id="friend-password" placeholder="Passwort" data-lang-placeholder-de="Passwort" data-lang-placeholder-en="Password" />
                 <div id="friend-login-error" class="error-msg"></div>
@@ -553,19 +558,16 @@
 
     <script>
         (() => {
-            // SICHERHEITSHINWEIS: Passwörter im Client-Side-Code sind unsicher!
             const FRIEND_PASSWORD = "ÜinOffenbach!";
             const ADMIN_PASSWORD = "Romulus2025?!";
             const ADMIN_EMAIL = "pauldippmann@gmail.com";
 
-            // SICHERHEITSHINWEIS: EmailJS-Konfiguration im Client-Side-Code ist unsicher.
             const EMAILJS_SERVICE_ID = 'service_9vdk8p2';
             const EMAILJS_TEMPLATE_ID_BOOKING = 'template_exo2yi1';
             const EMAILJS_TEMPLATE_ID_CANCEL = 'template_9azx5z9';
-            const EMAILJS_TEMPLATE_ID_REMINDER = 'template_9azx5z9'; // Platzhalter, falls eine neue Vorlage für Erinnerungen erstellt wird
+            const EMAILJS_TEMPLATE_ID_REMINDER = 'template_9azx5z9';
             const EMAILJS_PUBLIC_KEY = 'OXLiZSAem79gPP-Wl';
 
-            // SICHERHEITSHINWEIS: Firebase-Konfiguration im Client-Side-Code.
             const firebaseConfig = {
                 apiKey: "AIzaSyAu9hXGYbgmD-_pz0LHN5VgUcV9mRNkU98",
                 authDomain: "freunde-kalender-offenbach.firebaseapp.com",
@@ -575,36 +577,31 @@
                 appId: "1:753671032354:web:a154b43ccdfcc491c4c47b"
             };
 
-            // Initialisiere Firebase und Firestore
             firebase.initializeApp(firebaseConfig);
             const db = firebase.firestore();
 
-            // Kalender Start & Ende
             const CAL_START_YEAR = 2025;
             const CAL_END_YEAR = 2040;
 
-            // State
             let currentYear;
             let selectedStartDate = null;
             let selectedEndDate = null;
-            let currentView = 'friend'; // Kann 'friend' oder 'admin' sein
+            let currentView = 'friend';
             let currentLang = 'de';
 
             const sections = {
                 start: document.getElementById("start-page"),
-                friendLogin: document.getElementById("friend-login"),
                 friendArea: document.getElementById("friend-area"),
                 adminLogin: document.getElementById("admin-login"),
                 adminArea: document.getElementById("admin-area"),
                 cancel: document.getElementById("cancel-page")
             };
 
-            // Multilingualism
             const translations = {
                 de: {
                     'Willkommen in Offenbach!': 'Willkommen in Offenbach!',
-                    'I\'m looking forward to your visit! ...': 'Ich freue mich auf deinen Besuch! Über den Kalender kannst du als Gast bequem eine Übernachtung buchen. Oder du meldest dich als Admin an, um den Kalender zu verwalten.',
-                    'Gast-Login': 'Gast-Login',
+                    'Ich freue mich auf deinen Besuch! Über den Kalender kannst du als Gast bequem eine Übernachtung buchen. Oder du meldest dich als Admin an, um den Kalender zu verwalten.': 'Ich freue mich auf deinen Besuch! Über den Kalender kannst du als Gast bequem eine Übernachtung buchen. Oder du meldest dich als Admin an, um den Kalender zu verwalten.',
+                    'Hier geht es zur Buchung': 'Hier geht es zur Buchung',
                     'Admin Login': 'Admin Login',
                     'Startseite': 'Startseite',
                     'Bitte Passwort eingeben:': 'Bitte Passwort eingeben:',
@@ -668,8 +665,8 @@
                     'Statistiken': 'Statistiken',
                     'Anzahl Buchungen (aktiv):': 'Anzahl Buchungen (aktiv):',
                     'Anzahl stornierter Buchungen:': 'Anzahl stornierter Buchungen:',
-                    'Durchschnittliche Aufenthaltsdauer:': 'Durchschnittliche Aufenthaltsdauer:',
-                    'Auslastung im aktuellen Jahr:': 'Auslastung im aktuellen Jahr:',
+                    'Durchschnittliche Aufenthaltsdauer:' : 'Durchschnittliche Aufenthaltsdauer:',
+                    'Auslastung im aktuellen Jahr:' : 'Auslastung im aktuellen Jahr:',
                     'Tage': 'Tage',
                     'Buchung stornieren': 'Buchung stornieren',
                     'Stornierungslink wird überprüft...': 'Stornierungslink wird überprüft...',
@@ -704,7 +701,7 @@
                 en: {
                     'Willkommen in Offenbach!': 'Welcome to Offenbach!',
                     'Ich freue mich auf deinen Besuch! Über den Kalender kannst du als Gast bequem eine Übernachtung buchen. Oder du meldest dich als Admin an, um den Kalender zu verwalten.': 'I\'m looking forward to your visit! You can book an overnight stay as a guest via the calendar. Or you can log in as an admin to manage the calendar.',
-                    'Gast-Login': 'Guest Login',
+                    'Hier geht es zur Buchung': 'Click here to book',
                     'Admin Login': 'Admin Login',
                     'Startseite': 'Homepage',
                     'Bitte Passwort eingeben:': 'Please enter your password:',
@@ -831,8 +828,12 @@
             document.getElementById('lang-de').addEventListener('click', () => {
                 currentLang = 'de';
                 translatePage('de');
-                renderYearlyCalendar(currentYear);
-                if (currentView === 'admin') {
+                if (currentView === 'friend') {
+                    if(document.getElementById('friend-area').style.display !== 'none') {
+                        renderYearlyCalendar(currentYear);
+                    }
+                } else if (currentView === 'admin') {
+                    renderYearlyCalendar(currentYear);
                     renderAdminBookings();
                 }
                 updateBookingFormSummary();
@@ -840,15 +841,18 @@
             document.getElementById('lang-en').addEventListener('click', () => {
                 currentLang = 'en';
                 translatePage('en');
-                renderYearlyCalendar(currentYear);
-                if (currentView === 'admin') {
+                if (currentView === 'friend') {
+                    if(document.getElementById('friend-area').style.display !== 'none') {
+                        renderYearlyCalendar(currentYear);
+                    }
+                } else if (currentView === 'admin') {
+                    renderYearlyCalendar(currentYear);
                     renderAdminBookings();
                 }
                 updateBookingFormSummary();
             });
 
 
-            // Utility
             function formatDate(d) {
                 const year = d.getFullYear();
                 const month = (d.getMonth() + 1).toString().padStart(2, '0');
@@ -884,9 +888,6 @@
                 }, 3000);
             }
 
-            // -------------------
-            // Firebase Data Fetching
-            // -------------------
             async function fetchBookings() {
                 const snapshot = await db.collection('bookings').get();
                 const bookings = [];
@@ -910,9 +911,6 @@
                 await db.collection('bookings').doc(bookingId).update({ status });
             }
 
-            // -------------------
-            // Navigation & Sections
-            // -------------------
             function showSection(name) {
                 Object.values(sections).forEach(sec => sec.style.display = "none");
                 sections[name].style.display = "block";
@@ -924,15 +922,6 @@
                     btnToStart.style.display = "none";
                 }
             }
-
-            // -------------------
-            // Event Listeners
-            // -------------------
-            document.getElementById("btn-show-friend-login").addEventListener('click', () => {
-                document.getElementById("friend-login-error").textContent = "";
-                document.getElementById("friend-password").value = "";
-                showSection("friendLogin");
-            });
 
             document.getElementById("btn-show-admin-login").addEventListener('click', () => {
                 document.getElementById("admin-login-error").textContent = "";
@@ -1000,9 +989,6 @@
                 }
             });
 
-            // -----------------------
-            // Jahreskalender Übersicht
-            // -----------------------
             async function renderYearlyCalendar(year) {
                 const calendarContent = currentView === 'friend' ? document.getElementById("yearly-calendar-content") : document.getElementById("admin-yearly-calendar-content");
                 const yearDisplay = currentView === 'friend' ? document.getElementById("year-display") : document.getElementById("admin-year-display");
@@ -1094,7 +1080,6 @@
                 const start = sDate <= eDate ? sDate : eDate;
                 const end = sDate <= eDate ? eDate : sDate;
                 
-                // Buchungsformular anzeigen, sobald Start- und Enddatum gesetzt sind
                 if (currentView === 'friend' && selectedStartDate && selectedEndDate) {
                     showBookingForm();
                 } else if (currentView === 'admin' && selectedStartDate && selectedEndDate) {
@@ -1119,10 +1104,6 @@
                 }
             }
 
-            // ---------------------
-            // Datums- und Bereichsauswahl
-            // ---------------------
-
             function attachDateClickHandlers() {
                 const calendarSection = currentView === 'friend' ? document.getElementById("yearly-calendar-content") : document.getElementById("admin-yearly-calendar-content");
                 const cells = calendarSection.querySelectorAll("td:not(.inactive)");
@@ -1136,7 +1117,6 @@
                         const dateStr = clickedCell.getAttribute("data-date");
                         const date = dateFromStr(dateStr);
                         
-                        // Zuerst prüfen, ob der Tag gebucht oder blockiert ist
                         if(clickedCell.classList.contains('booked') || clickedCell.classList.contains('blocked')) {
                             selectedStartDate = null;
                             selectedEndDate = null;
@@ -1183,9 +1163,6 @@
                 });
             }
 
-            // ---------------------
-            // Buchungsformular (Gast)
-            // ---------------------
             const bookingForm = document.getElementById("booking-form");
             const bookStartInput = document.getElementById("book-start-date");
             const bookEndInput = document.getElementById("book-end-date");
@@ -1313,7 +1290,6 @@
 
                     await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_BOOKING, templateParams, EMAILJS_PUBLIC_KEY);
 
-                    // Zeige Erfolgsmeldung und Details
                     bookingForm.style.display = "none";
                     bookingSuccess.style.display = "block";
                     document.getElementById('success-details').innerHTML = `
@@ -1335,9 +1311,6 @@
                 }
             });
 
-            // -------------------
-            // Admin Bereich
-            // -------------------
             const adminBookingsList = document.getElementById("admin-bookings-list");
             const adminBookingFormContainer = document.getElementById('admin-booking-form-container');
 
@@ -1391,7 +1364,6 @@
                 const bookings = await fetchBookings();
                 const blocks = await fetchBlocks();
 
-                // Kopfzeilen dynamisch generieren
                 const bookingTableHeaders = [
                     translations[currentLang]['Typ'],
                     translations[currentLang]['Name'],
@@ -1530,9 +1502,6 @@
             }
 
 
-            // -------------------
-            // Statistiken
-            // -------------------
             async function renderStats() {
                 const bookings = await fetchBookings();
                 const activeBookings = bookings.filter(b => b.status === 'active' && new Date(b.endDate).getFullYear() === currentYear);
@@ -1571,9 +1540,6 @@
                 document.getElementById('stat-occupancy').textContent = `${occupancy}%`;
             }
 
-            // -------------------
-            // Blockieren/Freigeben direkt im Kalender (Admin)
-            // -------------------
             document.getElementById("btn-block-selected").addEventListener('click', async () => {
                 if (!selectedStartDate || !selectedEndDate) {
                     showNotification(translations[currentLang]['Bitte wähle zuerst einen Zeitraum im Kalender aus.'], true);
@@ -1641,7 +1607,6 @@
             });
 
 
-            // CSV-Export-Funktion
             async function exportBookingsToCsv() {
                 const bookings = await fetchBookings();
                 if (bookings.length === 0) {
@@ -1680,9 +1645,6 @@
 
             document.getElementById("btn-export-csv").addEventListener('click', exportBookingsToCsv);
 
-            // -------------------
-            // Stornierungslogik (Buchender)
-            // -------------------
             async function handleCancellationLink(cancellationId) {
                 showSection('cancel');
                 const statusText = document.getElementById('cancel-status-text');
@@ -1731,7 +1693,6 @@
                 };
             }
 
-            // Initialanzeige
             function initialize() {
                 const today = new Date();
                 currentYear = today.getFullYear();
