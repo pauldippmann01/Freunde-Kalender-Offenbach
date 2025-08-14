@@ -698,7 +698,8 @@
                     'Ihre Buchung wurde storniert': 'Ihre Buchung wurde storniert',
                     'Ja': 'Ja',
                     'Nein': 'Nein',
-                    'Ein Fehler ist aufgetreten. Die Buchung konnte nicht storniert werden.': 'Ein Fehler ist aufgetreten. Die Buchung konnte nicht storniert werden.'
+                    'Ein Fehler ist aufgetreten. Die Buchung konnte nicht storniert werden.': 'Ein Fehler ist aufgetreten. Die Buchung konnte nicht storniert werden.',
+                    'Dieser Tag ist nicht verfügbar.': 'Dieser Tag ist nicht verfügbar.'
                 },
                 en: {
                     'Willkommen in Offenbach!': 'Welcome to Offenbach!',
@@ -797,7 +798,8 @@
                     'Ihre Buchung wurde storniert': 'Your booking has been cancelled',
                     'Ja': 'Yes',
                     'Nein': 'No',
-                    'Ein Fehler ist aufgetreten. Die Buchung konnte nicht storniert werden.': 'An error occurred. The booking could not be cancelled.'
+                    'Ein Fehler ist aufgetreten. Die Buchung konnte nicht storniert werden.': 'An error occurred. The booking could not be cancelled.',
+                    'Dieser Tag ist nicht verfügbar.': 'This day is not available.'
                 }
             };
 
@@ -1091,63 +1093,30 @@
 
                 const start = sDate <= eDate ? sDate : eDate;
                 const end = sDate <= eDate ? eDate : sDate;
-
+                
+                // Buchungsformular anzeigen, sobald Start- und Enddatum gesetzt sind
+                if (currentView === 'friend' && selectedStartDate && selectedEndDate) {
+                    showBookingForm();
+                } else if (currentView === 'admin' && selectedStartDate && selectedEndDate) {
+                    showAdminBookingForm();
+                }
+                
                 let currentDate = new Date(start);
-                const bookings = fetchBookings();
-                const blocks = fetchBlocks();
-
-                Promise.all([bookings, blocks]).then(([bks, blks]) => {
-                    let isSelectionValid = true;
-                    let tempDate = new Date(start);
-                    while (tempDate <= end) {
-                        const dateStr = formatDate(tempDate);
-                        if(bks.some(b => b.status === 'active' && checkOverlap(dateStr, dateStr, b.startDate, b.endDate)) ||
-                           (currentView === 'friend' && blks.some(b => checkOverlap(dateStr, dateStr, b.startDate, b.endDate)))) {
-                            isSelectionValid = false;
-                            break;
-                        }
-                        tempDate.setDate(tempDate.getDate() + 1);
-                    }
-
-                    if (!isSelectionValid) {
-                        selectedStartDate = null;
-                        selectedEndDate = null;
-                        showNotification(translations[currentLang]['Der ausgewählte Zeitraum überschneidet sich mit einer bestehenden Buchung.'], true);
-                        updateSelectedDays();
-                        return;
-                    }
-
-                    currentDate = new Date(start);
-                    while (currentDate <= end) {
-                        const dateStr = formatDate(currentDate);
-                        const cell = calendarSection.querySelector(`td[data-date="${dateStr}"]`);
-                        if (cell) {
-                            cell.style.backgroundColor = '#81c784';
-                            if (formatDate(currentDate) === formatDate(start)) {
-                                cell.classList.add('selected-start');
-                            } else if (formatDate(currentDate) === formatDate(end)) {
-                                cell.classList.add('selected-end');
-                            } else {
-                                cell.classList.add('selected-range');
-                            }
-                        }
-                        currentDate.setDate(currentDate.getDate() + 1);
-                    }
-
-                    if (currentView === 'friend') {
-                        if(selectedEndDate) {
-                            showBookingForm();
+                while (currentDate <= end) {
+                    const dateStr = formatDate(currentDate);
+                    const cell = calendarSection.querySelector(`td[data-date="${dateStr}"]`);
+                    if (cell) {
+                        cell.style.backgroundColor = '#81c784';
+                        if (formatDate(currentDate) === formatDate(start)) {
+                            cell.classList.add('selected-start');
+                        } else if (formatDate(currentDate) === formatDate(end)) {
+                            cell.classList.add('selected-end');
                         } else {
-                            bookingForm.style.display = "none";
-                        }
-                    } else if (currentView === 'admin') {
-                        if (selectedEndDate) {
-                            showAdminBookingForm();
-                        } else {
-                            document.getElementById('admin-booking-form-container').style.display = 'none';
+                            cell.classList.add('selected-range');
                         }
                     }
-                });
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
             }
 
             // ---------------------
@@ -1160,17 +1129,19 @@
 
                 cells.forEach(cell => {
                     cell.style.cursor = "pointer";
-                    cell.addEventListener('click', (e) => {
+                    cell.addEventListener('click', async (e) => {
                         const clickedCell = e.target.closest('td');
                         if (!clickedCell) return;
 
                         const dateStr = clickedCell.getAttribute("data-date");
                         const date = dateFromStr(dateStr);
-
-                        if(currentView === 'friend' && (clickedCell.classList.contains('booked') || clickedCell.classList.contains('blocked'))) {
+                        
+                        // Zuerst prüfen, ob der Tag gebucht oder blockiert ist
+                        if(clickedCell.classList.contains('booked') || clickedCell.classList.contains('blocked')) {
                             selectedStartDate = null;
                             selectedEndDate = null;
                             updateSelectedDays();
+                            showNotification(translations[currentLang]['Dieser Tag ist nicht verfügbar.'], true);
                             return;
                         }
 
@@ -1178,12 +1149,34 @@
                             selectedStartDate = date;
                             selectedEndDate = null;
                         } else {
-                            if(date < selectedStartDate) {
-                                selectedEndDate = selectedStartDate;
-                                selectedStartDate = date;
-                            } else {
-                                selectedEndDate = date;
+                            const tempStart = selectedStartDate;
+                            const tempEnd = date;
+                            
+                            const [bookings, blocks] = await Promise.all([fetchBookings(), fetchBlocks()]);
+                            
+                            const rangeStart = tempStart <= tempEnd ? tempStart : tempEnd;
+                            const rangeEnd = tempStart <= tempEnd ? tempEnd : tempStart;
+
+                            let isSelectionValid = true;
+                            let tempDate = new Date(rangeStart);
+                            while (tempDate <= rangeEnd) {
+                                const dayStr = formatDate(tempDate);
+                                if(bookings.some(b => b.status === 'active' && checkOverlap(dayStr, dayStr, b.startDate, b.endDate)) ||
+                                   blocks.some(b => checkOverlap(dayStr, dayStr, b.startDate, b.endDate))) {
+                                    isSelectionValid = false;
+                                    break;
+                                }
+                                tempDate.setDate(tempDate.getDate() + 1);
                             }
+
+                            if (!isSelectionValid) {
+                                showNotification(translations[currentLang]['Der ausgewählte Zeitraum überschneidet sich mit einer bestehenden Buchung.'], true);
+                                selectedStartDate = null;
+                                selectedEndDate = null;
+                                updateSelectedDays();
+                                return;
+                            }
+                            selectedEndDate = date;
                         }
                         updateSelectedDays();
                     });
@@ -1397,7 +1390,17 @@
             async function renderAdminBookings() {
                 const bookings = await fetchBookings();
                 const blocks = await fetchBlocks();
-                const bookingTableHeaders = [translations[currentLang]['Typ'], translations[currentLang]['Name'], translations[currentLang]['E-Mail'], translations[currentLang]['Bemerkungen'], translations[currentLang]['Startdatum'], translations[currentLang]['Enddatum'], translations[currentLang]['Aktion']];
+
+                // Kopfzeilen dynamisch generieren
+                const bookingTableHeaders = [
+                    translations[currentLang]['Typ'],
+                    translations[currentLang]['Name'],
+                    translations[currentLang]['E-Mail'],
+                    translations[currentLang]['Bemerkungen'],
+                    translations[currentLang]['Startdatum'],
+                    translations[currentLang]['Enddatum'],
+                    translations[currentLang]['Aktion']
+                ];
 
                 let html = `<table><thead><tr><th>${bookingTableHeaders.join('</th><th>')}</th></tr></thead><tbody>`;
 
