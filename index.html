@@ -602,120 +602,110 @@
             // Multilingualism
             const translations = {
                 de: {
-                    'Welcome to Offenbach!': 'Willkommen in Offenbach!',
+                    'Willkommen in Offenbach!': 'Willkommen in Offenbach!',
                     'I\'m looking forward to your visit! ...': 'Ich freue mich auf deinen Besuch! Über den Kalender kannst du als Gast bequem eine Übernachtung buchen. Oder du meldest dich als Admin an, um den Kalender zu verwalten.',
-                    'Guest Login': 'Gast Login',
-                    'Please enter your password:': 'Bitte Passwort eingeben:',
-                    'Password': 'Passwort',
-                    'Login': 'Einloggen',
-                    'Wrong password!': 'Falsches Passwort!',
-                    'Yearly Calendar (Guest View)': 'Jahreskalender (Gast-Ansicht)',
-                    '< Previous Year': '< Vorjahr',
-                    'Next Year >': 'Nächstes Jahr >',
-                    'Available Days': 'Freie Tage',
-                    'Booked Days': 'Gebuchte Tage',
-                    'Blocked Days': 'Blockierte Tage',
-                    'Selected Period': 'Ausgewählter Zeitraum',
-                    'Booking Details': 'Buchungsdetails',
-                    'Name *': 'Name *',
-                    'E-Mail Address *': 'E-Mail-Adresse *',
-                    'Number of people * (max. 3)': 'Anzahl Personen * (max. 3)',
-                    'Start Date *': 'Startdatum *',
-                    'End Date *': 'Enddatum *',
-                    'Breakfast needed? *': 'Frühstück benötigt? *',
-                    'Yes': 'Ja',
-                    'No': 'Nein',
-                    'Arrival Time (optional)': 'Anreise Uhrzeit (optional)',
-                    'Departure Time (optional)': 'Abreise Uhrzeit (optional)',
-                    'Comments (optional, max. 200 characters)': 'Bemerkungen (optional, max. 200 Zeichen)',
-                    'Parking space needed?': 'Parkplatz benötigt?',
-                    'Submit Booking': 'Buchung abschicken',
-                    'Cancel': 'Abbrechen',
-                    'Please enter a name.': 'Bitte Name eingeben.',
-                    'Please enter an email address.': 'Bitte E-Mail-Adresse eingeben.',
-                    'Please enter a valid number of people (max. 3).': 'Bitte gültige Anzahl Personen eingeben (max. 3).',
-                    'Please enter valid start and end dates.': 'Bitte gültige Start- und Enddaten eingeben.',
-                    'End date cannot be before the start date.': 'Enddatum darf nicht vor Startdatum liegen.',
-                    'The selected period overlaps with a blocked period.': 'Der ausgewählte Zeitraum überschneidet sich mit einem blockierten Zeitraum.',
-                    'The selected period overlaps with an existing booking.': 'Der ausgewählte Zeitraum überschneidet sich mit einer bestehenden Buchung.',
-                    'Booking successful!': 'Buchung erfolgreich!',
-                    'Your booking details have been saved. You will receive a confirmation email shortly.': 'Ihre Buchungsdetails wurden gespeichert. Sie erhalten in Kürze eine Bestätigung per E-Mail.',
-                    'New Booking': 'Neue Buchung',
+                    'Gast-Login': 'Gast-Login',
                     'Admin Login': 'Admin Login',
-                    'Please enter the admin password:': 'Bitte Admin-Passwort eingeben:',
-                    'Admin Password': 'Admin Passwort',
-                    'Wrong admin password!': 'Falsches Admin-Passwort!',
-                    'Yearly Calendar (Admin View)': 'Jahreskalender (Admin-Ansicht)',
+                    'Startseite': 'Startseite',
+                    'Bitte Passwort eingeben:': 'Bitte Passwort eingeben:',
+                    'Passwort': 'Passwort',
+                    'Einloggen': 'Einloggen',
+                    'Falsches Passwort!': 'Falsches Passwort!',
+                    'Jahreskalender (Gast-Ansicht)': 'Jahreskalender (Gast-Ansicht)',
+                    '&lt; Vorjahr': '&lt; Vorjahr',
+                    'Nächstes Jahr &gt;': 'Nächstes Jahr &gt;',
+                    'Freie Tage': 'Freie Tage',
+                    'Gebuchte Tage': 'Gebuchte Tage',
+                    'Blockierte Tage': 'Blockierte Tage',
+                    'Ausgewählter Zeitraum': 'Ausgewählter Zeitraum',
+                    'Buchungsdetails': 'Buchungsdetails',
+                    'Buchung von': 'Buchung von',
+                    'bis': 'bis',
+                    'Name *': 'Name *',
+                    'E-Mail-Adresse *': 'E-Mail-Adresse *',
+                    'Anzahl Personen * (max. 3)': 'Anzahl Personen * (max. 3)',
+                    'Startdatum *': 'Startdatum *',
+                    'Enddatum *': 'Enddatum *',
+                    'Frühstück benötigt? *': 'Frühstück benötigt? *',
+                    'Ja': 'Ja',
+                    'Nein': 'Nein',
+                    'Anreise Uhrzeit (optional)': 'Anreise Uhrzeit (optional)',
+                    'Abreise Uhrzeit (optional)': 'Abreise Uhrzeit (optional)',
+                    'Bemerkungen (optional, max. 200 Zeichen)': 'Bemerkungen (optional, max. 200 Zeichen)',
+                    'Parkplatz benötigt?': 'Parkplatz benötigt?',
+                    'Buchung abschicken': 'Buchung abschicken',
+                    'Abbrechen': 'Abbrechen',
+                    'Bitte einen Namen eingeben.': 'Bitte einen Namen eingeben.',
+                    'Bitte eine gültige E-Mail-Adresse eingeben.': 'Bitte eine gültige E-Mail-Adresse eingeben.',
+                    'Bitte gültige Anzahl Personen eingeben (max. 3).': 'Bitte gültige Anzahl Personen eingeben (max. 3).',
+                    'Bitte gültige Start- und Enddaten eingeben.': 'Bitte gültige Start- und Enddaten eingeben.',
+                    'Enddatum darf nicht vor Startdatum liegen.': 'Enddatum darf nicht vor Startdatum liegen.',
+                    'Der ausgewählte Zeitraum überschneidet sich mit einem blockierten Zeitraum.': 'Der ausgewählte Zeitraum überschneidet sich mit einem blockierten Zeitraum.',
+                    'Der ausgewählte Zeitraum überschneidet sich mit einer bestehenden Buchung.': 'Der ausgewählte Zeitraum überschneidet sich mit einer bestehenden Buchung.',
+                    'Buchung erfolgreich!': 'Buchung erfolgreich!',
+                    'Ihre Buchungsdetails wurden gespeichert. Sie erhalten in Kürze eine Bestätigung per E-Mail.': 'Ihre Buchungsdetails wurden gespeichert. Sie erhalten in Kürze eine Bestätigung per E-Mail.',
+                    'Neue Buchung': 'Neue Buchung',
+                    'Admin Passwort': 'Admin Passwort',
+                    'Falsches Admin-Passwort!': 'Falsches Admin-Passwort!',
+                    'Jahreskalender (Admin-Ansicht)': 'Jahreskalender (Admin-Ansicht)',
                     'Admin Logout': 'Admin Logout',
-                    'Export Bookings (CSV)': 'Exportiere Buchungen (CSV)',
-                    'Cancelled': 'Storniert',
-                    'Block Selected Days': 'Ausgewählte Tage blockieren',
-                    'Unblock Selected Days': 'Ausgewählte Tage freigeben',
-                    'Admin Booking or Blocking': 'Admin-Buchung oder Blockierung',
-                    'Name': 'Name',
-                    'Email': 'E-Mail',
-                    'Start Date': 'Startdatum',
-                    'End Date': 'Enddatum',
-                    'Add Booking': 'Buchung eintragen',
-                    'Please select a period in the calendar first.': 'Bitte wähle zuerst einen Zeitraum im Kalender aus.',
-                    'The selected period overlaps with an existing booking.': 'Der ausgewählte Zeitraum überschneidet sich mit einer bestehenden Buchung.',
-                    'The period from %s to %s was successfully blocked.': 'Zeitraum von %s bis %s erfolgreich blockiert.',
-                    'Are you sure you want to unblock the days from %s to %s?': 'Sollen die Tage von %s bis %s wirklich freigegeben werden?',
-                    'Days successfully unblocked!': 'Tage erfolgreich freigegeben!',
-                    'No blocking found in the selected period.': 'Keine Blockierung im ausgewählten Zeitraum gefunden.',
-                    'Booked and Blocked Days': 'Belegte und Blockierte Tage',
-                    'Statistics': 'Statistiken',
-                    'Number of active bookings:': 'Anzahl Buchungen (aktiv):',
-                    'Number of cancelled bookings:': 'Anzahl stornierter Buchungen:',
-                    'Average stay duration:': 'Durchschnittliche Aufenthaltsdauer:',
-                    'Occupancy in current year:': 'Auslastung im aktuellen Jahr:',
-                    'days': 'Tage',
-                    'Cancel Booking': 'Buchung stornieren',
-                    'Cancellation link is being checked...': 'Stornierungslink wird überprüft...',
-                    'Invalid or already cancelled booking link.': 'Ungültiger oder bereits stornierter Buchungslink.',
-                    'Booking Details:': 'Buchungsdetails:',
-                    'Confirm & Cancel Booking': 'Buchung bestätigen & stornieren',
-                    'Back to homepage': 'Zurück zur Startseite',
-                    'Are you sure you want to cancel the booking from %s?': 'Soll die Buchung von %s wirklich storniert werden?',
-                    'Your booking has been successfully cancelled.': 'Ihre Buchung wurde erfolgreich storniert.',
-                    'Error cancelling the booking:': 'Fehler beim Stornieren der Buchung:',
-                    'A booking from %s has been successfully cancelled. A confirmation has been sent by email.': 'Buchung von %s erfolgreich storniert. Bestätigung wurde per E-Mail gesendet.',
-                    'Error! The email could not be sent.': 'Fehler! E-Mail konnte nicht gesendet werden.',
-                    'No bookings available for export.': 'Keine Buchungen zum Exportieren vorhanden.',
-                    'Manual booking from %s to %s was added successfully!': 'Manuelle Buchung von %s bis %s erfolgreich hinzugefügt!',
-                    'You have a booking from %s.': 'Sie haben eine Buchung von %s.',
-                    'Booking for %s from %s to %s.': 'Buchung für %s von %s bis %s.',
-                    'Your booking from %s has been cancelled.': 'Ihre Buchung von %s wurde storniert.',
-                    'Booking from %s from %s to %s.': 'Buchung von %s von %s bis %s.',
-                    'The booking has been successfully cancelled.': 'Die Buchung wurde erfolgreich storniert.',
-                    'Cancellation confirmation email sent to guest.': 'Stornierungsbestätigung per E-Mail an den Gast gesendet.',
-                    'An error occurred. The booking could not be cancelled.': 'Ein Fehler ist aufgetreten. Die Buchung konnte nicht storniert werden.',
-                    'Send Reminder Email': 'Erinnerungs-E-Mail senden',
-                    'Reminder email successfully sent!': 'Erinnerungs-E-Mail erfolgreich gesendet!',
-                    'Error sending reminder email.': 'Fehler beim Senden der Erinnerungs-E-Mail.',
+                    'Exportiere Buchungen (CSV)': 'Exportiere Buchungen (CSV)',
+                    'Storniert': 'Storniert',
+                    'Ausgewählte Tage blockieren': 'Ausgewählte Tage blockieren',
+                    'Ausgewählte Tage freigeben': 'Ausgewählte Tage freigeben',
+                    'Admin-Buchung oder Blockierung': 'Admin-Buchung oder Blockierung',
                     'Name': 'Name',
                     'E-Mail': 'E-Mail',
-                    'Start Date': 'Startdatum',
-                    'End Date': 'Enddatum',
-                    'Action': 'Aktion',
-                    'Booking': 'Buchung',
-                    'Cancelled': 'Storniert',
-                    'Blocked': 'Blockiert',
-                    'Delete': 'Löschen',
-                    'Unblock': 'Freigeben',
-                    'Please select a booking to send a reminder.': 'Bitte wähle eine Buchung aus, um eine Erinnerung zu senden.',
-                    'Booking from %s to %s was successfully cancelled.': 'Buchung von %s bis %s erfolgreich storniert.',
-                    'Do you really want to cancel this booking?': 'Buchung wirklich stornieren?',
-                    'Do you really want to delete this block?': 'Blockierung wirklich entfernen?',
-                    'This booking is already cancelled.': 'Diese Buchung ist bereits storniert.',
-                    'The end date cannot be before the start date.': 'Das Enddatum darf nicht vor dem Startdatum liegen.',
-                    'Please enter a name.': 'Bitte einen Namen eingeben.',
-                    'Please enter a valid email address.': 'Bitte eine gültige E-Mail-Adresse eingeben.'
+                    'Startdatum': 'Startdatum',
+                    'Enddatum': 'Enddatum',
+                    'Buchung eintragen': 'Buchung eintragen',
+                    'Bitte wähle zuerst einen Zeitraum im Kalender aus.': 'Bitte wähle zuerst einen Zeitraum im Kalender aus.',
+                    'Zeitraum von %s bis %s erfolgreich blockiert.': 'Zeitraum von %s bis %s erfolgreich blockiert.',
+                    'Sollen die Tage von %s bis %s wirklich freigegeben werden?': 'Sollen die Tage von %s bis %s wirklich freigegeben werden?',
+                    'Tage erfolgreich freigegeben!': 'Tage erfolgreich freigegeben!',
+                    'Keine Blockierung im ausgewählten Zeitraum gefunden.': 'Keine Blockierung im ausgewählten Zeitraum gefunden.',
+                    'Belegte und Blockierte Tage': 'Belegte und Blockierte Tage',
+                    'Statistiken': 'Statistiken',
+                    'Anzahl Buchungen (aktiv):': 'Anzahl Buchungen (aktiv):',
+                    'Anzahl stornierter Buchungen:': 'Anzahl stornierter Buchungen:',
+                    'Durchschnittliche Aufenthaltsdauer:': 'Durchschnittliche Aufenthaltsdauer:',
+                    'Auslastung im aktuellen Jahr:': 'Auslastung im aktuellen Jahr:',
+                    'Tage': 'Tage',
+                    'Buchung stornieren': 'Buchung stornieren',
+                    'Stornierungslink wird überprüft...': 'Stornierungslink wird überprüft...',
+                    'Ungültiger oder bereits stornierter Buchungslink.': 'Ungültiger oder bereits stornierter Buchungslink.',
+                    'Buchungsdetails:': 'Buchungsdetails:',
+                    'Confirm & Cancel Booking': 'Buchung bestätigen & stornieren',
+                    'Back to homepage': 'Zurück zur Startseite',
+                    'Soll die Buchung von %s wirklich storniert werden?': 'Soll die Buchung von %s wirklich storniert werden?',
+                    'Ihre Buchung wurde erfolgreich storniert.': 'Ihre Buchung wurde erfolgreich storniert.',
+                    'Fehler beim Stornieren der Buchung:': 'Fehler beim Stornieren der Buchung:',
+                    'Buchung von %s erfolgreich storniert. Bestätigung wurde per E-Mail gesendet.': 'Buchung von %s erfolgreich storniert. Bestätigung wurde per E-Mail gesendet.',
+                    'Fehler! E-Mail konnte nicht gesendet werden.': 'Fehler! E-Mail konnte nicht gesendet werden.',
+                    'Keine Buchungen zum Exportieren vorhanden.': 'Keine Buchungen zum Exportieren vorhanden.',
+                    'Manuelle Buchung von %s bis %s erfolgreich hinzugefügt!': 'Manuelle Buchung von %s bis %s erfolgreich hinzugefügt!',
+                    'Wohnung nicht verfügbar': 'Wohnung nicht verfügbar',
+                    'Aktion': 'Aktion',
+                    'Typ': 'Typ',
+                    'Buchung': 'Buchung',
+                    'Löschen': 'Löschen',
+                    'Freigeben': 'Freigeben',
+                    'Erinnerung': 'Erinnerung',
+                    'Diese Buchung ist bereits storniert.': 'Diese Buchung ist bereits storniert.',
+                    'Erinnerung an Ihre bevorstehende Buchung': 'Erinnerung an Ihre bevorstehende Buchung',
+                    'Erinnerungs-E-Mail erfolgreich gesendet!': 'Erinnerungs-E-Mail erfolgreich gesendet!',
+                    'Fehler beim Senden der Erinnerungs-E-Mail.': 'Fehler beim Senden der Erinnerungs-E-Mail.',
+                    'Ihre Buchung wurde storniert': 'Ihre Buchung wurde storniert',
+                    'Ja': 'Ja',
+                    'Nein': 'Nein',
+                    'Ein Fehler ist aufgetreten. Die Buchung konnte nicht storniert werden.': 'Ein Fehler ist aufgetreten. Die Buchung konnte nicht storniert werden.'
                 },
                 en: {
                     'Willkommen in Offenbach!': 'Welcome to Offenbach!',
-                    'Ich freue mich auf deinen Besuch! ...': 'I\'m looking forward to your visit! You can book an overnight stay as a guest via the calendar. Or you can log in as an admin to manage the calendar.',
-                    'Gast Login': 'Guest Login',
+                    'Ich freue mich auf deinen Besuch! Über den Kalender kannst du als Gast bequem eine Übernachtung buchen. Oder du meldest dich als Admin an, um den Kalender zu verwalten.': 'I\'m looking forward to your visit! You can book an overnight stay as a guest via the calendar. Or you can log in as an admin to manage the calendar.',
+                    'Gast-Login': 'Guest Login',
+                    'Admin Login': 'Admin Login',
+                    'Startseite': 'Homepage',
                     'Bitte Passwort eingeben:': 'Please enter your password:',
                     'Passwort': 'Password',
                     'Einloggen': 'Login',
@@ -728,8 +718,10 @@
                     'Blockierte Tage': 'Blocked Days',
                     'Ausgewählter Zeitraum': 'Selected Period',
                     'Buchungsdetails': 'Booking Details',
+                    'Buchung von': 'Booking from',
+                    'bis': 'to',
                     'Name *': 'Name *',
-                    'E-Mail-Adresse *': 'E-Mail Address *',
+                    'E-Mail-Adresse *': 'E-mail Address *',
                     'Anzahl Personen * (max. 3)': 'Number of people * (max. 3)',
                     'Startdatum *': 'Start Date *',
                     'Enddatum *': 'End Date *',
@@ -742,8 +734,8 @@
                     'Parkplatz benötigt?': 'Parking space needed?',
                     'Buchung abschicken': 'Submit Booking',
                     'Abbrechen': 'Cancel',
-                    'Bitte Name eingeben.': 'Please enter a name.',
-                    'Bitte E-Mail-Adresse eingeben.': 'Please enter an email address.',
+                    'Bitte einen Namen eingeben.': 'Please enter a name.',
+                    'Bitte eine gültige E-Mail-Adresse eingeben.': 'Please enter a valid email address.',
                     'Bitte gültige Anzahl Personen eingeben (max. 3).': 'Please enter a valid number of people (max. 3).',
                     'Bitte gültige Start- und Enddaten eingeben.': 'Please enter valid start and end dates.',
                     'Enddatum darf nicht vor Startdatum liegen.': 'End date cannot be before the start date.',
@@ -752,8 +744,6 @@
                     'Buchung erfolgreich!': 'Booking successful!',
                     'Ihre Buchungsdetails wurden gespeichert. Sie erhalten in Kürze eine Bestätigung per E-Mail.': 'Your booking details have been saved. You will receive a confirmation email shortly.',
                     'Neue Buchung': 'New Booking',
-                    'Admin Login': 'Admin Login',
-                    'Bitte Admin-Passwort eingeben:': 'Please enter the admin password:',
                     'Admin Passwort': 'Admin Password',
                     'Falsches Admin-Passwort!': 'Wrong admin password!',
                     'Jahreskalender (Admin-Ansicht)': 'Yearly Calendar (Admin View)',
@@ -769,7 +759,6 @@
                     'Enddatum': 'End Date',
                     'Buchung eintragen': 'Add Booking',
                     'Bitte wähle zuerst einen Zeitraum im Kalender aus.': 'Please select a period in the calendar first.',
-                    'Der ausgewählte Zeitraum überschneidet sich mit einer bestehenden Buchung.': 'The selected period overlaps with an existing booking.',
                     'Zeitraum von %s bis %s erfolgreich blockiert.': 'The period from %s to %s was successfully blocked.',
                     'Sollen die Tage von %s bis %s wirklich freigegeben werden?': 'Are you sure you want to unblock the days from %s to %s?',
                     'Tage erfolgreich freigegeben!': 'Days successfully unblocked!',
@@ -785,8 +774,8 @@
                     'Stornierungslink wird überprüft...': 'Cancellation link is being checked...',
                     'Ungültiger oder bereits stornierter Buchungslink.': 'Invalid or already cancelled booking link.',
                     'Buchungsdetails:': 'Booking Details:',
-                    'Buchung bestätigen & stornieren': 'Confirm & Cancel Booking',
-                    'Zurück zur Startseite': 'Back to homepage',
+                    'Confirm & Cancel Booking': 'Confirm & Cancel Booking',
+                    'Back to homepage': 'Back to homepage',
                     'Soll die Buchung von %s wirklich storniert werden?': 'Are you sure you want to cancel the booking from %s?',
                     'Ihre Buchung wurde erfolgreich storniert.': 'Your booking has been successfully cancelled.',
                     'Fehler beim Stornieren der Buchung:': 'Error cancelling the booking:',
@@ -794,34 +783,21 @@
                     'Fehler! E-Mail konnte nicht gesendet werden.': 'Error! The email could not be sent.',
                     'Keine Buchungen zum Exportieren vorhanden.': 'No bookings available for export.',
                     'Manuelle Buchung von %s bis %s erfolgreich hinzugefügt!': 'Manual booking from %s to %s was added successfully!',
-                    'Sie haben eine Buchung von %s.': 'You have a booking from %s.',
-                    'Buchung für %s von %s bis %s.': 'Booking for %s from %s to %s.',
-                    'Ihre Buchung von %s wurde storniert.': 'Your booking from %s has been cancelled.',
-                    'Buchung von %s von %s bis %s.': 'Booking from %s from %s to %s.',
-                    'Die Buchung wurde erfolgreich storniert.': 'The booking has been successfully cancelled.',
-                    'Stornierungsbestätigung per E-Mail an den Gast gesendet.': 'Cancellation confirmation email sent to guest.',
-                    'Ein Fehler ist aufgetreten. Die Buchung konnte nicht storniert werden.': 'An error occurred. The booking could not be cancelled.',
-                    'Erinnerungs-E-Mail senden': 'Send Reminder Email',
-                    'Erinnerungs-E-Mail erfolgreich gesendet!': 'Reminder email successfully sent!',
-                    'Fehler beim Senden der Erinnerungs-E-Mail.': 'Error sending reminder email.',
-                    'Name': 'Name',
-                    'E-Mail': 'Email',
-                    'Startdatum': 'Start Date',
-                    'Enddatum': 'End Date',
+                    'Wohnung nicht verfügbar': 'Apartment not available',
                     'Aktion': 'Action',
+                    'Typ': 'Type',
                     'Buchung': 'Booking',
-                    'Storniert': 'Cancelled',
-                    'Blockiert': 'Blocked',
                     'Löschen': 'Delete',
                     'Freigeben': 'Unblock',
-                    'Bitte wähle eine Buchung aus, um eine Erinnerung zu senden.': 'Please select a booking to send a reminder.',
-                    'Buchung von %s bis %s erfolgreich storniert.': 'Booking from %s to %s was successfully cancelled.',
-                    'Buchung wirklich stornieren?': 'Do you really want to cancel this booking?',
-                    'Blockierung wirklich entfernen?': 'Do you really want to delete this block?',
+                    'Erinnerung': 'Reminder',
                     'Diese Buchung ist bereits storniert.': 'This booking is already cancelled.',
-                    'Das Enddatum darf nicht vor dem Startdatum liegen.': 'The end date cannot be before the start date.',
-                    'Bitte einen Namen eingeben.': 'Please enter a name.',
-                    'Bitte eine gültige E-Mail-Adresse eingeben.': 'Please enter a valid email address.'
+                    'Erinnerung an Ihre bevorstehende Buchung': 'Reminder about your upcoming booking',
+                    'Erinnerungs-E-Mail erfolgreich gesendet!': 'Reminder email successfully sent!',
+                    'Fehler beim Senden der Erinnerungs-E-Mail.': 'Error sending reminder email.',
+                    'Ihre Buchung wurde storniert': 'Your booking has been cancelled',
+                    'Ja': 'Yes',
+                    'Nein': 'No',
+                    'Ein Fehler ist aufgetreten. Die Buchung konnte nicht storniert werden.': 'An error occurred. The booking could not be cancelled.'
                 }
             };
 
@@ -974,7 +950,7 @@
                     resetBookingForm();
                     renderYearlyCalendar(currentYear);
                 } else {
-                    document.getElementById("friend-login-error").textContent = translations[currentLang]['Wrong password!'];
+                    document.getElementById("friend-login-error").textContent = translations[currentLang]['Falsches Passwort!'];
                 }
             });
 
@@ -987,7 +963,7 @@
                     renderAdminBookings();
                     renderStats();
                 } else {
-                    document.getElementById("admin-login-error").textContent = translations[currentLang]['Wrong admin password!'];
+                    document.getElementById("admin-login-error").textContent = translations[currentLang]['Falsches Admin-Passwort!'];
                 }
             });
 
@@ -1070,7 +1046,7 @@
                             tooltip = bookedEntry.name;
                         } else if(cancelledEntry && currentView === 'admin') {
                             classes = "cancelled";
-                            tooltip = `${cancelledEntry.name} (${translations[currentLang]['storniert']})`;
+                            tooltip = `${cancelledEntry.name} (${translations[currentLang]['Storniert']})`;
                         }
 
                         let cellContent = day;
@@ -1136,7 +1112,7 @@
                     if (!isSelectionValid) {
                         selectedStartDate = null;
                         selectedEndDate = null;
-                        showNotification(translations[currentLang]['The selected period overlaps with an existing booking.'], true);
+                        showNotification(translations[currentLang]['Der ausgewählte Zeitraum überschneidet sich mit einer bestehenden Buchung.'], true);
                         updateSelectedDays();
                         return;
                     }
@@ -1339,7 +1315,7 @@
                         arrival_time: newBooking.arrivalTime,
                         departure_time: newBooking.departureTime,
                         comment: newBooking.comment,
-                        _subject: translations[currentLang]['Neue Buchung von'] + ' ' + newBooking.name
+                        _subject: translations[currentLang]['Buchung von'] + ' ' + newBooking.name
                     };
 
                     await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_BOOKING, templateParams, EMAILJS_PUBLIC_KEY);
@@ -1421,8 +1397,9 @@
             async function renderAdminBookings() {
                 const bookings = await fetchBookings();
                 const blocks = await fetchBlocks();
+                const bookingTableHeaders = [translations[currentLang]['Typ'], translations[currentLang]['Name'], translations[currentLang]['E-Mail'], translations[currentLang]['Bemerkungen'], translations[currentLang]['Startdatum'], translations[currentLang]['Enddatum'], translations[currentLang]['Aktion']];
 
-                let html = `<table><thead><tr><th>Typ</th><th>Name</th><th>E-Mail</th><th>Bemerkungen</th><th>Startdatum</th><th>Enddatum</th><th>Aktion</th></tr></thead><tbody>`;
+                let html = `<table><thead><tr><th>${bookingTableHeaders.join('</th><th>')}</th></tr></thead><tbody>`;
 
                 bookings.sort((a,b) => new Date(a.startDate) - new Date(b.startDate));
                 blocks.sort((a,b) => new Date(a.startDate) - new Date(b.startDate));
@@ -1448,7 +1425,9 @@
                 blocks.forEach(bl => {
                     html += `<tr>
                         <td>${translations[currentLang]['Blockiert']}</td>
-                        <td colspan="4" style="text-align:center;">-</td>
+                        <td>-</td>
+                        <td>-</td>
+                        <td>-</td>
                         <td>${bl.startDate}</td>
                         <td>${bl.endDate}</td>
                         <td><button class="btn-delete-block" data-id="${bl.id}" style="background-color: #757575; padding:5px 10px;">${translations[currentLang]['Freigeben']}</button></td>
@@ -1677,13 +1656,13 @@
                         booking.email || "",
                         booking.persons || "",
                         booking.breakfast || "",
-                        booking.parking ? "Ja" : "Nein",
+                        booking.parking ? translations[currentLang]['Ja'] : translations[currentLang]['Nein'],
                         booking.arrivalTime || "",
                         booking.departureTime || "",
                         booking.comment || "",
                         booking.startDate,
                         booking.endDate,
-                        booking.status
+                        booking.status === 'active' ? translations[currentLang]['Buchung'] : translations[currentLang]['Storniert']
                     ];
                     csvRows.push(row.map(cell => `"${cell}"`).join(';'));
                 }
