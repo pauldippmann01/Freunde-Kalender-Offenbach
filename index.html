@@ -270,6 +270,83 @@
                 padding: 10px;
             }
         }
+
+        /* ----- Popup Styles ----- */
+        #popup-overlay, #edit-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        #popup-box, #edit-modal-box {
+            background-color: #fff;
+            padding: 25px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            max-width: 400px;
+            width: 90%;
+            transform: scale(0.9);
+            transition: transform 0.3s ease-in-out;
+        }
+        #popup-overlay.visible #popup-box, #edit-modal-overlay.visible #edit-modal-box {
+            transform: scale(1);
+        }
+        #popup-box h4 {
+            margin-top: 0;
+            font-size: 1.2em;
+        }
+        #popup-message {
+            margin-bottom: 20px;
+            line-height: 1.4;
+        }
+        #popup-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+        .popup-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            color: #fff;
+        }
+        .popup-btn.primary { background-color: #3f51b5; }
+        .popup-btn.secondary { background-color: #f44336; }
+        .popup-btn.primary:hover { background-color: #5c6bc0; }
+        .popup-btn.secondary:hover { background-color: #d32f2f; }
+        .popup-icon {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        .popup-icon.success { color: #4CAF50; }
+        .popup-icon.error { color: #f44336; }
+        .popup-icon.info { color: #2196F3; }
+        /* ----- End Popup Styles ----- */
+
+        /* ----- Edit Modal Styles ----- */
+        #edit-modal-box {
+            max-width: 500px;
+            text-align: left;
+        }
+        #edit-modal-box h3 {
+            text-align: center;
+        }
+        #edit-modal-box button {
+            width: auto;
+        }
+        #edit-modal-buttons {
+            text-align: center;
+        }
+        /* ----- End Edit Modal Styles ----- */
     </style>
 </head>
 <body>
@@ -280,7 +357,7 @@
     </nav>
 
     <main>
-        <section id="start-page">
+        <section id="start-page" style="display:none;">
             <div class="container">
                 <h1>Willkommen in Offenbach!</h1>
                 <p style="text-align:center;">
@@ -389,6 +466,7 @@
                 <div style="margin-bottom: 20px; text-align: center;">
                     <button id="btn-logout-admin" style="background-color: #f44336;"><i class="fas fa-sign-out-alt icon"></i> Admin Logout</button>
                     <button id="btn-export-csv"><i class="fas fa-file-csv icon"></i> Exportiere Buchungen (CSV)</button>
+                    <button id="btn-export-ical"><i class="fas fa-calendar-alt icon"></i> Exportiere Kalender (iCal)</button>
                 </div>
                 <div style="text-align:center; margin-bottom: 10px;">
                     <button id="admin-year-prev">&lt; Vorjahr</button>
@@ -440,6 +518,64 @@
         </section>
 
     </main>
+    
+    <div id="popup-overlay">
+        <div id="popup-box">
+            <div id="popup-icon-container"></div>
+            <h4 id="popup-title"></h4>
+            <p id="popup-message"></p>
+            <div id="popup-buttons"></div>
+        </div>
+    </div>
+
+    <div id="edit-modal-overlay">
+        <div id="edit-modal-box">
+            <form id="edit-booking-form">
+                <h3 style="margin-top: 0;">Buchung bearbeiten</h3>
+                <div>
+                    <label for="edit-book-name">Name *</label>
+                    <input type="text" id="edit-book-name" required />
+                </div>
+                <div>
+                    <label for="edit-book-email">E-Mail-Adresse *</label>
+                    <input type="email" id="edit-book-email" required />
+                </div>
+                <div>
+                    <label for="edit-book-persons">Anzahl Personen * (max. 3)</label>
+                    <input type="number" id="edit-book-persons" min="1" max="3" required />
+                </div>
+                <div>
+                    <label for="edit-book-start-date">Startdatum *</label>
+                    <input type="date" id="edit-book-start-date" required />
+                </div>
+                <div>
+                    <label for="edit-book-end-date">Enddatum *</label>
+                    <input type="date" id="edit-book-end-date" required />
+                </div>
+                <div>
+                    <label for="edit-book-breakfast">Frühstück benötigt? *</label>
+                    <select id="edit-book-breakfast" required>
+                        <option value="ja">Ja</option>
+                        <option value="nein" selected>Nein</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="edit-book-arrival-time">Anreise Uhrzeit (optional)</label>
+                    <input type="time" id="edit-book-arrival-time" />
+                </div>
+                <div>
+                    <label for="edit-book-departure-time">Abreise Uhrzeit (optional)</label>
+                    <input type="time" id="edit-book-departure-time" />
+                </div>
+                <div id="edit-booking-error" class="error-msg"></div>
+                <div id="edit-modal-buttons">
+                    <button type="submit" style="background-color: #4CAF50;">Änderungen speichern</button>
+                    <button type="button" id="btn-cancel-edit-form" style="background-color: #f44336;">Abbrechen</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
 
     <script>
         (() => {
@@ -509,6 +645,79 @@
             }
             function generateCancellationId() {
                 return 'cancel_' + Math.random().toString(36).substr(2, 9);
+            }
+            function formatIcsDate(date, time) {
+                const d = new Date(date);
+                if (time) {
+                    const [h, m] = time.split(':');
+                    d.setHours(h, m, 0);
+                }
+                const year = d.getFullYear();
+                const month = (d.getMonth() + 1).toString().padStart(2, '0');
+                const day = d.getDate().toString().padStart(2, '0');
+                const hours = d.getHours().toString().padStart(2, '0');
+                const minutes = d.getMinutes().toString().padStart(2, '0');
+                const seconds = d.getSeconds().toString().padStart(2, '0');
+                return `${year}${month}${day}T${hours}${minutes}${seconds}`;
+            }
+            
+            // -------------------
+            // Pop-up-Funktionen
+            // -------------------
+            const popupOverlay = document.getElementById('popup-overlay');
+            const popupTitle = document.getElementById('popup-title');
+            const popupMessage = document.getElementById('popup-message');
+            const popupButtons = document.getElementById('popup-buttons');
+            const popupIconContainer = document.getElementById('popup-icon-container');
+
+            function showPopupMessage(message, title, type = 'info', extraButtons = '') {
+                popupTitle.textContent = title;
+                popupMessage.textContent = message;
+                popupIconContainer.innerHTML = '';
+                
+                let iconClass = '';
+                if (type === 'success') {
+                    iconClass = 'fa-circle-check popup-icon success';
+                } else if (type === 'error') {
+                    iconClass = 'fa-circle-xmark popup-icon error';
+                } else {
+                    iconClass = 'fa-circle-info popup-icon info';
+                }
+                popupIconContainer.innerHTML = `<i class="fa-solid ${iconClass}"></i>`;
+
+                popupButtons.innerHTML = `<button class="popup-btn primary" onclick="closePopup()">OK</button>${extraButtons}`;
+                popupOverlay.style.display = 'flex';
+                setTimeout(() => popupOverlay.classList.add('visible'), 10);
+            }
+
+            function showPopupConfirm(message, onConfirm, onCancel, title = 'Bestätigen') {
+                popupTitle.textContent = title;
+                popupMessage.textContent = message;
+                popupIconContainer.innerHTML = '<i class="fa-solid fa-circle-question popup-icon info"></i>';
+                
+                popupButtons.innerHTML = `
+                    <button class="popup-btn secondary" id="popup-cancel-btn">Abbrechen</button>
+                    <button class="popup-btn primary" id="popup-confirm-btn">Ja</button>
+                `;
+                
+                document.getElementById('popup-confirm-btn').onclick = () => {
+                    closePopup();
+                    if (onConfirm) onConfirm();
+                };
+                document.getElementById('popup-cancel-btn').onclick = () => {
+                    closePopup();
+                    if (onCancel) onCancel();
+                };
+                popupOverlay.style.display = 'flex';
+                setTimeout(() => popupOverlay.classList.add('visible'), 10);
+            }
+            
+            function closePopup() {
+                popupOverlay.classList.remove('visible');
+                setTimeout(() => {
+                    popupOverlay.style.display = 'none';
+                    popupButtons.innerHTML = '';
+                }, 300);
             }
 
             // -------------------
@@ -833,6 +1042,7 @@
                 bookingForm.style.display = "none";
                 bookingError.textContent = "";
                 bookingForm.reset && bookingForm.reset();
+                window.scrollTo(0, 0); // Scrollt zum Seitenanfang
             }
             
             document.getElementById("btn-cancel-booking-form").addEventListener('click', () => {
@@ -923,10 +1133,18 @@
 
                 try {
                     await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_ADMIN, templateParams, EMAILJS_PUBLIC_KEY);
-                    alert("Buchung erfolgreich gespeichert und Bestätigung gesendet!");
+                    
+                    const iCalButton = `<button class="popup-btn primary" id="btn-export-guest-ical">Zum Kalender hinzufügen (iCal)</button>`;
+                    showPopupMessage("Ihre Buchung wurde erfolgreich gespeichert und eine Bestätigung per E-Mail gesendet. Sie können nun weitere Buchungen vornehmen.", "Buchung erfolgreich!", "success", iCalButton);
+                    
+                    document.getElementById('btn-export-guest-ical').addEventListener('click', () => {
+                        const description = `Name: ${newBooking.name}\\nE-Mail: ${newBooking.email}\\nPersonen: ${newBooking.persons}\\nFrühstück: ${newBooking.breakfast}\\nAnreise: ${newBooking.arrivalTime || 'Nicht angegeben'}\\nAbreise: ${newBooking.departureTime || 'Nicht angegeben'}`;
+                        generateIcsFile("Übernachtung bei Paul", newBooking.startDate, newBooking.endDate, description, "Gast Buchung");
+                    });
+
                 } catch (error) {
                     console.error("Fehler beim Senden der E-Mail:", error);
-                    alert("Buchung erfolgreich, aber E-Mail konnte nicht gesendet werden. Bitte kontaktiere den Admin.");
+                    showPopupMessage("Ihre Buchung wurde erfolgreich erfasst, aber es gab einen Fehler beim Senden der E-Mail. Bitte kontaktieren Sie den Admin direkt.", "Fehler beim Senden der E-Mail", "error");
                 }
 
                 resetBookingForm();
@@ -953,7 +1171,10 @@
                         <td>${bk.breakfast}</td>
                         <td>${formatDateDe(bk.startDate)}</td>
                         <td>${formatDateDe(bk.endDate)}</td>
-                        <td><button class="btn-delete-booking" data-id="${bk.id}" style="background-color: #f44336; padding:5px 10px;">Löschen</button></td>
+                        <td>
+                            <button class="btn-edit-booking" data-id="${bk.id}" style="background-color: #3f51b5; padding:5px 10px;">Bearbeiten</button>
+                            <button class="btn-delete-booking" data-id="${bk.id}" style="background-color: #f44336; padding:5px 10px;">Löschen</button>
+                        </td>
                     </tr>`;
                 });
 
@@ -970,26 +1191,36 @@
                 html += "</tbody></table>";
 
                 adminBookingsList.innerHTML = html;
-
+                
+                document.querySelectorAll(".btn-edit-booking").forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const id = btn.getAttribute("data-id");
+                        const bookingToEdit = bookings.find(b => b.id === id);
+                        if (bookingToEdit) {
+                            showEditForm(bookingToEdit);
+                        }
+                    });
+                });
+                
                 document.querySelectorAll(".btn-delete-booking").forEach(btn => {
-                    btn.addEventListener('click', async () => {
-                        if(confirm("Buchung wirklich löschen?")) {
-                            const id = btn.getAttribute("data-id");
-                            const bookingToDelete = bookings.find(b => b.id === id);
-                            if (bookingToDelete) {
+                    btn.addEventListener('click', () => {
+                        const id = btn.getAttribute("data-id");
+                        const bookingToDelete = bookings.find(b => b.id === id);
+                        if (bookingToDelete) {
+                            showPopupConfirm(`Buchung von ${bookingToDelete.name} wirklich löschen?`, async () => {
                                 await deleteBookingWithNotification(bookingToDelete, true);
-                            }
+                            });
                         }
                     });
                 });
                 document.querySelectorAll(".btn-delete-block").forEach(btn => {
-                    btn.addEventListener('click', async () => {
-                        if(confirm("Blockierung wirklich entfernen?")) {
-                            const id = btn.getAttribute("data-id");
+                    btn.addEventListener('click', () => {
+                        const id = btn.getAttribute("data-id");
+                        showPopupConfirm("Blockierung wirklich entfernen?", async () => {
                             await deleteBlock(id);
                             renderAdminBookings();
                             renderYearlyCalendar(currentYear);
-                        }
+                        });
                     });
                 });
             }
@@ -1007,22 +1238,125 @@
                     };
 
                     await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_CANCEL, templateParams, EMAILJS_PUBLIC_KEY);
-                    alert(`Buchung von ${booking.name} erfolgreich storniert. Bestätigung wurde per E-Mail gesendet.`);
+                    showPopupMessage(`Buchung von ${booking.name} erfolgreich storniert. Bestätigung wurde per E-Mail gesendet.`, "Stornierung erfolgreich", "success");
                     
                     renderAdminBookings();
                     renderYearlyCalendar(currentYear);
                 } catch (error) {
                     console.error("Fehler beim Stornieren der Buchung:", error);
-                    alert("Ein Fehler ist aufgetreten. Die Buchung konnte nicht storniert werden.");
+                    showPopupMessage("Ein Fehler ist aufgetreten. Die Buchung konnte nicht storniert werden.", "Fehler", "error");
                 }
             }
+
+            // -------------------
+            // Edit-Modal-Logik (Admin)
+            // -------------------
+            const editModalOverlay = document.getElementById('edit-modal-overlay');
+            const editBookingForm = document.getElementById('edit-booking-form');
+            const editError = document.getElementById('edit-booking-error');
+            let currentBookingIdToEdit = null;
+
+            function showEditForm(booking) {
+                currentBookingIdToEdit = booking.id;
+                document.getElementById('edit-book-name').value = booking.name;
+                document.getElementById('edit-book-email').value = booking.email;
+                document.getElementById('edit-book-persons').value = booking.persons;
+                document.getElementById('edit-book-start-date').value = booking.startDate;
+                document.getElementById('edit-book-end-date').value = booking.endDate;
+                document.getElementById('edit-book-breakfast').value = booking.breakfast;
+                document.getElementById('edit-book-arrival-time').value = booking.arrivalTime || '';
+                document.getElementById('edit-book-departure-time').value = booking.departureTime || '';
+                editError.textContent = '';
+                editModalOverlay.style.display = 'flex';
+                setTimeout(() => editModalOverlay.classList.add('visible'), 10);
+            }
+
+            function closeEditForm() {
+                editModalOverlay.classList.remove('visible');
+                setTimeout(() => {
+                    editModalOverlay.style.display = 'none';
+                    currentBookingIdToEdit = null;
+                }, 300);
+            }
+            
+            document.getElementById('btn-cancel-edit-form').addEventListener('click', closeEditForm);
+            
+            editBookingForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const name = document.getElementById("edit-book-name").value.trim();
+                const email = document.getElementById("edit-book-email").value.trim();
+                const persons = parseInt(document.getElementById("edit-book-persons").value);
+                const breakfast = document.getElementById("edit-book-breakfast").value;
+                const arrival = document.getElementById("edit-book-arrival-time").value || null;
+                const departure = document.getElementById("edit-book-departure-time").value || null;
+                const startDate = document.getElementById("edit-book-start-date").value;
+                const endDate = document.getElementById("edit-book-end-date").value;
+
+                editError.textContent = "";
+
+                if(!name || !email || !persons || !startDate || !endDate) {
+                    editError.textContent = "Bitte füllen Sie alle erforderlichen Felder aus.";
+                    return;
+                }
+                if(endDate < startDate) {
+                    editError.textContent = "Enddatum darf nicht vor Startdatum liegen.";
+                    return;
+                }
+                if(persons < 1 || persons > 3) {
+                    editError.textContent = "Bitte gültige Anzahl Personen eingeben (max. 3).";
+                    return;
+                }
+
+                const bookings = (await fetchBookings()).filter(b => b.id !== currentBookingIdToEdit);
+                const blocks = await fetchBlocks();
+                
+                const rangeStart = dateFromStr(startDate);
+                const rangeEnd = dateFromStr(endDate);
+                let day = new Date(rangeStart);
+                while (day <= rangeEnd) {
+                    const dayStr = formatDate(day);
+                    if (blocks.some(b => checkOverlap(dayStr, dayStr, b.startDate, b.endDate))) {
+                        editError.textContent = `Der Zeitraum überschneidet sich mit einem blockierten Zeitraum.`;
+                        return;
+                    }
+                    if (bookings.some(b => checkOverlap(dayStr, dayStr, b.startDate, b.endDate))) {
+                        editError.textContent = `Der Zeitraum überschneidet sich mit einer bestehenden Buchung.`;
+                        return;
+                    }
+                    day.setDate(day.getDate() + 1);
+                }
+                
+                const updatedBooking = {
+                    name,
+                    email,
+                    persons,
+                    breakfast,
+                    arrivalTime: arrival,
+                    departureTime: departure,
+                    startDate,
+                    endDate
+                };
+                
+                try {
+                    await db.collection('bookings').doc(currentBookingIdToEdit).update(updatedBooking);
+                    showPopupMessage("Buchung erfolgreich aktualisiert!", "Erfolgreich", "success");
+                    closeEditForm();
+                    renderAdminBookings();
+                    renderYearlyCalendar(currentYear);
+                } catch (error) {
+                    console.error("Fehler beim Aktualisieren der Buchung:", error);
+                    showPopupMessage("Ein Fehler ist aufgetreten. Die Buchung konnte nicht aktualisiert werden.", "Fehler", "error");
+                }
+            });
+
 
             // -------------------
             // Blockieren/Freigeben direkt im Kalender (Admin)
             // -------------------
             document.getElementById("btn-block-selected").addEventListener('click', async () => {
                 if (!selectedStartDate || !selectedEndDate) {
-                    alert("Bitte wähle zuerst einen Zeitraum im Kalender aus.");
+                    showPopupMessage("Bitte wähle zuerst einen Zeitraum im Kalender aus.", "Kein Zeitraum ausgewählt");
                     return;
                 }
 
@@ -1037,14 +1371,14 @@
                 while (day <= rangeEnd) {
                     const dayStr = formatDate(day);
                     if (bookings.some(b => checkOverlap(dayStr, dayStr, b.startDate, b.endDate))) {
-                        alert("Der ausgewählte Zeitraum überschneidet sich mit einer bestehenden Buchung.");
+                        showPopupMessage("Der ausgewählte Zeitraum überschneidet sich mit einer bestehenden Buchung.", "Fehler", "error");
                         return;
                     }
                     day.setDate(day.getDate() + 1);
                 }
 
                 await db.collection('blocks').add({startDate, endDate});
-                alert(`Zeitraum von ${formatDateDe(startDate)} bis ${formatDateDe(endDate)} erfolgreich blockiert.`);
+                showPopupMessage(`Zeitraum von ${formatDateDe(startDate)} bis ${formatDateDe(endDate)} erfolgreich blockiert.`, "Zeitraum blockiert", "success");
                 selectedStartDate = null;
                 selectedEndDate = null;
                 renderAdminBookings();
@@ -1053,14 +1387,14 @@
             
             document.getElementById("btn-unblock-selected").addEventListener('click', async () => {
                 if (!selectedStartDate || !selectedEndDate) {
-                    alert("Bitte wähle zuerst einen Zeitraum im Kalender aus.");
+                    showPopupMessage("Bitte wähle zuerst einen Zeitraum im Kalender aus.", "Kein Zeitraum ausgewählt");
                     return;
                 }
                 
                 const startDate = formatDate(selectedStartDate <= selectedEndDate ? selectedStartDate : selectedEndDate);
                 const endDate = formatDate(selectedStartDate <= selectedEndDate ? selectedEndDate : selectedStartDate);
 
-                if (confirm(`Sollen die Tage von ${formatDateDe(startDate)} bis ${formatDateDe(endDate)} wirklich freigegeben werden?`)) {
+                showPopupConfirm(`Sollen die Tage von ${formatDateDe(startDate)} bis ${formatDateDe(endDate)} wirklich freigegeben werden?`, async () => {
                     const blocks = await fetchBlocks();
                     let blocksToRemove = blocks.filter(block => checkOverlap(block.startDate, block.endDate, startDate, endDate));
                     
@@ -1071,25 +1405,99 @@
                             batch.delete(docRef);
                         });
                         await batch.commit();
-
-                        alert("Tage erfolgreich freigegeben!");
+                        showPopupMessage("Tage erfolgreich freigegeben!", "Erfolgreich", "success");
                     } else {
-                        alert("Keine Blockierung im ausgewählten Zeitraum gefunden.");
+                        showPopupMessage("Keine Blockierung im ausgewählten Zeitraum gefunden.", "Keine Blockierung", "info");
                     }
 
                     selectedStartDate = null;
                     selectedEndDate = null;
                     renderAdminBookings();
                     renderYearlyCalendar(currentYear);
-                }
+                });
             });
 
+            // -------------------
+            // iCal-Export Funktionen
+            // -------------------
+            function generateIcsFile(title, startDate, endDate, description, filename) {
+                const start = new Date(startDate);
+                const end = new Date(endDate);
+                end.setDate(end.getDate() + 1); // iCal end date is exclusive
+                
+                const icsContent = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Gast Kalender Offenbach//NONSGML v1.0//EN
+BEGIN:VEVENT
+UID:${new Date().getTime()}@deine-domain.com
+DTSTAMP:${formatIcsDate(new Date())}
+DTSTART;VALUE=DATE:${formatIcsDate(start)}
+DTEND;VALUE=DATE:${formatIcsDate(end)}
+SUMMARY:${title}
+DESCRIPTION:${description}
+END:VEVENT
+END:VCALENDAR`;
+
+                const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8;' });
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(blob);
+                link.download = `${filename}.ics`;
+                link.click();
+            }
+
+            document.getElementById("btn-export-ical").addEventListener('click', async () => {
+                const bookings = await fetchBookings();
+                const blocks = await fetchBlocks();
+
+                let icsContent = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Gast Kalender Offenbach//NONSGML v1.0//EN\n`;
+
+                bookings.forEach(bk => {
+                    const start = new Date(bk.startDate);
+                    const end = new Date(bk.endDate);
+                    end.setDate(end.getDate() + 1); // iCal end date is exclusive
+                    
+                    const description = `Name: ${bk.name}\\nE-Mail: ${bk.email}\\nPersonen: ${bk.persons}\\nFrühstück: ${bk.breakfast}\\nAnreise: ${bk.arrivalTime || 'Nicht angegeben'}\\nAbreise: ${bk.departureTime || 'Nicht angegeben'}`;
+
+                    icsContent += `BEGIN:VEVENT
+UID:${bk.id}@deine-domain.com
+DTSTAMP:${formatIcsDate(new Date())}
+DTSTART;VALUE=DATE:${formatIcsDate(start)}
+DTEND;VALUE=DATE:${formatIcsDate(end)}
+SUMMARY:Übernachtung bei Paul
+DESCRIPTION:${description}
+END:VEVENT\n`;
+                });
+                
+                blocks.forEach(bl => {
+                    const start = new Date(bl.startDate);
+                    const end = new Date(bl.endDate);
+                    end.setDate(end.getDate() + 1);
+                    
+                    icsContent += `BEGIN:VEVENT
+UID:${bl.id}@deine-domain.com
+DTSTAMP:${formatIcsDate(new Date())}
+DTSTART;VALUE=DATE:${formatIcsDate(start)}
+DTEND;VALUE=DATE:${formatIcsDate(end)}
+SUMMARY:Blockierter Zeitraum
+END:VEVENT\n`;
+                });
+
+                icsContent += "END:VCALENDAR";
+
+                const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8;' });
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(blob);
+                link.download = `Kalender_Export_${new Date().toISOString().slice(0, 10)}.ics`;
+                link.click();
+            });
 
             // CSV-Export-Funktion
             async function exportBookingsToCsv() {
                 const bookings = await fetchBookings();
                 if (bookings.length === 0) {
-                    alert("Keine Buchungen zum Exportieren vorhanden.");
+                    showPopupMessage("Keine Buchungen zum Exportieren vorhanden.", "Keine Daten", "info");
                     return;
                 }
 
@@ -1154,12 +1562,12 @@
                 `;
                 buttonsDiv.style.display = 'block';
 
-                document.getElementById('btn-confirm-cancellation').onclick = async () => {
-                    if (confirm(`Soll die Buchung von ${booking.name} wirklich storniert werden?`)) {
+                document.getElementById('btn-confirm-cancellation').onclick = () => {
+                    showPopupConfirm(`Soll die Buchung von ${booking.name} wirklich storniert werden?`, async () => {
                         await deleteBookingWithNotification({id: bookingId, ...booking}, false);
                         statusText.textContent = "Ihre Buchung wurde erfolgreich storniert.";
                         buttonsDiv.style.display = 'none';
-                    }
+                    });
                 };
                 document.getElementById('btn-return-home').onclick = () => {
                     window.location.href = window.location.origin + window.location.pathname;
@@ -1186,7 +1594,8 @@
                     showSection("start");
                 }
             }
-
+            
+            window.closePopup = closePopup; // Macht die Funktion global verfügbar für Inline-Klicks
             initialize();
         })();
     </script>
