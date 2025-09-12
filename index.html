@@ -81,6 +81,8 @@
             border: 1px solid #ddd;
             height: 30px;
             box-sizing: border-box;
+            position: relative; /* Wichtig für die halbtags-Darstellung */
+            overflow: hidden;
         }
         table.calendar th {
             background-color: #f2f2f2;
@@ -94,19 +96,48 @@
             background-color: #f9f9f9;
             cursor: default;
         }
-        table.calendar td.booked {
-            background-color: #ff5252;
-            color: white;
+        
+        /* Halbtages-Färbung */
+        .half-day {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1; /* Muss unter dem Tages-Text liegen */
         }
-        table.calendar td.blocked {
-            background-color: #757575;
-            color: white;
+        .half-day::before, .half-day::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
         }
-        table.calendar td.selected-start,
-        table.calendar td.selected-end,
-        table.calendar td.selected-range {
-            background-color: #81c784 !important;
+        .half-day::before {
+            clip-path: polygon(0 0, 100% 0, 0 100%);
         }
+        .half-day::after {
+            clip-path: polygon(100% 0, 100% 100%, 0 100%);
+        }
+        .booked-am::before { background-color: #ff5252; }
+        .blocked-am::before { background-color: #757575; }
+        .selected-am::before { background-color: #81c784; }
+        .booked-pm::after { background-color: #ff5252; }
+        .blocked-pm::after { background-color: #757575; }
+        .selected-pm::after { background-color: #81c784; }
+
+        .calendar-day-text {
+            position: relative;
+            z-index: 2;
+            pointer-events: none;
+            display: block;
+        }
+        
+        /* Volle Tage haben eine einzige Farbe */
+        table.calendar td.full-day-booked { background-color: #ff5252; color: white; }
+        table.calendar td.full-day-blocked { background-color: #757575; color: white; }
+        table.calendar td.full-day-selected { background-color: #81c784; color: white; }
 
         #calendar-legend {
             display: flex;
@@ -660,6 +691,105 @@
                 const seconds = d.getSeconds().toString().padStart(2, '0');
                 return `${year}${month}${day}T${hours}${minutes}${seconds}`;
             }
+            function isHalfDaySelected(dateStr, time) {
+                if (!selectedStartDate || !selectedEndDate) return false;
+                const halfDays = getHalfDaysInRange(formatDate(selectedStartDate), formatDate(selectedEndDate));
+                return halfDays.includes(toHalfDayStr(dateStr, time));
+            }
+            function isHalfDayBooked(dateStr, time, bookings) {
+                for (const booking of bookings) {
+                    const allHalfDays = getHalfDaysInRange(booking.startDate, booking.endDate, booking.arrivalTime, booking.departureTime);
+                    if (allHalfDays.includes(toHalfDayStr(dateStr, time))) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            function isHalfDayBlocked(dateStr, time, blocks) {
+                for (const block of blocks) {
+                    const allHalfDays = getHalfDaysInRange(block.startDate, block.endDate, block.arrivalTime, block.departureTime);
+                    if (allHalfDays.includes(toHalfDayStr(dateStr, time))) {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            function getBookingForHalfDay(dateStr, time, bookings) {
+                for (const booking of bookings) {
+                    const allHalfDays = getHalfDaysInRange(booking.startDate, booking.endDate, booking.arrivalTime, booking.departureTime);
+                    if (allHalfDays.includes(toHalfDayStr(dateStr, time))) {
+                        return booking;
+                    }
+                }
+                return null;
+            }
+            function getBlockForHalfDay(dateStr, time, blocks) {
+                for (const block of blocks) {
+                    const allHalfDays = getHalfDaysInRange(block.startDate, block.endDate, block.arrivalTime, block.departureTime);
+                    if (allHalfDays.includes(toHalfDayStr(dateStr, time))) {
+                        return block;
+                    }
+                }
+                return null;
+            }
+            function toHalfDayStr(dateStr, time) {
+                if (!dateStr) return null;
+                let halfDay = '';
+                if (time) {
+                    const [h, m] = time.split(':').map(Number);
+                    halfDay = (h < 12) ? 'am' : 'pm';
+                } else {
+                    halfDay = 'full';
+                }
+                return `${dateStr}-${halfDay}`;
+            }
+            function getHalfDaysInRange(start, end, startTime = null, endTime = null) {
+                const dates = [];
+                let current = new Date(start);
+                const last = new Date(end);
+
+                while (current <= last) {
+                    const dateStr = formatDate(current);
+                    const isFirstDay = dateStr === start;
+                    const isLastDay = dateStr === end;
+
+                    if (isFirstDay && isLastDay) {
+                        if (startTime && endTime) {
+                             const startHour = parseInt(startTime.split(':')[0]);
+                             const endHour = parseInt(endTime.split(':')[0]);
+                             if (startHour < 12 && endHour < 12) {
+                                dates.push(toHalfDayStr(dateStr, '09:00')); // AM
+                             } else if (startHour >= 12 && endHour >= 12) {
+                                dates.push(toHalfDayStr(dateStr, '13:00')); // PM
+                             } else {
+                                dates.push(toHalfDayStr(dateStr, '09:00'));
+                                dates.push(toHalfDayStr(dateStr, '13:00'));
+                             }
+                        } else {
+                            dates.push(toHalfDayStr(dateStr, null)); // Full day
+                        }
+                    } else if (isFirstDay) {
+                         if (startTime && parseInt(startTime.split(':')[0]) >= 12) {
+                             dates.push(toHalfDayStr(dateStr, '13:00'));
+                         } else {
+                             dates.push(toHalfDayStr(dateStr, '09:00'));
+                             dates.push(toHalfDayStr(dateStr, '13:00'));
+                         }
+                    } else if (isLastDay) {
+                        if (endTime && parseInt(endTime.split(':')[0]) < 12) {
+                             dates.push(toHalfDayStr(dateStr, '09:00'));
+                         } else {
+                             dates.push(toHalfDayStr(dateStr, '09:00'));
+                             dates.push(toHalfDayStr(dateStr, '13:00'));
+                         }
+                    } else {
+                        dates.push(toHalfDayStr(dateStr, '09:00'));
+                        dates.push(toHalfDayStr(dateStr, '13:00'));
+                    }
+                    current.setDate(current.getDate() + 1);
+                }
+                return dates;
+            }
             
             // -------------------
             // Pop-up-Funktionen
@@ -845,54 +975,120 @@
 
                 const [bookings, blocks] = await Promise.all([fetchBookings(), fetchBlocks()]);
 
-                const monthNames = [
+                const MONTH_NAMES = [
                     "Januar","Februar","März","April","Mai","Juni",
                     "Juli","August","September","Oktober","November","Dezember"
                 ];
 
-                for(let m=0; m<12; m++) {
-                    const firstDay = new Date(year, m, 1);
-                    const lastDay = new Date(year, m+1, 0);
-                    const daysInMonth = lastDay.getDate();
+                for(let month = 0; month < 12; month++) {
+                    const daysInMonth = new Date(year, month + 1, 0).getDate();
+                    const firstDay = new Date(year, month, 1).getDay();
+                    const startDay = (firstDay === 0) ? 6 : firstDay - 1;
 
-                    let monthHtml = `<table class="calendar" data-month="${m}" data-year="${year}">`;
-                    monthHtml += `<thead><tr><th colspan="7">${monthNames[m]}</th></tr>`;
-                    monthHtml += `<tr><th>M</th><th>D</th><th>M</th><th>D</th><th>F</th><th>S</th><th>S</th></tr></thead><tbody><tr>`;
-
-                    const startWeekday = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
-                    for(let i=0; i<startWeekday; i++) {
-                        monthHtml += `<td class="inactive"></td>`;
+                    let tableHTML = `
+                        <div>
+                            <h3 style="text-align: center;">${MONTH_NAMES[month]} ${year}</h3>
+                            <table class="calendar">
+                                <thead>
+                                    <tr>
+                                        <th>Mo</th><th>Di</th><th>Mi</th><th>Do</th><th>Fr</th><th>Sa</th><th>So</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                    `;
+                    for (let i = 0; i < startDay; i++) {
+                        tableHTML += '<td class="inactive"></td>';
                     }
-                    for(let day=1; day<=daysInMonth; day++) {
-                        const date = new Date(year, m, day);
-                        const dateStr = formatDate(date);
-                        let classes = "";
-                        let tooltip = "";
 
-                        const bookedEntry = bookings.find(bk => checkOverlap(dateStr, dateStr, bk.startDate, bk.endDate));
-                        const blockedEntry = blocks.find(bl => checkOverlap(dateStr, dateStr, bl.startDate, bl.endDate));
+                    for (let day = 1; day <= daysInMonth; day++) {
+                        if ((startDay + day - 1) % 7 === 0 && day !== 1) {
+                            tableHTML += '</tr><tr>';
+                        }
+                        
+                        const dateStr = formatDate(new Date(year, month, day));
+                        let dayClass = '';
+                        let bookingInfo = '';
+                        let cellContent = `<span class="calendar-day-text">${day}</span>`;
+                        let tooltip = '';
 
-                        if(blockedEntry) {
-                            classes = "blocked";
-                            tooltip = "Wohnung nicht verfügbar";
-                        } else if(bookedEntry) {
-                            classes = "booked";
-                            tooltip = bookedEntry.name;
+                        const isBookedAM = isHalfDayBooked(dateStr, 'am', bookings);
+                        const isBookedPM = isHalfDayBooked(dateStr, 'pm', bookings);
+                        const isBlockedAM = isHalfDayBlocked(dateStr, 'am', blocks);
+                        const isBlockedPM = isHalfDayBlocked(dateStr, 'pm', blocks);
+                        const isSelectedAM = isHalfDaySelected(dateStr, 'am');
+                        const isSelectedPM = isHalfDaySelected(dateStr, 'pm');
+
+                        // Überprüfe den Status des ganzen Tages
+                        const isFullDayBooked = isBookedAM && isBookedPM;
+                        const isFullDayBlocked = isBlockedAM && isBlockedPM;
+                        const isFullDaySelected = isSelectedAM && isSelectedPM;
+                        
+                        if (isFullDayBooked) {
+                            dayClass = 'full-day-booked';
+                            if (currentView !== 'friend') {
+                                const booking = getBookingForHalfDay(dateStr, 'am', bookings);
+                                if (booking) {
+                                    bookingInfo = `Gebucht von: ${booking.name}<br>Personen: ${booking.persons}<br>Email: ${booking.email}`;
+                                }
+                            }
+                        } else if (isFullDayBlocked) {
+                            dayClass = 'full-day-blocked';
+                            if (currentView !== 'friend') {
+                                const block = getBlockForHalfDay(dateStr, 'am', blocks);
+                                if (block && block.reason) {
+                                    bookingInfo = `Blockiert: ${block.reason}`;
+                                }
+                            }
+                        } else if (isFullDaySelected) {
+                             dayClass = 'full-day-selected';
+                        } else if (isBookedAM || isBookedPM || isBlockedAM || isBlockedPM || isSelectedAM || isSelectedPM) {
+                            // Halb-Tagesbuchungen
+                            dayClass = 'partially-booked';
+                            cellContent = `<div class="half-day ${isBookedAM ? 'booked-am' : ''} ${isBlockedAM ? 'blocked-am' : ''} ${isSelectedAM ? 'selected-am' : ''} ${isBookedPM ? 'booked-pm' : ''} ${isBlockedPM ? 'blocked-pm' : ''} ${isSelectedPM ? 'selected-pm' : ''}"></div><span class="calendar-day-text">${day}</span>`;
+                            if (currentView !== 'friend') {
+                                let booking;
+                                if (isBookedAM) booking = getBookingForHalfDay(dateStr, 'am', bookings);
+                                if (!booking && isBookedPM) booking = getBookingForHalfDay(dateStr, 'pm', bookings);
+                                let block;
+                                if (isBlockedAM) block = getBlockForHalfDay(dateStr, 'am', blocks);
+                                if (!block && isBlockedPM) block = getBlockForHalfDay(dateStr, 'pm', blocks);
+
+                                if (booking) {
+                                    bookingInfo = `Teilgebucht von: ${booking.name}<br>Personen: ${booking.persons}<br>Email: ${booking.email}`;
+                                } else if (block && block.reason) {
+                                    bookingInfo = `Teilblockiert: ${block.reason}`;
+                                }
+                            }
                         }
 
-                        let cellContent = day;
+                        // Tooltip für Admin-Ansicht
+                        if (bookingInfo) {
+                            tooltip = `<span class="tooltiptext">${bookingInfo}</span>`;
+                        }
+                        
+                        let cellHtml = `<td data-date="${dateStr}" class="${dayClass}">`;
                         if (tooltip) {
-                            monthHtml += `<td class="${classes}" data-date="${dateStr}"><div class="tooltip"><span>${cellContent}</span><span class="tooltiptext">${tooltip}</span></div></td>`;
+                            cellHtml += `<div class="tooltip">${cellContent}${tooltip}</div>`;
                         } else {
-                            monthHtml += `<td class="${classes}" data-date="${dateStr}"><span>${cellContent}</span></td>`;
+                            cellHtml += `<span>${cellContent}</span>`;
                         }
-
-                        if((startWeekday + day) % 7 === 0) {
-                            monthHtml += "</tr><tr>";
-                        }
+                        cellHtml += `</td>`;
+                        tableHTML += cellHtml;
                     }
-                    monthHtml += "</tr></tbody></table>";
-                    calendarContent.insertAdjacentHTML("beforeend", monthHtml);
+
+                    while ((startDay + daysInMonth) % 7 !== 0) {
+                        tableHTML += '<td class="inactive"></td>';
+                        daysInMonth++;
+                    }
+
+                    tableHTML += `
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                    calendarContent.innerHTML += tableHTML;
                 }
                 attachDateClickHandlers();
                 updateSelectedDays();
@@ -903,6 +1099,10 @@
                 const allCells = calendarSection.querySelectorAll("td");
                 allCells.forEach(cell => {
                     cell.classList.remove('selected-start', 'selected-end', 'selected-range');
+                    const halfDayDiv = cell.querySelector('.half-day');
+                    if (halfDayDiv) {
+                        halfDayDiv.classList.remove('selected-am', 'selected-pm');
+                    }
                     if(!cell.classList.contains('booked') && !cell.classList.contains('blocked') && !cell.classList.contains('inactive')) {
                         cell.style.backgroundColor = 'white';
                     }
@@ -920,7 +1120,7 @@
                 
                 const start = sDate <= eDate ? sDate : eDate;
                 const end = sDate <= eDate ? eDate : sDate;
-
+                
                 let currentDate = new Date(start);
                 const bookings = fetchBookings();
                 const blocks = fetchBlocks();
@@ -953,7 +1153,14 @@
                         const dateStr = formatDate(currentDate);
                         const cell = calendarSection.querySelector(`td[data-date="${dateStr}"]`);
                         if (cell) {
-                            cell.style.backgroundColor = '#81c784';
+                            if (!cell.classList.contains('partially-booked')) {
+                                cell.style.backgroundColor = '#81c784';
+                            } else {
+                                const halfDayDiv = cell.querySelector('.half-day');
+                                if (halfDayDiv) {
+                                    halfDayDiv.classList.add('selected-am', 'selected-pm');
+                                }
+                            }
                             if (formatDate(currentDate) === formatDate(start)) {
                                 cell.classList.add('selected-start');
                             } else if (formatDate(currentDate) === formatDate(end)) {
@@ -992,7 +1199,7 @@
                         const dateStr = clickedCell.getAttribute("data-date");
                         const date = dateFromStr(dateStr);
 
-                        if(currentView === 'friend' && (clickedCell.classList.contains('booked') || clickedCell.classList.contains('blocked'))) {
+                        if(currentView === 'friend' && (clickedCell.classList.contains('booked') || clickedCell.classList.contains('blocked') || clickedCell.classList.contains('partially-booked'))) {
                             selectedStartDate = null;
                             selectedEndDate = null;
                             updateSelectedDays();
@@ -1086,20 +1293,18 @@
                 const bookings = await fetchBookings();
                 const blocks = await fetchBlocks();
                 
-                const rangeStart = dateFromStr(startDate);
-                const rangeEnd = dateFromStr(endDate);
-                let day = new Date(rangeStart);
-                while (day <= rangeEnd) {
-                    const dayStr = formatDate(day);
-                    if (blocks.some(b => checkOverlap(dayStr, dayStr, b.startDate, b.endDate))) {
+                const allHalfDays = getHalfDaysInRange(startDate, endDate, arrival, departure);
+
+                for (const halfDay of allHalfDays) {
+                    const [dateStr, time] = halfDay.split('-');
+                    if (isHalfDayBlocked(dateStr, time, blocks)) {
                         bookingError.textContent = `Der Zeitraum überschneidet sich mit einem blockierten Zeitraum.`;
                         return;
                     }
-                    if (bookings.some(b => checkOverlap(dayStr, dayStr, b.startDate, b.endDate))) {
+                    if (isHalfDayBooked(dateStr, time, bookings)) {
                         bookingError.textContent = `Der Zeitraum überschneidet sich mit einer bestehenden Buchung.`;
                         return;
                     }
-                    day.setDate(day.getDate() + 1);
                 }
                 
                 const newBooking = {
@@ -1311,20 +1516,18 @@
                 const bookings = (await fetchBookings()).filter(b => b.id !== currentBookingIdToEdit);
                 const blocks = await fetchBlocks();
                 
-                const rangeStart = dateFromStr(startDate);
-                const rangeEnd = dateFromStr(endDate);
-                let day = new Date(rangeStart);
-                while (day <= rangeEnd) {
-                    const dayStr = formatDate(day);
-                    if (blocks.some(b => checkOverlap(dayStr, dayStr, b.startDate, b.endDate))) {
+                const allHalfDays = getHalfDaysInRange(startDate, endDate, arrival, departure);
+
+                for (const halfDay of allHalfDays) {
+                    const [dateStr, time] = halfDay.split('-');
+                    if (isHalfDayBlocked(dateStr, time, blocks)) {
                         editError.textContent = `Der Zeitraum überschneidet sich mit einem blockierten Zeitraum.`;
                         return;
                     }
-                    if (bookings.some(b => checkOverlap(dayStr, dayStr, b.startDate, b.endDate))) {
+                    if (isHalfDayBooked(dateStr, time, bookings)) {
                         editError.textContent = `Der Zeitraum überschneidet sich mit einer bestehenden Buchung.`;
                         return;
                     }
-                    day.setDate(day.getDate() + 1);
                 }
                 
                 const updatedBooking = {
@@ -1365,16 +1568,13 @@
 
                 const bookings = await fetchBookings();
                 
-                const rangeStart = dateFromStr(startDate);
-                const rangeEnd = dateFromStr(endDate);
-                let day = new Date(rangeStart);
-                while (day <= rangeEnd) {
-                    const dayStr = formatDate(day);
-                    if (bookings.some(b => checkOverlap(dayStr, dayStr, b.startDate, b.endDate))) {
+                const allHalfDays = getHalfDaysInRange(startDate, endDate);
+                for (const halfDay of allHalfDays) {
+                    const [dateStr, time] = halfDay.split('-');
+                    if (isHalfDayBooked(dateStr, time, bookings)) {
                         showPopupMessage("Der ausgewählte Zeitraum überschneidet sich mit einer bestehenden Buchung.", "Fehler", "error");
                         return;
                     }
-                    day.setDate(day.getDate() + 1);
                 }
 
                 await db.collection('blocks').add({startDate, endDate});
