@@ -112,7 +112,9 @@
             position: absolute;
             width: 100%;
             height: 100%;
+            pointer-events: none;
         }
+        
         .half-day.am::before {
             background: linear-gradient(to top left, transparent 50%, white 50%);
             z-index: 1;
@@ -747,44 +749,35 @@
                 }
                 return dates;
             }
-            function getHalfDaysInRange(start, end) {
+            function getHalfDaysInRange(startHalfDayStr, endHalfDayStr) {
                 const halfDays = [];
-                const startDate = dateFromStr(fromHalfDayStr(start).date);
-                const startTime = fromHalfDayStr(start).time;
-                const endDate = dateFromStr(fromHalfDayStr(end).date);
-                const endTime = fromHalfDayStr(end).time;
-
+                const startInfo = fromHalfDayStr(startHalfDayStr);
+                const endInfo = fromHalfDayStr(endHalfDayStr);
+                const startDate = dateFromStr(startInfo.date);
+                const endDate = dateFromStr(endInfo.date);
+                
                 let currentDate = new Date(startDate);
-                let currentHalfDay;
-
-                if (startTime === 'pm') {
-                    currentHalfDay = toHalfDayStr(formatDate(currentDate), 'pm');
-                    halfDays.push(currentHalfDay);
+                
+                if (startInfo.time === 'pm') {
+                    halfDays.push(toHalfDayStr(formatDate(currentDate), 'pm'));
                     currentDate.setDate(currentDate.getDate() + 1);
                 } else {
-                    currentHalfDay = toHalfDayStr(formatDate(currentDate), 'am');
-                    halfDays.push(currentHalfDay);
-                    currentHalfDay = toHalfDayStr(formatDate(currentDate), 'pm');
-                    halfDays.push(currentHalfDay);
-                    currentDate.setDate(currentDate.getDate() + 1);
-                }
-
-                while (currentDate < endDate) {
-                    currentHalfDay = toHalfDayStr(formatDate(currentDate), 'am');
-                    halfDays.push(currentHalfDay);
-                    currentHalfDay = toHalfDayStr(formatDate(currentDate), 'pm');
-                    halfDays.push(currentHalfDay);
-                    currentDate.setDate(currentDate.getDate() + 1);
-                }
-                
-                if (currentDate.getTime() === endDate.getTime()) {
-                    if (endTime === 'am') {
-                        halfDays.push(toHalfDayStr(formatDate(currentDate), 'am'));
-                    } else if (endTime === 'pm') {
-                        halfDays.push(toHalfDayStr(formatDate(currentDate), 'am'));
+                    halfDays.push(toHalfDayStr(formatDate(currentDate), 'am'));
+                    if (formatDate(currentDate) !== endInfo.date || endInfo.time === 'pm') {
                         halfDays.push(toHalfDayStr(formatDate(currentDate), 'pm'));
                     }
                 }
+
+                while (currentDate < endDate) {
+                    halfDays.push(toHalfDayStr(formatDate(currentDate), 'am'));
+                    halfDays.push(toHalfDayStr(formatDate(currentDate), 'pm'));
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+                
+                if (formatDate(currentDate) === endInfo.date && endInfo.time === 'am') {
+                    halfDays.push(toHalfDayStr(formatDate(currentDate), 'am'));
+                }
+
                 return halfDays;
             }
 
@@ -1045,22 +1038,27 @@
                 const breakfast = document.getElementById('book-breakfast').value;
                 const errorDiv = document.getElementById('booking-error');
 
-                if (new Date(startDate) > new Date(endDate) || (startDate === endDate && startTime === 'pm' && endTime === 'am')) {
-                    errorDiv.textContent = "Das Enddatum muss nach dem Startdatum liegen.";
+                const startHalfDay = toHalfDayStr(startDate, startTime);
+                const endHalfDay = toHalfDayStr(endDate, endTime);
+
+                const startDateObj = dateFromStr(startDate);
+                const endDateObj = dateFromStr(endDate);
+                
+                if (endDateObj < startDateObj || (endDateObj.getTime() === startDateObj.getTime() && startTime === 'pm' && endTime === 'am')) {
+                    errorDiv.textContent = "Die Abreise muss am selben oder nach dem Anreisetag sein.";
                     return;
                 }
 
                 errorDiv.textContent = "";
                 const allBookings = await fetchBookings();
                 const allBlocks = await fetchBlocks();
-
-                const startHalfDay = toHalfDayStr(startDate, startTime);
-                const endHalfDay = toHalfDayStr(endDate, endTime);
+                
                 const halfDaysToBook = getHalfDaysInRange(startHalfDay, endHalfDay);
 
                 let isOverlapping = false;
                 for (const halfDay of halfDaysToBook) {
-                    if (isHalfDayBooked(halfDay.split('-').slice(0,3).join('-'), halfDay.split('-')[3], allBookings) || isHalfDayBlocked(halfDay.split('-').slice(0,3).join('-'), halfDay.split('-')[3], allBlocks)) {
+                    const halfDayInfo = fromHalfDayStr(halfDay);
+                    if (isHalfDayBooked(halfDayInfo.date, halfDayInfo.time, allBookings) || isHalfDayBlocked(halfDayInfo.date, halfDayInfo.time, allBlocks)) {
                         isOverlapping = true;
                         break;
                     }
@@ -1125,38 +1123,37 @@
                 const time = e.offsetX < target.offsetWidth / 2 ? 'am' : 'pm';
 
                 const halfDayStr = toHalfDayStr(dateStr, time);
-                const halfDayDate = dateFromStr(dateStr);
-                const halfDayMoment = new Date(halfDayDate.setHours(time === 'pm' ? 12 : 0, 0, 0, 0));
-
-                const allBookings = await fetchBookings();
-                const allBlocks = await fetchBlocks();
-
-                if (currentView === 'friend') {
-                    if (isHalfDayBooked(dateStr, time, allBookings) || isHalfDayBlocked(dateStr, time, allBlocks)) {
-                        showPopupMessage('Dieser Zeitraum ist bereits belegt oder blockiert.', 'Nicht verfügbar', 'info');
-                        return;
-                    }
-                }
-
+                
                 if (!selectedStart) {
                     selectedStart = halfDayStr;
                     selectedEnd = halfDayStr;
                 } else {
-                    const selectedStartMoment = new Date(dateFromStr(fromHalfDayStr(selectedStart).date).setHours(fromHalfDayStr(selectedStart).time === 'pm' ? 12 : 0));
+                    const selectedStartInfo = fromHalfDayStr(selectedStart);
+                    const selectedDate = dateFromStr(selectedStartInfo.date);
+                    const selectedTime = selectedStartInfo.time;
+
+                    const newDate = dateFromStr(dateStr);
+                    const newTime = time;
+
+                    // Compare dates and times
+                    const isSameDate = newDate.getTime() === selectedDate.getTime();
+                    const isNewAfterSelected = newDate.getTime() > selectedDate.getTime() || (isSameDate && newTime === 'pm' && selectedTime === 'am');
                     
-                    if (halfDayMoment < selectedStartMoment) {
+                    if (isNewAfterSelected) {
+                        selectedEnd = halfDayStr;
+                    } else {
                         selectedEnd = selectedStart;
                         selectedStart = halfDayStr;
-                    } else {
-                        selectedEnd = halfDayStr;
                     }
                 }
                 
                 // Formular-Updates
-                document.getElementById('book-start-date').value = fromHalfDayStr(selectedStart).date;
-                document.getElementById('book-start-time').value = fromHalfDayStr(selectedStart).time;
-                document.getElementById('book-end-date').value = fromHalfDayStr(selectedEnd).date;
-                document.getElementById('book-end-time').value = fromHalfDayStr(selectedEnd).time;
+                const startInfo = fromHalfDayStr(selectedStart);
+                const endInfo = fromHalfDayStr(selectedEnd);
+                document.getElementById('book-start-date').value = startInfo.date;
+                document.getElementById('book-start-time').value = startInfo.time;
+                document.getElementById('book-end-date').value = endInfo.date;
+                document.getElementById('book-end-time').value = endInfo.time;
                 
                 const form = document.getElementById('booking-form');
                 form.style.display = 'block';
@@ -1207,55 +1204,41 @@
                         }
                         
                         let cellClass = '';
-                        let isFullDayBooked = isHalfDayBooked(dateStr, 'am', allBookings) && isHalfDayBooked(dateStr, 'pm', allBookings);
-                        let isFullDayBlocked = isHalfDayBlocked(dateStr, 'am', allBlocks) && isHalfDayBlocked(dateStr, 'pm', allBlocks);
+                        let dayStatusAm = '';
+                        let dayStatusPm = '';
+
+                        if (isHalfDayBooked(dateStr, 'am', allBookings)) dayStatusAm = 'booked-am';
+                        if (isHalfDayBlocked(dateStr, 'am', allBlocks)) dayStatusAm = 'blocked-am';
                         
-                        if (date < today) {
-                            cellClass += ' inactive';
-                        }
+                        if (isHalfDayBooked(dateStr, 'pm', allBookings)) dayStatusPm = 'booked-pm';
+                        if (isHalfDayBlocked(dateStr, 'pm', allBlocks)) dayStatusPm = 'blocked-pm';
 
                         let tooltipHtml = '';
                         if (isAdmin) {
                             const bookingAm = getBookingForHalfDay(dateStr, 'am', allBookings);
                             const bookingPm = getBookingForHalfDay(dateStr, 'pm', allBookings);
-                            if (bookingAm || bookingPm) {
-                                tooltipHtml = `<span class="tooltiptext">${bookingAm?.name || ''} / ${bookingPm?.name || ''}</span>`;
+                            const blockAm = getBlockForHalfDay(dateStr, 'am', allBlocks);
+                            const blockPm = getBlockForHalfDay(dateStr, 'pm', allBlocks);
+
+                            let tooltipText = [];
+                            if (bookingAm) tooltipText.push(`Vormittag: ${bookingAm.name}`);
+                            if (bookingPm) tooltipText.push(`Nachmittag: ${bookingPm.name}`);
+                            if (blockAm) tooltipText.push(`Vormittag: Blockiert`);
+                            if (blockPm) tooltipText.push(`Nachmittag: Blockiert`);
+                            if (tooltipText.length > 0) {
+                                tooltipHtml = `<span class="tooltiptext">${tooltipText.join('<br>')}</span>`;
                             }
                         }
 
-                        let isSelected = false;
                         if (selectedStart && selectedEnd) {
                             const halfDays = getHalfDaysInRange(selectedStart, selectedEnd);
-                            const amSelected = halfDays.includes(toHalfDayStr(dateStr, 'am'));
-                            const pmSelected = halfDays.includes(toHalfDayStr(dateStr, 'pm'));
-                            if (amSelected && pmSelected) {
-                                isSelected = true;
-                            }
-                        }
-                        
-                        let dayStatusAm = '';
-                        let dayStatusPm = '';
-
-                        if (isHalfDayBooked(dateStr, 'am', allBookings) || isHalfDayBlocked(dateStr, 'am', allBlocks)) {
-                            dayStatusAm = 'booked-am';
-                            if (isHalfDayBlocked(dateStr, 'am', allBlocks)) dayStatusAm = 'blocked-am';
-                        }
-                        if (isHalfDayBooked(dateStr, 'pm', allBookings) || isHalfDayBlocked(dateStr, 'pm', allBlocks)) {
-                            dayStatusPm = 'booked-pm';
-                            if (isHalfDayBlocked(dateStr, 'pm', allBlocks)) dayStatusPm = 'blocked-pm';
-                        }
-                        if (selectedStart && selectedEnd) {
-                            if (getHalfDaysInRange(selectedStart, selectedEnd).includes(toHalfDayStr(dateStr, 'am'))) {
+                            if (halfDays.includes(toHalfDayStr(dateStr, 'am'))) {
                                 dayStatusAm = 'selected-am';
                             }
-                            if (getHalfDaysInRange(selectedStart, selectedEnd).includes(toHalfDayStr(dateStr, 'pm'))) {
+                            if (halfDays.includes(toHalfDayStr(dateStr, 'pm'))) {
                                 dayStatusPm = 'selected-pm';
                             }
                         }
-                        
-                        if (isFullDayBooked) cellClass += ' full-day-booked';
-                        if (isFullDayBlocked) cellClass += ' full-day-blocked';
-                        if (isSelected) cellClass += ' full-day-selected';
 
                         tableHTML += `
                             <td data-date="${dateStr}" class="${cellClass}">
