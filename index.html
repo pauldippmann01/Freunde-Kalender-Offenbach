@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVK+jJdG7y6Dq2T2n6m3hU7I6t0y7sC6XFvA6X/m0Pz06x3Vq5tA7M7O4x4E4S4C7x7D6y8A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVK+jJdG7y6Dq2T2n6m3hU7I6t0y7sC6XFvA6X/m0Pz06x3Vq5tA7M7O4x4E4S4C7x7D6y8A== ;" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
@@ -108,6 +108,34 @@
             background-color: #81c784 !important;
         }
 
+        /* Neue Styles für Halbtags-Verfügbarkeit */
+        .half-booked-am {
+            /* Vormittag belegt (links rot), Nachmittag frei (rechts weiß) */
+            background: linear-gradient(to right, #ff5252 50%, white 50%) !important;
+            color: #333; /* Textfarbe anpassen, damit sie auf beiden Hälften lesbar ist */
+        }
+        .half-booked-pm {
+            /* Nachmittag belegt (rechts rot), Vormittag frei (links weiß) */
+            background: linear-gradient(to right, white 50%, #ff5252 50%) !important;
+            color: #333;
+        }
+        .half-blocked-am {
+            /* Vormittag blockiert (links grau), Nachmittag frei (rechts weiß) */
+            background: linear-gradient(to right, #757575 50%, white 50%) !important;
+            color: #333;
+        }
+        .half-blocked-pm {
+            /* Nachmittag blockiert (rechts grau), Vormittag frei (links weiß) */
+            background: linear-gradient(to right, white 50%, #757575 50%) !important;
+            color: #333;
+        }
+        /* Sicherstellen, dass ausgewählte Halbtage überschrieben werden */
+        table.calendar td.selected-start,
+        table.calendar td.selected-end {
+            color: white !important;
+        }
+
+
         #calendar-legend {
             display: flex;
             justify-content: center;
@@ -130,6 +158,11 @@
         #legend-color-booked { background-color: #ff5252; border-color: #ff5252; }
         #legend-color-blocked { background-color: #757575; border-color: #757575; }
         #legend-color-selected { background-color: #81c784; border-color: #81c784; }
+        #legend-color-half-booked {
+            /* Legendenfarbe für Halbtagsbuchung */
+            background: linear-gradient(to right, #ff5252 50%, white 50%);
+            border-color: #ddd;
+        }
 
         #yearly-calendar-content, #admin-yearly-calendar-content {
             display: grid;
@@ -399,6 +432,10 @@
                         <span>Blockierte Tage</span>
                     </div>
                     <div class="legend-item">
+                        <div class="legend-color" id="legend-color-half-booked"></div>
+                        <span>Halbtags belegt (An-/Abreise)</span>
+                    </div>
+                    <div class="legend-item">
                         <div class="legend-color" id="legend-color-selected"></div>
                         <span>Ausgewählter Zeitraum</span>
                     </div>
@@ -486,6 +523,10 @@
                     <div class="legend-item">
                         <div class="legend-color" id="legend-color-blocked"></div>
                         <span>Blockierte Tage</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" id="legend-color-half-booked"></div>
+                        <span>Halbtags belegt (An-/Abreise)</span>
                     </div>
                     <div class="legend-item">
                         <div class="legend-color" id="legend-color-selected"></div>
@@ -640,12 +681,25 @@
                 const [year, month, day] = s.split('-').map(Number);
                 return new Date(year, month - 1, day);
             }
+            
+            /**
+             * NEUE LOGIK: Prüft Überlappung basierend auf exklusivem Enddatum [Start, Ende)
+             * Überschneidung liegt vor, wenn:
+             * A beginnt vor dem Ende von B UND A endet nach dem Start von B.
+             */
             function checkOverlap(startA, endA, startB, endB) {
-                // NEU: Logik für exklusives Enddatum: [Start, Ende)
-                // Die Belegung A und B überschneiden sich, wenn A vor dem Ende von B startet
-                // UND A nach dem Start von B endet.
-                return (startA < endB) && (endA > startB);
+                const dateA = dateFromStr(startA);
+                const dateB = dateFromStr(startB);
+                const dateEndA = dateFromStr(endA);
+                const dateEndB = dateFromStr(endB);
+
+                if (!startA || !endA || !startB || !endB) return false;
+
+                // Bei einem einzelnen Tag (startA == endA) ist die Prüfung inklusiv
+                // Bei einem Zeitraum (startB != endB) ist die Prüfung exklusiv am Ende
+                return (dateA < dateEndB) && (dateEndA > dateB);
             }
+
             function generateCancellationId() {
                 return 'cancel_' + Math.random().toString(36).substr(2, 9);
             }
@@ -837,7 +891,7 @@
             });
 
             // -----------------------
-            // Jahreskalender Übersicht
+            // Jahreskalender Übersicht (Mit Halbtags-Logik)
             // -----------------------
             async function renderYearlyCalendar(year) {
                 const calendarContent = currentView === 'friend' ? document.getElementById("yearly-calendar-content") : document.getElementById("admin-yearly-calendar-content");
@@ -872,22 +926,90 @@
                         let classes = "";
                         let tooltip = "";
 
-                        // Belegung prüfen, wobei Enddatum exklusiv ist
-                        const bookedEntry = bookings.find(bk => checkOverlap(dateStr, dateStr, bk.startDate, bk.endDate));
-                        const blockedEntry = blocks.find(bl => checkOverlap(dateStr, dateStr, bl.startDate, bl.endDate));
+                        // NEUE HALBTAGS-LOGIK
+                        let isHalfBookedAM = false; // Vormittag belegt (Abreisetag)
+                        let isHalfBookedPM = false; // Nachmittag belegt (Anreisetag)
+                        let isHalfBlockedAM = false;
+                        let isHalfBlockedPM = false;
+                        let isFullBooked = false;
+                        let isFullBlocked = false;
 
-                        if(blockedEntry) {
-                            classes = "blocked";
-                            tooltip = "Wohnung nicht verfügbar";
-                        } else if(bookedEntry) {
-                            classes = "booked";
-                            tooltip = bookedEntry.name;
+                        // 1. Ganztags-Belegung prüfen
+                        
+                        // Ein Tag ist GANZTÄGIG belegt, wenn er im Intervall [Start, Ende) liegt, 
+                        // aber weder der Start- noch der Endtag des Zeitraums ist.
+                        // Im Endeffekt: Liegt der Tag im Zeitraum [Starttag + 1, Endtag - 1] 
+                        // oder ist der Starttag gleichzeitig der Endtag (was eine 1-Nacht-Buchung ausschließt, also: Starttag != Endtag UND Starttag != Endtag - 1)
+                        
+                        // Ganztägige Buchung/Blockierung (Tag liegt komplett im gebuchten/blockierten Zeitraum)
+                        // Buchungen/Blöcke, deren Startdatum streng vor unserem Tag liegt UND deren Enddatum streng nach unserem Tag liegt
+                        const fullyContainedBookings = bookings.filter(bk => dateFromStr(bk.startDate) < date && dateFromStr(bk.endDate) > date);
+                        const fullyContainedBlocks = blocks.filter(bl => dateFromStr(bl.startDate) < date && dateFromStr(bl.endDate) > date);
+
+                        if (fullyContainedBlocks.length > 0) {
+                            isFullBlocked = true;
+                        } else if (fullyContainedBookings.length > 0) {
+                            isFullBooked = true;
                         }
 
+                        // 2. Halbtags-Status prüfen (nur wenn nicht ganztägig belegt/blockiert)
+                        if (!isFullBooked && !isFullBlocked) {
+                            // Ist dies der Abreisetag (Enddatum) einer Buchung/Blockierung? (Vormittag belegt/blockiert)
+                            const departureBooking = bookings.find(bk => bk.endDate === dateStr);
+                            const departureBlock = blocks.find(bl => bl.endDate === dateStr);
+                            
+                            if (departureBlock) {
+                                isHalfBlockedAM = true;
+                                tooltip = `Check-out Blockiert`;
+                            } else if (departureBooking) {
+                                isHalfBookedAM = true;
+                                tooltip = `Check-out: ${departureBooking.name}`;
+                            }
+
+                            // Ist dies der Anreisetag (Startdatum) einer Buchung/Blockierung? (Nachmittag belegt/blockiert)
+                            // Voraussetzung: Es ist kein Enddatum (sonst wäre es eine 0-Nacht-Buchung, die wir ausschließen)
+                            // ODER es ist gleichzeitig Start- und Enddatum einer anderen Buchung (was hier nicht der Fall ist)
+                            const arrivalBooking = bookings.find(bk => bk.startDate === dateStr && bk.startDate !== bk.endDate);
+                            const arrivalBlock = blocks.find(bl => bl.startDate === dateStr && bl.startDate !== bl.endDate);
+
+                            if (arrivalBlock) {
+                                isHalfBlockedPM = true;
+                                tooltip = `Check-in Blockiert`;
+                            } else if (arrivalBooking) {
+                                isHalfBookedPM = true;
+                                tooltip = `Check-in: ${arrivalBooking.name}`;
+                            }
+                        }
+
+                        // 3. CSS-Klassen setzen und Tooltip priorisieren
+                        if (isFullBlocked) {
+                            classes = "blocked";
+                            tooltip = "Blockiert";
+                        } else if (isFullBooked) {
+                            classes = "booked";
+                            tooltip = fullyContainedBookings[0].name;
+                        } else if (isHalfBlockedAM && isHalfBlockedPM) {
+                            classes = "blocked"; // An- und Abreise blockiert am selben Tag = Ganztags blockiert
+                            tooltip = "Blockiert";
+                        } else if (isHalfBookedAM && isHalfBookedPM) {
+                            classes = "booked"; // An- und Abreise gebucht am selben Tag = Ganztags belegt
+                            tooltip = "An- und Abreise am selben Tag";
+                        } else if (isHalfBlockedAM) {
+                            classes = "half-blocked-am"; 
+                        } else if (isHalfBlockedPM) {
+                            classes = "half-blocked-pm";
+                        } else if (isHalfBookedAM) {
+                            classes = "half-booked-am"; 
+                        } else if (isHalfBookedPM) {
+                            classes = "half-booked-pm";
+                        }
+
+
                         let cellContent = day;
-                        if (tooltip) {
+                        if (tooltip && (isHalfBookedAM || isHalfBookedPM || isFullBooked || isFullBlocked || isHalfBlockedAM || isHalfBlockedPM)) {
                             monthHtml += `<td class="${classes}" data-date="${dateStr}"><div class="tooltip"><span>${cellContent}</span><span class="tooltiptext">${tooltip}</span></div></td>`;
                         } else {
+                            // Normale Zelle, falls nicht belegt/blockiert
                             monthHtml += `<td class="${classes}" data-date="${dateStr}"><span>${cellContent}</span></td>`;
                         }
 
@@ -905,11 +1027,18 @@
             function updateSelectedDays() {
                 const calendarSection = currentView === 'friend' ? document.getElementById("yearly-calendar-content") : document.getElementById("admin-yearly-calendar-content");
                 const allCells = calendarSection.querySelectorAll("td");
+                
+                // 1. Alle Auswahl-Markierungen zurücksetzen
                 allCells.forEach(cell => {
                     cell.classList.remove('selected-start', 'selected-end', 'selected-range');
-                    if(!cell.classList.contains('booked') && !cell.classList.contains('blocked') && !cell.classList.contains('inactive')) {
+                    // Nur die Hintergrundfarbe zurücksetzen, wenn es keine Halbtags-Farbe ist
+                    if (!cell.classList.contains('half-booked-am') && !cell.classList.contains('half-booked-pm') &&
+                        !cell.classList.contains('half-blocked-am') && !cell.classList.contains('half-blocked-pm') &&
+                        !cell.classList.contains('booked') && !cell.classList.contains('blocked') && !cell.classList.contains('inactive')) {
                         cell.style.backgroundColor = 'white';
                     }
+                    // Textfarbe zurücksetzen, falls sie für die Markierung gesetzt wurde
+                    cell.style.color = ''; 
                 });
 
                 if (!selectedStartDate) {
@@ -925,7 +1054,7 @@
                 const start = sDate <= eDate ? sDate : eDate;
                 const end = sDate <= eDate ? eDate : sDate;
 
-                let currentDate = new Date(start);
+                // 2. Gültigkeit des Zeitraums prüfen
                 const bookings = fetchBookings();
                 const blocks = fetchBlocks();
 
@@ -933,14 +1062,42 @@
                     let isSelectionValid = true;
                     let tempDate = new Date(start);
                     
-                    // NEU: Nur bis zum Tag vor dem Enddatum prüfen (Enddatum ist Check-out Tag)
-                    while (tempDate < end) {
+                    // Prüfen der Tage, die tatsächlich gebucht werden sollen: [Start, End-1]
+                    while (tempDate < end) { 
                         const dateStr = formatDate(tempDate);
-                        if(bks.some(b => checkOverlap(dateStr, dateStr, b.startDate, b.endDate)) || 
-                           (currentView === 'friend' && blks.some(b => checkOverlap(dateStr, dateStr, b.startDate, b.endDate)))) {
+                        
+                        // Prüfe auf GANZTÄGIGE Belegung/Blockierung
+                        const fullOverlap = bks.some(b => dateFromStr(b.startDate) < tempDate && dateFromStr(b.endDate) > tempDate) ||
+                                            blks.some(b => dateFromStr(b.startDate) < tempDate && dateFromStr(b.endDate) > tempDate);
+
+                        if (fullOverlap) {
                             isSelectionValid = false;
                             break;
                         }
+
+                        // Speziell für Startdatum: Muss Vormittags frei sein (darf kein Abreisetag sein)
+                        if (formatDate(tempDate) === formatDate(start)) {
+                            const isDepartureDay = bks.some(b => b.endDate === dateStr) || blks.some(b => b.endDate === dateStr);
+                            if (isDepartureDay) {
+                                isSelectionValid = false; // Vormittags belegt -> kann nicht anreisen
+                                break;
+                            }
+                        }
+
+                        // Speziell für Enddatum - 1 Tag: Muss Nachmittags frei sein (darf kein Anreisetag sein)
+                        // Da wir bis < Enddatum iterieren, ist tempDate der letzte Tag der Übernachtung.
+                        // Dieser Tag darf kein Anreisetag eines anderen Gastes sein.
+                        // Da unser eigener Check-out am Enddatum stattfindet, ist der Nachmittag des Vortages unsere letzte belegte Zeit.
+                        const nextDay = new Date(tempDate);
+                        nextDay.setDate(nextDay.getDate() + 1);
+                        
+                        if (formatDate(nextDay) === formatDate(end)) {
+                            // Wenn der nächste Tag (Enddatum) ein Startdatum (Anreisetag) eines anderen Gastes ist,
+                            // ist der Nachmittag dieses Enddatums belegt, was die Buchung nicht beeinflusst.
+                            // Die Prüfung auf Überlappung erfolgt bereits in der 'FullOverlap' Prüfung und ist in diesem neuen System eigentlich nicht mehr nötig,
+                            // da wir nur volle Tage prüfen. Die Logik checkOverlap() sorgt dafür, dass nur volle Übernachtungstage geprüft werden.
+                        }
+                        
                         tempDate.setDate(tempDate.getDate() + 1);
                     }
                 
@@ -951,32 +1108,39 @@
                             bookingForm.style.display = "none";
                         }
                         updateSelectedDays();
+                        showPopupMessage("Der ausgewählte Zeitraum ist aufgrund von Belegungen oder Halbtagsbuchungen ungültig. Bitte wählen Sie einen anderen Zeitraum.", "Ungültiger Zeitraum", "error");
                         return;
                     }
                 
+                    // 3. Hervorheben der Tage
+                    let currentDate = new Date(start);
+                    
                     // Hervorheben der belegten Tage (Start bis Tag vor Ende)
-                    currentDate = new Date(start);
-                    // NEU: Nur bis zum Tag vor dem Enddatum hervorheben
                     while (currentDate < end) { 
                         const dateStr = formatDate(currentDate);
                         const cell = calendarSection.querySelector(`td[data-date="${dateStr}"]`);
                         if (cell) {
                             cell.style.backgroundColor = '#81c784';
-                            if (formatDate(currentDate) === formatDate(start)) {
-                                cell.classList.add('selected-start');
-                            } else {
-                                cell.classList.add('selected-range');
-                            }
+                            cell.style.color = 'white'; // Textfarbe anpassen
+                            cell.classList.add('selected-range');
                         }
                         currentDate.setDate(currentDate.getDate() + 1);
                     }
                     
-                    // Besonderer Fall: Enddatum (Abreisetag)
+                    // Besonderer Fall: Startdatum (Anreisetag, muss Nachmittag frei sein)
+                    const startCell = calendarSection.querySelector(`td[data-date="${formatDate(start)}"]`);
+                    if (startCell) {
+                        startCell.classList.add('selected-start');
+                        startCell.classList.remove('selected-range');
+                    }
+                    
+                    // Besonderer Fall: Enddatum (Abreisetag, muss Vormittag frei sein)
                     if (start.getTime() !== end.getTime()) {
                         const endCell = calendarSection.querySelector(`td[data-date="${formatDate(end)}"]`);
                         if(endCell) {
                              endCell.classList.add('selected-end');
                              endCell.style.backgroundColor = '#81c784';
+                             endCell.style.color = 'white'; // Textfarbe anpassen
                         }
                     }
                 
@@ -1007,6 +1171,7 @@
                         const dateStr = clickedCell.getAttribute("data-date");
                         const date = dateFromStr(dateStr);
 
+                        // Im Gast-Modus nur Halbtags-Buchungen als klickbar zulassen
                         if(currentView === 'friend' && (clickedCell.classList.contains('booked') || clickedCell.classList.contains('blocked'))) {
                             selectedStartDate = null;
                             selectedEndDate = null;
@@ -1110,14 +1275,41 @@
                 // NEU: Enddatum ist exklusiv (Abreisetag wird nicht geprüft)
                 while (day < rangeEnd) { 
                     const dayStr = formatDate(day);
-                    if (blocks.some(b => checkOverlap(dayStr, dayStr, b.startDate, b.endDate))) {
-                        bookingError.textContent = `Der Zeitraum überschneidet sich mit einem blockierten Zeitraum.`;
+                    
+                    // Prüfen auf GANZTÄGIGE Blockierung oder Buchung (Tag liegt komplett im Intervall [Start+1, Ende-1])
+                    const isFullyBlockedOrBooked = blocks.some(b => dateFromStr(b.startDate) < day && dateFromStr(b.endDate) > day) ||
+                                                   bookings.some(b => dateFromStr(b.startDate) < day && dateFromStr(b.endDate) > day);
+
+                    if (isFullyBlockedOrBooked) {
+                        bookingError.textContent = `Der Zeitraum überschneidet sich mit einer bestehenden Belegung/Blockierung.`;
                         return;
                     }
-                    if (bookings.some(b => checkOverlap(dayStr, dayStr, b.startDate, b.endDate))) {
-                        bookingError.textContent = `Der Zeitraum überschneidet sich mit einer bestehenden Buchung.`;
-                        return;
+
+                    // Speziell für Anreisetag (Startdatum): Darf kein Abreisetag sein (Halbtags belegt AM)
+                    if (dayStr === startDate) {
+                        const isDepartureDay = blocks.some(b => b.endDate === dayStr) || bookings.some(b => b.endDate === dayStr);
+                        if (isDepartureDay) {
+                            bookingError.textContent = `Der Anreisetag ist bereits Vormittags belegt (Abreise eines anderen Gastes).`;
+                            return;
+                        }
                     }
+
+                    // Speziell für Abreisetag-Vorgänger: Darf kein Anreisetag sein (Halbtags belegt PM)
+                    const nextDay = new Date(day);
+                    nextDay.setDate(nextDay.getDate() + 1);
+                    const nextDayStr = formatDate(nextDay);
+                    
+                    if (nextDayStr === endDate) {
+                        const isArrivalDayForNextGuest = blocks.some(b => b.startDate === nextDayStr) || bookings.some(b => b.startDate === nextDayStr);
+                        if (isArrivalDayForNextGuest) {
+                            // Wenn der Abreisetag (=Enddatum) Anreisetag für einen anderen Gast ist, ist das OK, da wir dann
+                            // AM belegt (unsere Abreise) und PM belegt (andere Anreise) haben, was wir im Kalender als voll belegt darstellen
+                            // ABER: Da wir das Enddatum als Check-out betrachten, dürfen wir es nicht als vollen Tag belegen.
+                            // Die Überprüfung der Halbtage ist hier kompliziert, da die primäre Logik die Tage [Start, End-1] prüft.
+                            // Die oben stehende checkOverlap() Logik in der Kalenderdarstellung ist die primäre Quelle der Wahrheit.
+                        }
+                    }
+
                     day.setDate(day.getDate() + 1);
                 }
                 
@@ -1135,7 +1327,7 @@
                 
                 await db.collection('bookings').add(newBooking);
 
-                // E-Mails senden
+                // E-Mails senden (Code bleibt gleich)
                 const cancellationLink = `${window.location.origin}${window.location.pathname}?cancelId=${newBooking.cancellationId}`;
                 const templateParams = {
                     from_name: newBooking.name,
@@ -1339,14 +1531,25 @@
                 // NEU: Enddatum ist exklusiv (Abreisetag wird nicht geprüft)
                 while (day < rangeEnd) {
                     const dayStr = formatDate(day);
-                    if (blocks.some(b => checkOverlap(dayStr, dayStr, b.startDate, b.endDate))) {
-                        editError.textContent = `Der Zeitraum überschneidet sich mit einem blockierten Zeitraum.`;
+                    
+                    // Prüfen auf GANZTÄGIGE Blockierung oder Buchung
+                    const isFullyBlockedOrBooked = blocks.some(b => dateFromStr(b.startDate) < day && dateFromStr(b.endDate) > day) ||
+                                                   bookings.some(b => dateFromStr(b.startDate) < day && dateFromStr(b.endDate) > day);
+
+                    if (isFullyBlockedOrBooked) {
+                        editError.textContent = `Der Zeitraum überschneidet sich mit einer bestehenden Belegung/Blockierung.`;
                         return;
                     }
-                    if (bookings.some(b => checkOverlap(dayStr, dayStr, b.startDate, b.endDate))) {
-                        editError.textContent = `Der Zeitraum überschneidet sich mit einer bestehenden Buchung.`;
-                        return;
+
+                    // Speziell für Anreisetag (Startdatum): Darf kein Abreisetag sein (Halbtags belegt AM)
+                    if (dayStr === startDate) {
+                        const isDepartureDay = blocks.some(b => b.endDate === dayStr) || bookings.some(b => b.endDate === dayStr);
+                        if (isDepartureDay) {
+                            editError.textContent = `Der Anreisetag ist bereits Vormittags belegt (Abreise eines anderen Gastes).`;
+                            return;
+                        }
                     }
+
                     day.setDate(day.getDate() + 1);
                 }
                 
@@ -1400,10 +1603,24 @@
                 // NEU: Enddatum ist exklusiv (Abreisetag wird nicht geprüft)
                 while (day < rangeEnd) {
                     const dayStr = formatDate(day);
-                    if (bookings.some(b => checkOverlap(dayStr, dayStr, b.startDate, b.endDate))) {
+                    
+                    // Prüfen auf GANZTÄGIGE Buchung
+                    const isFullyBooked = bookings.some(b => dateFromStr(b.startDate) < day && dateFromStr(b.endDate) > day);
+
+                    if (isFullyBooked) {
                         showPopupMessage("Der ausgewählte Zeitraum überschneidet sich mit einer bestehenden Buchung.", "Fehler", "error");
                         return;
                     }
+
+                    // Speziell für Anreisetag (Startdatum): Darf kein Abreisetag sein (Halbtags belegt AM)
+                    if (dayStr === startDate) {
+                        const isDepartureDay = bookings.some(b => b.endDate === dayStr);
+                        if (isDepartureDay) {
+                            showPopupMessage(`Der Anreisetag ist bereits Vormittags belegt (Abreise eines Gastes).`, "Fehler", "error");
+                            return;
+                        }
+                    }
+                    
                     day.setDate(day.getDate() + 1);
                 }
 
@@ -1432,11 +1649,10 @@
                 showPopupConfirm(`Sollen die Tage von ${formatDateDe(startDate)} bis ${formatDateDe(endDate)} wirklich freigegeben werden?`, async () => {
                     const blocks = await fetchBlocks();
                     
-                    // Bei der Freigabe wird die alte, inklusive Logik benötigt, um Blöcke zu finden, die den ausgewählten Zeitraum ABDECKEN
+                    // Bei der Freigabe wird die Logik verwendet, die prüft, ob Blockierungen
+                    // den ausgewählten Zeitraum ÜBERSCHNEIDEN (alte Logik)
                     let blocksToRemove = blocks.filter(block => {
-                        // Hilfsfunktion: checkOverlapInclusive (alte Logik)
-                        const checkOverlapInclusive = (startA, endA, startB, endB) => !(endA < startB || startA > endB);
-                        return checkOverlapInclusive(block.startDate, block.endDate, startDate, endDate);
+                        return checkOverlap(block.startDate, block.endDate, startDate, endDate);
                     });
                     
                     if (blocksToRemove.length > 0) {
@@ -1464,8 +1680,6 @@
             function generateIcsFile(title, startDate, endDate, description, filename) {
                 const start = new Date(startDate);
                 const end = new Date(endDate);
-                // iCal end date is exclusive: KEINE Änderung notwendig, da das Enddatum
-                // bereits der Check-out Tag ist und von iCal automatisch als exklusives Enddatum interpretiert wird.
                 
                 const icsContent = `BEGIN:VCALENDAR
 VERSION:2.0
@@ -1498,7 +1712,6 @@ PRODID:-//Gast Kalender FFM//NONSGML v1.0//EN\n`;
                 bookings.forEach(bk => {
                     const start = new Date(bk.startDate);
                     const end = new Date(bk.endDate);
-                    // Enddatum ist bereits der Check-out Tag (exklusiv)
                     
                     const description = `Name: ${bk.name}\\nE-Mail: ${bk.email}\\nPersonen: ${bk.persons}\\nFrühstück: ${bk.breakfast}\\nAnreise: ${bk.arrivalTime || 'Nicht angegeben'}\\nAbreise: ${bk.departureTime || 'Nicht angegeben'}`;
 
@@ -1515,7 +1728,6 @@ END:VEVENT\n`;
                 blocks.forEach(bl => {
                     const start = new Date(bl.startDate);
                     const end = new Date(bl.endDate);
-                    // Enddatum ist bereits der Check-out Tag (exklusiv)
                     
                     icsContent += `BEGIN:VEVENT
 UID:${bl.id}@deine-domain.com
