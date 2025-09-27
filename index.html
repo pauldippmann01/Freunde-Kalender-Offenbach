@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVK+jJdG7y6Dq2T2n6m3hU7I6t0y7sC6XFvA6X/m0Pz06x3Vq5tA7M7O4x4E4S4C7x7D6y8A== ;" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVK+jJdG7y6Dq2T2n6m3hU7I6t0y7sC6XFvA6X/m0Pz06x3Vq5tA7M7O4x4E4S4C7x7D6y8A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
@@ -108,34 +108,6 @@
             background-color: #81c784 !important;
         }
 
-        /* Neue Styles für Halbtags-Verfügbarkeit */
-        .half-booked-am {
-            /* Vormittag belegt (links rot), Nachmittag frei (rechts weiß) */
-            background: linear-gradient(to right, #ff5252 50%, white 50%) !important;
-            color: #333; /* Textfarbe anpassen, damit sie auf beiden Hälften lesbar ist */
-        }
-        .half-booked-pm {
-            /* Nachmittag belegt (rechts rot), Vormittag frei (links weiß) */
-            background: linear-gradient(to right, white 50%, #ff5252 50%) !important;
-            color: #333;
-        }
-        .half-blocked-am {
-            /* Vormittag blockiert (links grau), Nachmittag frei (rechts weiß) */
-            background: linear-gradient(to right, #757575 50%, white 50%) !important;
-            color: #333;
-        }
-        .half-blocked-pm {
-            /* Nachmittag blockiert (rechts grau), Vormittag frei (links weiß) */
-            background: linear-gradient(to right, white 50%, #757575 50%) !important;
-            color: #333;
-        }
-        /* Sicherstellen, dass ausgewählte Halbtage überschrieben werden */
-        table.calendar td.selected-start,
-        table.calendar td.selected-end {
-            color: white !important;
-        }
-
-
         #calendar-legend {
             display: flex;
             justify-content: center;
@@ -158,11 +130,6 @@
         #legend-color-booked { background-color: #ff5252; border-color: #ff5252; }
         #legend-color-blocked { background-color: #757575; border-color: #757575; }
         #legend-color-selected { background-color: #81c784; border-color: #81c784; }
-        #legend-color-half-booked {
-            /* Legendenfarbe für Halbtagsbuchung */
-            background: linear-gradient(to right, #ff5252 50%, white 50%);
-            border-color: #ddd;
-        }
 
         #yearly-calendar-content, #admin-yearly-calendar-content {
             display: grid;
@@ -432,10 +399,6 @@
                         <span>Blockierte Tage</span>
                     </div>
                     <div class="legend-item">
-                        <div class="legend-color" id="legend-color-half-booked"></div>
-                        <span>Halbtags belegt (An-/Abreise)</span>
-                    </div>
-                    <div class="legend-item">
                         <div class="legend-color" id="legend-color-selected"></div>
                         <span>Ausgewählter Zeitraum</span>
                     </div>
@@ -523,10 +486,6 @@
                     <div class="legend-item">
                         <div class="legend-color" id="legend-color-blocked"></div>
                         <span>Blockierte Tage</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color" id="legend-color-half-booked"></div>
-                        <span>Halbtags belegt (An-/Abreise)</span>
                     </div>
                     <div class="legend-item">
                         <div class="legend-color" id="legend-color-selected"></div>
@@ -672,37 +631,26 @@
                 const day = d.getDate().toString().padStart(2, '0');
                 return `${year}-${month}-${day}`;
             }
+
             function formatDateDe(dateString) {
                 const [year, month, day] = dateString.split('-');
                 return `${day}.${month}.${year}`;
             }
+
             function dateFromStr(s) {
                 if (!s) return null;
                 const [year, month, day] = s.split('-').map(Number);
                 return new Date(year, month - 1, day);
             }
-            
-            /**
-             * NEUE LOGIK: Prüft Überlappung basierend auf exklusivem Enddatum [Start, Ende)
-             * Überschneidung liegt vor, wenn:
-             * A beginnt vor dem Ende von B UND A endet nach dem Start von B.
-             */
+
             function checkOverlap(startA, endA, startB, endB) {
-                const dateA = dateFromStr(startA);
-                const dateB = dateFromStr(startB);
-                const dateEndA = dateFromStr(endA);
-                const dateEndB = dateFromStr(endB);
-
-                if (!startA || !endA || !startB || !endB) return false;
-
-                // Bei einem einzelnen Tag (startA == endA) ist die Prüfung inklusiv
-                // Bei einem Zeitraum (startB != endB) ist die Prüfung exklusiv am Ende
-                return (dateA < dateEndB) && (dateEndA > dateB);
+                return !(endA < startB || startA > endB);
             }
 
             function generateCancellationId() {
                 return 'cancel_' + Math.random().toString(36).substr(2, 9);
             }
+
             function formatIcsDate(date, time) {
                 const d = new Date(date);
                 if (time) {
@@ -717,10 +665,12 @@
                 const seconds = d.getSeconds().toString().padStart(2, '0');
                 return `${year}${month}${day}T${hours}${minutes}${seconds}`;
             }
-            
+
+
             // -------------------
             // Pop-up-Funktionen
             // -------------------
+
             const popupOverlay = document.getElementById('popup-overlay');
             const popupTitle = document.getElementById('popup-title');
             const popupMessage = document.getElementById('popup-message');
@@ -731,8 +681,8 @@
                 popupTitle.textContent = title;
                 popupMessage.textContent = message;
                 popupIconContainer.innerHTML = '';
-                
                 let iconClass = '';
+
                 if (type === 'success') {
                     iconClass = 'fa-circle-check popup-icon success';
                 } else if (type === 'error') {
@@ -740,8 +690,8 @@
                 } else {
                     iconClass = 'fa-circle-info popup-icon info';
                 }
+                
                 popupIconContainer.innerHTML = `<i class="fa-solid ${iconClass}"></i>`;
-
                 popupButtons.innerHTML = `<button class="popup-btn primary" onclick="closePopup()">OK</button>${extraButtons}`;
                 popupOverlay.style.display = 'flex';
                 setTimeout(() => popupOverlay.classList.add('visible'), 10);
@@ -751,7 +701,6 @@
                 popupTitle.textContent = title;
                 popupMessage.textContent = message;
                 popupIconContainer.innerHTML = '<i class="fa-solid fa-circle-question popup-icon info"></i>';
-                
                 popupButtons.innerHTML = `
                     <button class="popup-btn secondary" id="popup-cancel-btn">Abbrechen</button>
                     <button class="popup-btn primary" id="popup-confirm-btn">Ja</button>
@@ -765,10 +714,11 @@
                     closePopup();
                     if (onCancel) onCancel();
                 };
+
                 popupOverlay.style.display = 'flex';
                 setTimeout(() => popupOverlay.classList.add('visible'), 10);
             }
-            
+
             function closePopup() {
                 popupOverlay.classList.remove('visible');
                 setTimeout(() => {
@@ -780,6 +730,7 @@
             // -------------------
             // Firebase Data Fetching
             // -------------------
+
             async function fetchBookings() {
                 const snapshot = await db.collection('bookings').get();
                 const bookings = [];
@@ -788,6 +739,7 @@
                 });
                 return bookings;
             }
+
             async function fetchBlocks() {
                 const snapshot = await db.collection('blocks').get();
                 const blocks = [];
@@ -796,9 +748,11 @@
                 });
                 return blocks;
             }
+
             async function deleteBooking(bookingId) {
                 await db.collection('bookings').doc(bookingId).delete();
             }
+
             async function deleteBlock(blockId) {
                 await db.collection('blocks').doc(blockId).delete();
             }
@@ -806,6 +760,7 @@
             // -------------------
             // Navigation & Sections
             // -------------------
+
             function showSection(name) {
                 Object.values(sections).forEach(sec => sec.style.display = "none");
                 sections[name].style.display = "block";
@@ -821,6 +776,7 @@
             // -------------------
             // Event Listeners
             // -------------------
+
             document.getElementById("btn-show-friend-login").addEventListener('click', () => {
                 document.getElementById("friend-login-error").textContent = "";
                 document.getElementById("friend-password").value = "";
@@ -832,7 +788,7 @@
                 document.getElementById("admin-password").value = "";
                 showSection("adminLogin");
             });
-            
+
             document.getElementById("btn-to-start").addEventListener('click', () => {
                 showSection("start");
             });
@@ -864,25 +820,28 @@
             document.getElementById("btn-logout-admin").addEventListener('click', () => {
                 showSection("start");
             });
-            
+
             document.getElementById("year-prev").addEventListener('click', () => {
                 if(currentYear > CAL_START_YEAR) {
                     currentYear--;
                     renderYearlyCalendar(currentYear);
                 }
             });
+
             document.getElementById("year-next").addEventListener('click', () => {
                 if(currentYear < CAL_END_YEAR) {
                     currentYear++;
                     renderYearlyCalendar(currentYear);
                 }
             });
+
             document.getElementById("admin-year-prev").addEventListener('click', () => {
                 if(currentYear > CAL_START_YEAR) {
                     currentYear--;
                     renderYearlyCalendar(currentYear);
                 }
             });
+
             document.getElementById("admin-year-next").addEventListener('click', () => {
                 if(currentYear < CAL_END_YEAR) {
                     currentYear++;
@@ -890,9 +849,11 @@
                 }
             });
 
+
             // -----------------------
-            // Jahreskalender Übersicht (Mit Halbtags-Logik)
+            // Jahreskalender Übersicht
             // -----------------------
+
             async function renderYearlyCalendar(year) {
                 const calendarContent = currentView === 'friend' ? document.getElementById("yearly-calendar-content") : document.getElementById("admin-yearly-calendar-content");
                 const yearDisplay = currentView === 'friend' ? document.getElementById("year-display") : document.getElementById("admin-year-display");
@@ -912,366 +873,322 @@
                     const lastDay = new Date(year, m+1, 0);
                     const daysInMonth = lastDay.getDate();
 
-                    let monthHtml = `<table class="calendar" data-month="${m}" data-year="${year}">`;
-                    monthHtml += `<thead><tr><th colspan="7">${monthNames[m]}</th></tr>`;
-                    monthHtml += `<tr><th>M</th><th>D</th><th>M</th><th>D</th><th>F</th><th>S</th><th>S</th></tr></thead><tbody><tr>`;
+                    let monthHtml = `
+                        <div class="calendar-month">
+                            <h3 style="text-align: center; margin-top: 5px; margin-bottom: 5px;">${monthNames[m]} ${year}</h3>
+                            <table class="calendar">
+                                <thead>
+                                    <tr>
+                                        <th>Mo</th><th>Di</th><th>Mi</th><th>Do</th><th>Fr</th><th>Sa</th><th>So</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                    `;
 
-                    const startWeekday = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1;
-                    for(let i=0; i<startWeekday; i++) {
+                    // Start offset (0=So, 1=Mo... 6=Sa) -> need 1-7 (1=Mo)
+                    let startDay = firstDay.getDay(); 
+                    if (startDay === 0) startDay = 7; // Sunday correction
+                    let dayOffset = startDay - 1;
+
+                    // Fill leading empty cells
+                    for(let i=0; i<dayOffset; i++) {
                         monthHtml += `<td class="inactive"></td>`;
                     }
-                    for(let day=1; day<=daysInMonth; day++) {
-                        const date = new Date(year, m, day);
+                    
+                    for(let d=1; d<=daysInMonth; d++) {
+                        const date = new Date(year, m, d);
                         const dateStr = formatDate(date);
-                        let classes = "";
-                        let tooltip = "";
-
-                        // NEUE HALBTAGS-LOGIK
-                        let isHalfBookedAM = false; // Vormittag belegt (Abreisetag)
-                        let isHalfBookedPM = false; // Nachmittag belegt (Anreisetag)
-                        let isHalfBlockedAM = false;
-                        let isHalfBlockedPM = false;
-                        let isFullBooked = false;
-                        let isFullBlocked = false;
-
-                        // 1. Ganztags-Belegung prüfen
                         
-                        // Ein Tag ist GANZTÄGIG belegt, wenn er im Intervall [Start, Ende) liegt, 
-                        // aber weder der Start- noch der Endtag des Zeitraums ist.
-                        // Im Endeffekt: Liegt der Tag im Zeitraum [Starttag + 1, Endtag - 1] 
-                        // oder ist der Starttag gleichzeitig der Endtag (was eine 1-Nacht-Buchung ausschließt, also: Starttag != Endtag UND Starttag != Endtag - 1)
-                        
-                        // Ganztägige Buchung/Blockierung (Tag liegt komplett im gebuchten/blockierten Zeitraum)
-                        // Buchungen/Blöcke, deren Startdatum streng vor unserem Tag liegt UND deren Enddatum streng nach unserem Tag liegt
-                        const fullyContainedBookings = bookings.filter(bk => dateFromStr(bk.startDate) < date && dateFromStr(bk.endDate) > date);
-                        const fullyContainedBlocks = blocks.filter(bl => dateFromStr(bl.startDate) < date && dateFromStr(bl.endDate) > date);
+                        // Check for existing bookings and blocks
+                        const isBookingEnd = bookings.some(b => b.endDate === dateStr);
+                        const isBlockEnd = blocks.some(b => b.endDate === dateStr);
+                        const isBookingStart = bookings.some(b => b.startDate === dateStr && b.startDate !== b.endDate);
+                        const isBlockStart = blocks.some(b => b.startDate === dateStr && b.startDate !== b.endDate);
 
-                        if (fullyContainedBlocks.length > 0) {
-                            isFullBlocked = true;
-                        } else if (fullyContainedBookings.length > 0) {
-                            isFullBooked = true;
-                        }
+                        const isFullyContainedBooking = bookings.some(b => dateFromStr(b.startDate) < date && dateFromStr(b.endDate) > date);
+                        const isFullyContainedBlock = blocks.some(b => dateFromStr(b.startDate) < date && dateFromStr(b.endDate) > date);
 
-                        // 2. Halbtags-Status prüfen (nur wenn nicht ganztägig belegt/blockiert)
-                        if (!isFullBooked && !isFullBlocked) {
-                            // Ist dies der Abreisetag (Enddatum) einer Buchung/Blockierung? (Vormittag belegt/blockiert)
-                            const departureBooking = bookings.find(bk => bk.endDate === dateStr);
-                            const departureBlock = blocks.find(bl => bl.endDate === dateStr);
-                            
-                            if (departureBlock) {
-                                isHalfBlockedAM = true;
-                                tooltip = `Check-out Blockiert`;
-                            } else if (departureBooking) {
-                                isHalfBookedAM = true;
-                                tooltip = `Check-out: ${departureBooking.name}`;
-                            }
+                        let cssClass = "";
+                        let tooltipText = "";
+                        let dataId = "";
 
-                            // Ist dies der Anreisetag (Startdatum) einer Buchung/Blockierung? (Nachmittag belegt/blockiert)
-                            // Voraussetzung: Es ist kein Enddatum (sonst wäre es eine 0-Nacht-Buchung, die wir ausschließen)
-                            // ODER es ist gleichzeitig Start- und Enddatum einer anderen Buchung (was hier nicht der Fall ist)
-                            const arrivalBooking = bookings.find(bk => bk.startDate === dateStr && bk.startDate !== bk.endDate);
-                            const arrivalBlock = blocks.find(bl => bl.startDate === dateStr && bl.startDate !== bl.endDate);
-
-                            if (arrivalBlock) {
-                                isHalfBlockedPM = true;
-                                tooltip = `Check-in Blockiert`;
-                            } else if (arrivalBooking) {
-                                isHalfBookedPM = true;
-                                tooltip = `Check-in: ${arrivalBooking.name}`;
-                            }
-                        }
-
-                        // 3. CSS-Klassen setzen und Tooltip priorisieren
-                        if (isFullBlocked) {
-                            classes = "blocked";
-                            tooltip = "Blockiert";
-                        } else if (isFullBooked) {
-                            classes = "booked";
-                            tooltip = fullyContainedBookings[0].name;
-                        } else if (isHalfBlockedAM && isHalfBlockedPM) {
-                            classes = "blocked"; // An- und Abreise blockiert am selben Tag = Ganztags blockiert
-                            tooltip = "Blockiert";
-                        } else if (isHalfBookedAM && isHalfBookedPM) {
-                            classes = "booked"; // An- und Abreise gebucht am selben Tag = Ganztags belegt
-                            tooltip = "An- und Abreise am selben Tag";
-                        } else if (isHalfBlockedAM) {
-                            classes = "half-blocked-am"; 
-                        } else if (isHalfBlockedPM) {
-                            classes = "half-blocked-pm";
-                        } else if (isHalfBookedAM) {
-                            classes = "half-booked-am"; 
-                        } else if (isHalfBookedPM) {
-                            classes = "half-booked-pm";
-                        }
-
-
-                        let cellContent = day;
-                        if (tooltip && (isHalfBookedAM || isHalfBookedPM || isFullBooked || isFullBlocked || isHalfBlockedAM || isHalfBlockedPM)) {
-                            monthHtml += `<td class="${classes}" data-date="${dateStr}"><div class="tooltip"><span>${cellContent}</span><span class="tooltiptext">${tooltip}</span></div></td>`;
+                        // Determine the state of the day (booked, blocked, half, free)
+                        if (isFullyContainedBooking) {
+                            cssClass = "booked";
+                            tooltipText = "Belegt";
+                        } else if (isFullyContainedBlock) {
+                            cssClass = "blocked";
+                            tooltipText = "Blockiert";
+                        } else if (isBookingEnd && isBookingStart) {
+                            cssClass = "booked"; // Full day booked (turnover on the same day is complex, but visually full is safest for friend view)
+                            tooltipText = "Belegt (Wechsel)";
+                        } else if (isBlockEnd && isBlockStart) {
+                            cssClass = "blocked"; 
+                            tooltipText = "Blockiert (Wechsel)";
+                        } else if (isBookingEnd || isBlockEnd) {
+                            cssClass = "half-booked-am"; // AM occupied (previous guest departure)
+                            tooltipText = isBookingEnd ? "Abreisetag" : "Blockiert (Ab)";
+                            dataId = isBookingEnd ? bookings.find(b => b.endDate === dateStr).id : blocks.find(b => b.endDate === dateStr).id;
+                        } else if (isBookingStart || isBlockStart) {
+                            cssClass = "half-booked-pm"; // PM occupied (new guest arrival)
+                            tooltipText = isBookingStart ? "Anreisetag" : "Blockiert (An)";
+                            dataId = isBookingStart ? bookings.find(b => b.startDate === dateStr).id : blocks.find(b => b.startDate === dateStr).id;
                         } else {
-                            // Normale Zelle, falls nicht belegt/blockiert
-                            monthHtml += `<td class="${classes}" data-date="${dateStr}"><span>${cellContent}</span></td>`;
+                            cssClass = "available";
+                            tooltipText = "Verfügbar";
+                        }
+                        
+                        // Handle past dates (only if not admin or already booked)
+                        const today = new Date();
+                        today.setHours(0,0,0,0);
+                        if (date < today && !isFullyContainedBooking && !isFullyContainedBlock && !isBookingEnd && !isBlockEnd && !isBookingStart && !isBlockStart) {
+                            cssClass = "inactive";
+                        }
+                        
+                        // Start new row every Monday (or 7 cells)
+                        if ((dayOffset + d - 1) % 7 === 0 && d > 1) {
+                            monthHtml += `</tr><tr>`;
                         }
 
-                        if((startWeekday + day) % 7 === 0) {
-                            monthHtml += "</tr><tr>";
+                        // Add cell content
+                        // Add an event listener only if it's the friend view (for booking) or admin view (for blocking/unblocking)
+                        let cellContent = d;
+                        if (currentView === 'friend' && cssClass !== 'inactive') {
+                            cellContent = `<span class="day-number" data-date="${dateStr}">${d}</span>`;
+                        } else if (currentView === 'admin') {
+                            const tooltipContent = tooltipText.includes('Belegt') ? `<span class="tooltiptext">${tooltipText} - ID: ${dataId}</span>` : `<span class="tooltiptext">${tooltipText}</span>`;
+                            cellContent = `<div class="tooltip" data-date="${dateStr}" data-id="${dataId}" data-type="${cssClass.startsWith('booked') ? 'booking' : cssClass.startsWith('blocked') ? 'block' : 'available'}">${d}${tooltipContent}</div>`;
+                        }
+                        
+                        monthHtml += `<td class="${cssClass}" data-date="${dateStr}">${cellContent}</td>`;
+                    }
+
+                    // Fill trailing empty cells
+                    const endOffset = (dayOffset + daysInMonth) % 7;
+                    if (endOffset !== 0) {
+                        for(let i=endOffset; i<7; i++) {
+                            monthHtml += `<td class="inactive"></td>`;
                         }
                     }
-                    monthHtml += "</tr></tbody></table>";
-                    calendarContent.insertAdjacentHTML("beforeend", monthHtml);
+
+                    monthHtml += `
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                    calendarContent.innerHTML += monthHtml;
                 }
-                attachDateClickHandlers();
-                updateSelectedDays();
+
+                if (currentView === 'friend') {
+                    attachFriendCalendarListeners(bookings, blocks);
+                } else if (currentView === 'admin') {
+                    attachAdminCalendarListeners(bookings, blocks);
+                }
             }
 
-            function updateSelectedDays() {
-                const calendarSection = currentView === 'friend' ? document.getElementById("yearly-calendar-content") : document.getElementById("admin-yearly-calendar-content");
-                const allCells = calendarSection.querySelectorAll("td");
-                
-                // 1. Alle Auswahl-Markierungen zurücksetzen
-                allCells.forEach(cell => {
-                    cell.classList.remove('selected-start', 'selected-end', 'selected-range');
-                    // Nur die Hintergrundfarbe zurücksetzen, wenn es keine Halbtags-Farbe ist
-                    if (!cell.classList.contains('half-booked-am') && !cell.classList.contains('half-booked-pm') &&
-                        !cell.classList.contains('half-blocked-am') && !cell.classList.contains('half-blocked-pm') &&
-                        !cell.classList.contains('booked') && !cell.classList.contains('blocked') && !cell.classList.contains('inactive')) {
-                        cell.style.backgroundColor = 'white';
-                    }
-                    // Textfarbe zurücksetzen, falls sie für die Markierung gesetzt wurde
-                    cell.style.color = ''; 
-                });
 
-                if (!selectedStartDate) {
-                    if (currentView === 'friend') {
-                        bookingForm.style.display = "none";
-                    }
-                    return;
-                }
-                
-                const sDate = dateFromStr(formatDate(selectedStartDate));
-                let eDate = selectedEndDate ? dateFromStr(formatDate(selectedEndDate)) : sDate;
-                
-                const start = sDate <= eDate ? sDate : eDate;
-                const end = sDate <= eDate ? eDate : sDate;
+            // -------------------
+            // Booking Logic (Friend)
+            // -------------------
 
-                // 2. Gültigkeit des Zeitraums prüfen
-                const bookings = fetchBookings();
-                const blocks = fetchBlocks();
-
-                Promise.all([bookings, blocks]).then(([bks, blks]) => {
-                    let isSelectionValid = true;
-                    let tempDate = new Date(start);
-                    
-                    // Prüfen der Tage, die tatsächlich gebucht werden sollen: [Start, End-1]
-                    while (tempDate < end) { 
-                        const dateStr = formatDate(tempDate);
-                        
-                        // Prüfe auf GANZTÄGIGE Belegung/Blockierung
-                        const fullOverlap = bks.some(b => dateFromStr(b.startDate) < tempDate && dateFromStr(b.endDate) > tempDate) ||
-                                            blks.some(b => dateFromStr(b.startDate) < tempDate && dateFromStr(b.endDate) > tempDate);
-
-                        if (fullOverlap) {
-                            isSelectionValid = false;
-                            break;
-                        }
-
-                        // Speziell für Startdatum: Muss Vormittags frei sein (darf kein Abreisetag sein)
-                        if (formatDate(tempDate) === formatDate(start)) {
-                            const isDepartureDay = bks.some(b => b.endDate === dateStr) || blks.some(b => b.endDate === dateStr);
-                            if (isDepartureDay) {
-                                isSelectionValid = false; // Vormittags belegt -> kann nicht anreisen
-                                break;
-                            }
-                        }
-
-                        // Speziell für Enddatum - 1 Tag: Muss Nachmittags frei sein (darf kein Anreisetag sein)
-                        // Da wir bis < Enddatum iterieren, ist tempDate der letzte Tag der Übernachtung.
-                        // Dieser Tag darf kein Anreisetag eines anderen Gastes sein.
-                        // Da unser eigener Check-out am Enddatum stattfindet, ist der Nachmittag des Vortages unsere letzte belegte Zeit.
-                        const nextDay = new Date(tempDate);
-                        nextDay.setDate(nextDay.getDate() + 1);
-                        
-                        if (formatDate(nextDay) === formatDate(end)) {
-                            // Wenn der nächste Tag (Enddatum) ein Startdatum (Anreisetag) eines anderen Gastes ist,
-                            // ist der Nachmittag dieses Enddatums belegt, was die Buchung nicht beeinflusst.
-                            // Die Prüfung auf Überlappung erfolgt bereits in der 'FullOverlap' Prüfung und ist in diesem neuen System eigentlich nicht mehr nötig,
-                            // da wir nur volle Tage prüfen. Die Logik checkOverlap() sorgt dafür, dass nur volle Übernachtungstage geprüft werden.
-                        }
-                        
-                        tempDate.setDate(tempDate.getDate() + 1);
-                    }
-                
-                    if (!isSelectionValid) {
-                        selectedStartDate = null;
-                        selectedEndDate = null;
-                        if (currentView === 'friend') {
-                            bookingForm.style.display = "none";
-                        }
-                        updateSelectedDays();
-                        showPopupMessage("Der ausgewählte Zeitraum ist aufgrund von Belegungen oder Halbtagsbuchungen ungültig. Bitte wählen Sie einen anderen Zeitraum.", "Ungültiger Zeitraum", "error");
-                        return;
-                    }
-                
-                    // 3. Hervorheben der Tage
-                    let currentDate = new Date(start);
-                    
-                    // Hervorheben der belegten Tage (Start bis Tag vor Ende)
-                    while (currentDate < end) { 
-                        const dateStr = formatDate(currentDate);
-                        const cell = calendarSection.querySelector(`td[data-date="${dateStr}"]`);
-                        if (cell) {
-                            cell.style.backgroundColor = '#81c784';
-                            cell.style.color = 'white'; // Textfarbe anpassen
-                            cell.classList.add('selected-range');
-                        }
-                        currentDate.setDate(currentDate.getDate() + 1);
-                    }
-                    
-                    // Besonderer Fall: Startdatum (Anreisetag, muss Nachmittag frei sein)
-                    const startCell = calendarSection.querySelector(`td[data-date="${formatDate(start)}"]`);
-                    if (startCell) {
-                        startCell.classList.add('selected-start');
-                        startCell.classList.remove('selected-range');
-                    }
-                    
-                    // Besonderer Fall: Enddatum (Abreisetag, muss Vormittag frei sein)
-                    if (start.getTime() !== end.getTime()) {
-                        const endCell = calendarSection.querySelector(`td[data-date="${formatDate(end)}"]`);
-                        if(endCell) {
-                             endCell.classList.add('selected-end');
-                             endCell.style.backgroundColor = '#81c784';
-                             endCell.style.color = 'white'; // Textfarbe anpassen
-                        }
-                    }
-                
-                    if (currentView === 'friend') {
-                        if(selectedEndDate) {
-                            showBookingForm();
-                        } else {
-                            bookingForm.style.display = "none";
-                        }
-                    }
-                });
-            }
-
-            // ---------------------
-            // Datums- und Bereichsauswahl
-            // ---------------------
-            
-            function attachDateClickHandlers() {
-                const calendarSection = currentView === 'friend' ? document.getElementById("yearly-calendar-content") : document.getElementById("admin-yearly-calendar-content");
-                const cells = calendarSection.querySelectorAll("td:not(.inactive)");
-                
+            function attachFriendCalendarListeners(bookings, blocks) {
+                const cells = document.querySelectorAll('#yearly-calendar-content td[data-date].available, #yearly-calendar-content td[data-date].half-booked-am, #yearly-calendar-content td[data-date].half-booked-pm');
                 cells.forEach(cell => {
-                    cell.style.cursor = "pointer";
                     cell.addEventListener('click', (e) => {
-                        const clickedCell = e.target.closest('td');
-                        if (!clickedCell) return;
-                        
-                        const dateStr = clickedCell.getAttribute("data-date");
+                        const dateStr = cell.getAttribute('data-date');
                         const date = dateFromStr(dateStr);
-
-                        // Im Gast-Modus nur Halbtags-Buchungen als klickbar zulassen
-                        if(currentView === 'friend' && (clickedCell.classList.contains('booked') || clickedCell.classList.contains('blocked'))) {
-                            selectedStartDate = null;
-                            selectedEndDate = null;
-                            updateSelectedDays();
-                            return;
-                        }
-
-                        if(!selectedStartDate || (selectedStartDate && selectedEndDate)) {
+                        
+                        if (!selectedStartDate || (selectedStartDate && selectedEndDate)) {
+                            // Start new selection
+                            resetSelectedDays();
                             selectedStartDate = date;
                             selectedEndDate = null;
+                        } else if (date < selectedStartDate) {
+                            // Invalid selection: end before start. Reset selection.
+                            showPopupMessage("Das Enddatum kann nicht vor dem Startdatum liegen.", "Ungültige Auswahl", 'error');
+                            resetSelectedDays();
+                            return;
+                        } else if (date.getTime() === selectedStartDate.getTime()) {
+                            // Same day selected, reset selection.
+                            resetSelectedDays();
+                            return;
                         } else {
-                            if(date < selectedStartDate) {
-                                selectedEndDate = selectedStartDate;
-                                selectedStartDate = date;
-                            } else {
-                                selectedEndDate = date;
-                            }
+                            // Finalize selection
+                            selectedEndDate = date;
                         }
-                        updateSelectedDays();
+
+                        updateSelectedDays(bookings, blocks);
                     });
                 });
             }
 
-            // ---------------------
-            // Buchungsformular (Gast)
-            // ---------------------
-            const bookingForm = document.getElementById("booking-form");
-            const bookStartInput = document.getElementById("book-start-date");
-            const bookEndInput = document.getElementById("book-end-date");
-            const bookingError = document.getElementById("booking-error");
-
-            function showBookingForm() {
-                if(!selectedStartDate || !selectedEndDate) {
-                    bookingForm.style.display = "none";
-                    return;
-                }
-                bookStartInput.value = formatDate(selectedStartDate);
-                bookEndInput.value = formatDate(selectedEndDate);
-                bookingError.textContent = "";
-                bookingForm.style.display = "block";
-                bookingForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                document.getElementById("book-name").focus();
-            }
-            function resetBookingForm() {
+            function resetSelectedDays() {
                 selectedStartDate = null;
                 selectedEndDate = null;
-                updateSelectedDays();
-                bookingForm.style.display = "none";
-                bookingError.textContent = "";
-                bookingForm.reset && bookingForm.reset();
-                window.scrollTo(0, 0); // Scrollt zum Seitenanfang
+                document.querySelectorAll('#yearly-calendar-content td').forEach(cell => {
+                    cell.classList.remove('selected-start', 'selected-end', 'selected-range');
+                });
+                document.getElementById('booking-form').style.display = 'none';
+                document.getElementById('booking-error').textContent = '';
             }
+
+            function updateSelectedDays(bks, blks) {
+                document.querySelectorAll('#yearly-calendar-content td').forEach(cell => {
+                    cell.classList.remove('selected-start', 'selected-end', 'selected-range');
+                });
+
+                if (!selectedStartDate) {
+                    document.getElementById('booking-form').style.display = 'none';
+                    return;
+                }
+
+                let start = selectedStartDate;
+                let end = selectedEndDate;
+                const startDateStr = formatDate(start);
+                
+                let isSelectionValid = true;
+                let tempDate = new Date(start);
+                
+                // If only start date is selected, highlight it temporarily
+                if (!end) {
+                    document.querySelector(`#yearly-calendar-content td[data-date='${startDateStr}']`).classList.add('selected-start');
+                    document.getElementById('booking-form').style.display = 'none';
+                    return;
+                }
+                
+                // Adjust end date to be exclusive for the loop ([start, end))
+                end = new Date(end);
+                end.setDate(end.getDate() + 1); 
+
+                // Prüfen der Tage, die tatsächlich gebucht werden sollen: [Start, End-1]
+                while (tempDate < end) { 
+                    const dateStr = formatDate(tempDate);
+
+                    // 1. Prüfen auf GANZTÄGIGE Blockierung/Buchung (Tag liegt komplett im Intervall [Start+1, Ende-1])
+                    // Der Starttag ist hier nicht vollständig enthalten, da die Buchung an diesem Tag beginnt.
+                    // Die Tage, die tatsächlich zwischen Start und Ende liegen:
+                    if (formatDate(tempDate) !== startDateStr) {
+                         const isFullyContainedBooking = bks.some(b => dateFromStr(b.startDate) < tempDate && dateFromStr(b.endDate) > tempDate);
+                         const isFullyContainedBlock = blks.some(b => dateFromStr(b.startDate) < tempDate && dateFromStr(b.endDate) > tempDate);
+
+                        if (isFullyContainedBooking || isFullyContainedBlock) {
+                            isSelectionValid = false;
+                            showPopupMessage(`Der Zeitraum von ${formatDateDe(startDateStr)} bis ${formatDateDe(formatDate(selectedEndDate))} überschneidet sich mit einer bestehenden Belegung/Blockierung (${formatDateDe(dateStr)}).`, "Auswahl nicht möglich", 'error');
+                            break;
+                        }
+                    }
+                    
+                    // NEU: Speziell für Anreisedatum (Start): Darf kein Anreisetag (PM belegt) für jemand anderen sein
+                    if (formatDate(tempDate) === formatDate(start)) {
+                        const isArrivalDayForOther = bks.some(b => b.startDate === dateStr) || blks.some(b => b.startDate === dateStr);
+                        
+                        // Wenn der Tag ein Anreisetag für jemand anderen ist, darf unsere Buchung nicht an diesem Tag beginnen,
+                        // es sei denn, es ist genau dieselbe Buchung (was die Logik oben ausschließt, da Start != Ende-1 ist).
+                        if (isArrivalDayForOther && dateStr !== formatDate(selectedEndDate)) {
+                            // Wenn es ein Anreisetag ist, ist PM belegt. Wenn unsere Buchung an diesem Tag beginnt, 
+                            // dann wäre PM doppelt belegt.
+                            isSelectionValid = false;
+                            showPopupMessage(`Der Anreisetag (${formatDateDe(dateStr)}) ist bereits für einen anderen Gast reserviert (Anreisetag).`, "Auswahl nicht möglich", 'error');
+                            break;
+                        }
+                    }
+
+                    // *** BUGFIX: Der explizite Check, der die Anreise am Abreisetag eines anderen Gastes (Turnover) verhindert, wird entfernt. ***
+                    /*
+                    // Speziell für Startdatum: Muss Vormittags frei sein (darf kein Abreisetag sein)
+                    if (formatDate(tempDate) === formatDate(start)) {
+                        const isDepartureDay = bks.some(b => b.endDate === dateStr) || blks.some(b => b.endDate === dateStr);
+                        if (isDepartureDay) {
+                            isSelectionValid = false; // Vormittags belegt -> kann nicht anreisen
+                            break;
+                        }
+                    }
+                    */
+
+                    // Check if a day between start and end is *any* part of another booking/block
+                    // This is largely covered by the 'fully contained' check above.
+                    
+                    tempDate.setDate(tempDate.getDate() + 1);
+                }
+
+                if (!isSelectionValid) {
+                    resetSelectedDays();
+                    return;
+                }
+
+                // Apply selection CSS if valid
+                tempDate = new Date(start);
+                while (tempDate <= selectedEndDate) {
+                    const cell = document.querySelector(`#yearly-calendar-content td[data-date='${formatDate(tempDate)}']`);
+                    if (cell) {
+                        if (formatDate(tempDate) === startDateStr) {
+                            cell.classList.add('selected-start');
+                        } else if (formatDate(tempDate) === formatDate(selectedEndDate)) {
+                            cell.classList.add('selected-end');
+                        } else {
+                            cell.classList.add('selected-range');
+                        }
+                    }
+                    tempDate.setDate(tempDate.getDate() + 1);
+                }
+
+                if (selectedStartDate && selectedEndDate) {
+                    document.getElementById('book-start-date').value = formatDate(selectedStartDate);
+                    document.getElementById('book-end-date').value = formatDate(selectedEndDate);
+                    document.getElementById('booking-form').style.display = 'block';
+                }
+            }
+
+            document.getElementById('btn-cancel-booking-form').addEventListener('click', resetSelectedDays);
             
-            document.getElementById("btn-cancel-booking-form").addEventListener('click', () => {
-                resetBookingForm();
-            });
+            // -------------------
+            // Form Submission
+            // -------------------
 
-            bookingForm.addEventListener('submit', async (e) => {
+            document.getElementById('booking-form').addEventListener('submit', async (e) => {
                 e.preventDefault();
-                const name = document.getElementById("book-name").value.trim();
-                const email = document.getElementById("book-email").value.trim();
-                const persons = parseInt(document.getElementById("book-persons").value);
-                const breakfast = document.getElementById("book-breakfast").value;
-                const arrival = document.getElementById("book-arrival-time").value || null;
-                const departure = document.getElementById("book-departure-time").value || null;
-                const startDate = bookStartInput.value;
-                const endDate = bookEndInput.value;
+                const bookingError = document.getElementById('booking-error');
+                bookingError.textContent = '';
 
-                bookingError.textContent = "";
+                const name = document.getElementById('book-name').value;
+                const email = document.getElementById('book-email').value;
+                const persons = parseInt(document.getElementById('book-persons').value);
+                const startDate = document.getElementById('book-start-date').value;
+                const endDate = document.getElementById('book-end-date').value;
+                const breakfast = document.getElementById('book-breakfast').value;
+                const arrivalTime = document.getElementById('book-arrival-time').value;
+                const departureTime = document.getElementById('book-departure-time').value;
+                const bookingId = generateCancellationId();
 
-                if(!name) {
-                    bookingError.textContent = "Bitte Name eingeben.";
-                    return;
-                }
-                if(!email) {
-                    bookingError.textContent = "Bitte E-Mail-Adresse eingeben.";
-                    return;
-                }
-                if(!persons || persons < 1 || persons > 3) {
-                    bookingError.textContent = "Bitte gültige Anzahl Personen eingeben (max. 3).";
-                    return;
-                }
-                if(!startDate || !endDate) {
-                    bookingError.textContent = "Bitte gültige Start- und Enddaten eingeben.";
+                if (persons < 1 || persons > 3) {
+                    bookingError.textContent = 'Die Personenzahl muss zwischen 1 und 3 liegen.';
                     return;
                 }
                 
-                // NEU: Das Enddatum muss streng größer sein als das Startdatum (Mindestaufenthalt 1 Nacht)
-                if (endDate <= startDate) {
-                    bookingError.textContent = "Das Enddatum muss mindestens einen Tag nach dem Startdatum liegen (Mindestaufenthalt 1 Nacht).";
+                const start = dateFromStr(startDate);
+                const end = dateFromStr(endDate);
+                
+                if (start >= end) {
+                    bookingError.textContent = 'Das Enddatum muss nach dem Startdatum liegen.';
                     return;
                 }
 
-                const bookings = await fetchBookings();
-                const blocks = await fetchBlocks();
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                if (start < today) {
+                    bookingError.textContent = 'Buchungen für die Vergangenheit sind nicht möglich.';
+                    return;
+                }
+
+                // 2. Doppelte Prüfung auf Überschneidung mit bestehenden Buchungen/Blockierungen
+                const [bookings, blocks] = await Promise.all([fetchBookings(), fetchBlocks()]);
                 
-                const rangeStart = dateFromStr(startDate);
-                const rangeEnd = dateFromStr(endDate);
-                let day = new Date(rangeStart);
-                
+                let day = new Date(start);
+                const rangeEnd = new Date(end);
+                rangeEnd.setDate(rangeEnd.getDate() + 1); // Exclusive end date
+
                 // NEU: Enddatum ist exklusiv (Abreisetag wird nicht geprüft)
                 while (day < rangeEnd) { 
                     const dayStr = formatDate(day);
@@ -1285,6 +1202,20 @@
                         return;
                     }
 
+                    // NEU: Speziell für Anreisedatum (Start): Darf kein Anreisetag (PM belegt) für jemand anderen sein
+                    if (dayStr === startDate) {
+                        const isArrivalDayForOther = blocks.some(b => b.startDate === dayStr) || bookings.some(b => b.startDate === dayStr);
+                        
+                        // Wenn der Tag ein Anreisetag für jemand anderen ist, darf unsere Buchung nicht an diesem Tag beginnen,
+                        // da dies eine doppelte Belegung des Nachmittags bedeuten würde.
+                        if (isArrivalDayForOther && dayStr !== endDate) {
+                            bookingError.textContent = `Der Anreisetag (${formatDateDe(dayStr)}) ist bereits für einen anderen Gast reserviert (Anreisetag).`;
+                            return;
+                        }
+                    }
+                    
+                    // *** BUGFIX: Der explizite Check, der die Anreise am Abreisetag eines anderen Gastes (Turnover) verhindert, wird entfernt. ***
+                    /*
                     // Speziell für Anreisetag (Startdatum): Darf kein Abreisetag sein (Halbtags belegt AM)
                     if (dayStr === startDate) {
                         const isDepartureDay = blocks.some(b => b.endDate === dayStr) || bookings.some(b => b.endDate === dayStr);
@@ -1293,540 +1224,737 @@
                             return;
                         }
                     }
-
-                    // Speziell für Abreisetag-Vorgänger: Darf kein Anreisetag sein (Halbtags belegt PM)
-                    const nextDay = new Date(day);
-                    nextDay.setDate(nextDay.getDate() + 1);
-                    const nextDayStr = formatDate(nextDay);
-                    
-                    if (nextDayStr === endDate) {
-                        const isArrivalDayForNextGuest = blocks.some(b => b.startDate === nextDayStr) || bookings.some(b => b.startDate === nextDayStr);
-                        if (isArrivalDayForNextGuest) {
-                            // Wenn der Abreisetag (=Enddatum) Anreisetag für einen anderen Gast ist, ist das OK, da wir dann
-                            // AM belegt (unsere Abreise) und PM belegt (andere Anreise) haben, was wir im Kalender als voll belegt darstellen
-                            // ABER: Da wir das Enddatum als Check-out betrachten, dürfen wir es nicht als vollen Tag belegen.
-                            // Die Überprüfung der Halbtage ist hier kompliziert, da die primäre Logik die Tage [Start, End-1] prüft.
-                            // Die oben stehende checkOverlap() Logik in der Kalenderdarstellung ist die primäre Quelle der Wahrheit.
-                        }
-                    }
+                    */
 
                     day.setDate(day.getDate() + 1);
                 }
-                
-                const newBooking = {
-                    name,
-                    email,
-                    persons,
-                    breakfast,
-                    arrivalTime: arrival,
-                    departureTime: departure,
-                    startDate,
-                    endDate,
-                    cancellationId: generateCancellationId()
-                };
-                
-                await db.collection('bookings').add(newBooking);
 
-                // E-Mails senden (Code bleibt gleich)
-                const cancellationLink = `${window.location.origin}${window.location.pathname}?cancelId=${newBooking.cancellationId}`;
-                const templateParams = {
-                    from_name: newBooking.name,
-                    to_email: newBooking.email,
-                    admin_email: ADMIN_EMAIL,
-                    start_date: formatDateDe(newBooking.startDate),
-                    end_date: formatDateDe(newBooking.endDate),
-                    persons: newBooking.persons,
-                    cancellation_link: cancellationLink,
-                    breakfast: newBooking.breakfast,
-                    arrival_time: newBooking.arrivalTime,
-                    departure_time: newBooking.departureTime
-                };
-
+                // 3. Speichern der Buchung
                 try {
-                    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_ADMIN, templateParams, EMAILJS_PUBLIC_KEY);
-                    
-                    const iCalButton = `<button class="popup-btn primary" id="btn-export-guest-ical">Zum Kalender hinzufügen (iCal)</button>`;
-                    showPopupMessage("Ihre Buchung wurde erfolgreich gespeichert und eine Bestätigung per E-Mail gesendet. Sie können nun weitere Buchungen vornehmen.", "Buchung erfolgreich!", "success", iCalButton);
-                    
-                    document.getElementById('btn-export-guest-ical').addEventListener('click', () => {
-                        const description = `Name: ${newBooking.name}\\nE-Mail: ${newBooking.email}\\nPersonen: ${newBooking.persons}\\nFrühstück: ${newBooking.breakfast}\\nAnreise: ${newBooking.arrivalTime || 'Nicht angegeben'}\\nAbreise: ${newBooking.departureTime || 'Nicht angegeben'}`;
-                        generateIcsFile("Übernachtung bei Paul", newBooking.startDate, newBooking.endDate, description, "Gast Buchung");
+                    await db.collection('bookings').add({
+                        name,
+                        email,
+                        persons,
+                        startDate,
+                        endDate,
+                        breakfast,
+                        arrivalTime,
+                        departureTime,
+                        cancellationId: bookingId,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
                     });
 
-                } catch (error) {
-                    console.error("Fehler beim Senden der E-Mail:", error);
-                    showPopupMessage("Ihre Buchung wurde erfolgreich erfasst, aber es gab einen Fehler beim Senden der E-Mail. Bitte kontaktieren Sie den Admin direkt.", "Fehler beim Senden der E-Mail", "error");
-                }
-
-                resetBookingForm();
-                renderYearlyCalendar(currentYear);
-            });
-
-            // -------------------
-            // Admin Bereich
-            // -------------------
-            const adminBookingsList = document.getElementById("admin-bookings-list");
-
-            async function renderAdminBookings() {
-                const bookings = await fetchBookings();
-                const blocks = await fetchBlocks();
-
-                let html = `<table><thead><tr><th>Typ</th><th>Name</th><th>E-Mail</th><th>Personen</th><th>Frühstück</th><th>Startdatum</th><th>Enddatum</th><th>Aktion</th></tr></thead><tbody>`;
-
-                bookings.forEach(bk => {
-                    html += `<tr>
-                        <td>Buchung</td>
-                        <td>${bk.name}</td>
-                        <td>${bk.email}</td>
-                        <td>${bk.persons}</td>
-                        <td>${bk.breakfast}</td>
-                        <td>${formatDateDe(bk.startDate)}</td>
-                        <td>${formatDateDe(bk.endDate)}</td>
-                        <td>
-                            <button class="btn-edit-booking" data-id="${bk.id}" style="background-color: #3f51b5; padding:5px 10px;">Bearbeiten</button>
-                            <button class="btn-delete-booking" data-id="${bk.id}" style="background-color: #f44336; padding:5px 10px;">Löschen</button>
-                        </td>
-                    </tr>`;
-                });
-
-                blocks.forEach(bl => {
-                    html += `<tr>
-                        <td>Blockiert</td>
-                        <td colspan="5" style="text-align:center;">-</td>
-                        <td>${formatDateDe(bl.startDate)}</td>
-                        <td>${formatDateDe(bl.endDate)}</td>
-                        <td><button class="btn-delete-block" data-id="${bl.id}" style="background-color: #757575; padding:5px 10px;">Entfernen</button></td>
-                    </tr>`;
-                });
-
-                html += "</tbody></table>";
-
-                adminBookingsList.innerHTML = html;
-                
-                document.querySelectorAll(".btn-edit-booking").forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        const id = btn.getAttribute("data-id");
-                        const bookingToEdit = bookings.find(b => b.id === id);
-                        if (bookingToEdit) {
-                            showEditForm(bookingToEdit);
-                        }
-                    });
-                });
-                
-                document.querySelectorAll(".btn-delete-booking").forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        const id = btn.getAttribute("data-id");
-                        const bookingToDelete = bookings.find(b => b.id === id);
-                        if (bookingToDelete) {
-                            showPopupConfirm(`Buchung von ${bookingToDelete.name} wirklich löschen?`, async () => {
-                                await deleteBookingWithNotification(bookingToDelete, true);
-                            });
-                        }
-                    });
-                });
-                document.querySelectorAll(".btn-delete-block").forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        const id = btn.getAttribute("data-id");
-                        showPopupConfirm("Blockierung wirklich entfernen?", async () => {
-                            await deleteBlock(id);
-                            renderAdminBookings();
-                            renderYearlyCalendar(currentYear);
-                        });
-                    });
-                });
-            }
-
-            async function deleteBookingWithNotification(booking, isAdminAction) {
-                try {
-                    await deleteBooking(booking.id);
-                    
+                    // 4. Benachrichtigung per E-Mail
                     const templateParams = {
-                        to_email: booking.email,
-                        admin_email: ADMIN_EMAIL,
-                        start_date: formatDateDe(booking.startDate),
-                        end_date: formatDateDe(booking.endDate),
-                        admin_action: isAdminAction ? 'Ja' : 'Nein'
+                        to_name: name,
+                        to_email: email,
+                        from_name: 'FFM Kalender',
+                        start_date: formatDateDe(startDate),
+                        end_date: formatDateDe(endDate),
+                        persons: persons,
+                        breakfast: breakfast,
+                        arrival_time: arrivalTime || 'N/A',
+                        departure_time: departureTime || 'N/A',
+                        cancellation_link: `${window.location.origin}${window.location.pathname}?cancelId=${bookingId}`,
+                        admin_email: ADMIN_EMAIL
                     };
 
-                    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_CANCEL, templateParams, EMAILJS_PUBLIC_KEY);
-                    showPopupMessage(`Buchung von ${booking.name} erfolgreich storniert. Bestätigung wurde per E-Mail gesendet.`, "Stornierung erfolgreich", "success");
-                    
-                    renderAdminBookings();
+                    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_FRIEND, templateParams, EMAILJS_PUBLIC_KEY);
+                    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_ADMIN, templateParams, EMAILJS_PUBLIC_KEY);
+
+                    showPopupMessage(
+                        `Deine Buchung von ${formatDateDe(startDate)} bis ${formatDateDe(endDate)} wurde erfolgreich eingereicht und bestätigt. Eine Bestätigungs-E-Mail wurde an dich und den Administrator versendet.`, 
+                        "Buchung erfolgreich!", 
+                        'success'
+                    );
+
+                    resetBookingForm();
                     renderYearlyCalendar(currentYear);
+
                 } catch (error) {
-                    console.error("Fehler beim Stornieren der Buchung:", error);
-                    showPopupMessage("Ein Fehler ist aufgetreten. Die Buchung konnte nicht storniert werden.", "Fehler", "error");
+                    console.error("Fehler bei der Buchung:", error);
+                    bookingError.textContent = 'Es ist ein unerwarteter Fehler aufgetreten. Bitte versuche es später erneut.';
+                    showPopupMessage("Es ist ein Fehler beim Speichern der Buchung aufgetreten.", "Fehler", 'error');
                 }
+            });
+
+            function resetBookingForm() {
+                document.getElementById('booking-form').reset();
+                document.getElementById('booking-form').style.display = 'none';
+                document.getElementById('booking-error').textContent = '';
+                resetSelectedDays();
             }
 
             // -------------------
-            // Edit-Modal-Logik (Admin)
+            // Admin Logic
             // -------------------
-            const editModalOverlay = document.getElementById('edit-modal-overlay');
-            const editBookingForm = document.getElementById('edit-booking-form');
-            const editError = document.getElementById('edit-booking-error');
-            let currentBookingIdToEdit = null;
 
-            function showEditForm(booking) {
-                currentBookingIdToEdit = booking.id;
-                document.getElementById('edit-book-name').value = booking.name;
-                document.getElementById('edit-book-email').value = booking.email;
-                document.getElementById('edit-book-persons').value = booking.persons;
-                document.getElementById('edit-book-start-date').value = booking.startDate;
-                document.getElementById('edit-book-end-date').value = booking.endDate;
-                document.getElementById('edit-book-breakfast').value = booking.breakfast;
-                document.getElementById('edit-book-arrival-time').value = booking.arrivalTime || '';
-                document.getElementById('edit-book-departure-time').value = booking.departureTime || '';
-                editError.textContent = '';
-                editModalOverlay.style.display = 'flex';
-                setTimeout(() => editModalOverlay.classList.add('visible'), 10);
+            let selectedAdminDays = [];
+            
+            function attachAdminCalendarListeners(bookings, blocks) {
+                const cells = document.querySelectorAll('#admin-yearly-calendar-content td[data-date]');
+                cells.forEach(cell => {
+                    cell.removeEventListener('click', handleAdminCellClick); // Remove existing listeners
+                    cell.addEventListener('click', handleAdminCellClick);
+
+                    const dateStr = cell.getAttribute('data-date');
+                    cell.classList.remove('selected-start', 'selected-end', 'selected-range');
+
+                    if (selectedAdminDays.includes(dateStr)) {
+                        cell.classList.add('selected-range');
+                    }
+                });
+                
+                document.getElementById('btn-block-selected').onclick = handleBlockSelected;
+                document.getElementById('btn-unblock-selected').onclick = handleUnblockSelected;
             }
 
-            function closeEditForm() {
-                editModalOverlay.classList.remove('visible');
+            async function handleAdminCellClick(e) {
+                const dateStr = e.currentTarget.getAttribute('data-date');
+                const dayDiv = e.currentTarget.querySelector('.tooltip');
+                const tooltipText = e.currentTarget.querySelector('.tooltiptext')?.textContent || '';
+                const id = dayDiv?.getAttribute('data-id');
+                const type = dayDiv?.getAttribute('data-type');
+                
+                if (type === 'booking') {
+                    const booking = await db.collection('bookings').doc(id).get();
+                    if (booking.exists) {
+                        showEditModal({id: id, ...booking.data()}, false);
+                        return;
+                    }
+                } else if (type === 'block') {
+                    // Check if it's the start/end day of a block. If so, only show edit/delete block.
+                    // For now, let's keep the multiple selection for admin.
+                }
+
+                if (selectedAdminDays.includes(dateStr)) {
+                    selectedAdminDays = selectedAdminDays.filter(d => d !== dateStr);
+                    e.currentTarget.classList.remove('selected-range');
+                } else {
+                    selectedAdminDays.push(dateStr);
+                    e.currentTarget.classList.add('selected-range');
+                }
+                
+                selectedAdminDays.sort();
+            }
+            
+            async function handleBlockSelected() {
+                if (selectedAdminDays.length === 0) {
+                    showPopupMessage("Bitte wählen Sie zuerst Tage im Kalender aus.", "Keine Tage ausgewählt", 'info');
+                    return;
+                }
+                
+                showPopupConfirm(`Sollen die ${selectedAdminDays.length} ausgewählten Tage blockiert werden?`, async () => {
+                    const sortedDates = selectedAdminDays.sort();
+                    const startDate = sortedDates[0];
+                    const endDate = sortedDates[sortedDates.length - 1];
+                    
+                    try {
+                        // Check for overlaps with existing bookings first
+                        const bookings = await fetchBookings();
+                        const blocks = await fetchBlocks();
+                        const start = dateFromStr(startDate);
+                        const end = dateFromStr(endDate);
+                        end.setDate(end.getDate()); // Keep end date as last night
+
+                        let overlap = false;
+                        for (let dayStr of selectedAdminDays) {
+                            const day = dateFromStr(dayStr);
+                            
+                            // Check against existing bookings
+                            const isFullyContainedBooking = bookings.some(b => dateFromStr(b.startDate) < day && dateFromStr(b.endDate) > day);
+                            const isBookingEnd = bookings.some(b => b.endDate === dayStr);
+                            const isBookingStart = bookings.some(b => b.startDate === dayStr);
+                            
+                            if (isFullyContainedBooking) {
+                                overlap = true;
+                                showPopupMessage(`Die Auswahl überschneidet sich mit einer bestehenden Buchung am ${formatDateDe(dayStr)}.`, "Blockierung nicht möglich", 'error');
+                                break;
+                            }
+                            // Allow blocking on start/end days of bookings (half-day turnover is still possible for existing bookings)
+                        }
+
+                        if (overlap) return;
+
+                        // Check against existing blocks
+                        // Merging logic: find all blocks that overlap with the new selection and delete them.
+                        const blocksToDelete = blocks.filter(b => checkOverlap(start, end, dateFromStr(b.startDate), dateFromStr(b.endDate)));
+                        
+                        // Find the absolute start and end of the merged block
+                        let newBlockStart = start;
+                        let newBlockEnd = end;
+                        
+                        blocksToDelete.forEach(b => {
+                            const bStart = dateFromStr(b.startDate);
+                            const bEnd = dateFromStr(b.endDate);
+                            if (bStart < newBlockStart) newBlockStart = bStart;
+                            if (bEnd > newBlockEnd) newBlockEnd = bEnd;
+                        });
+                        
+                        // Delete overlapping blocks
+                        const deletePromises = blocksToDelete.map(b => deleteBlock(b.id));
+                        await Promise.all(deletePromises);
+                        
+                        // Create new merged block
+                        await db.collection('blocks').add({
+                            startDate: formatDate(newBlockStart),
+                            endDate: formatDate(newBlockEnd),
+                            timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+
+                        showPopupMessage(`Die Tage von ${formatDateDe(formatDate(newBlockStart))} bis ${formatDateDe(formatDate(newBlockEnd))} wurden erfolgreich blockiert.`, "Blockierung erfolgreich", 'success');
+
+                        selectedAdminDays = [];
+                        renderYearlyCalendar(currentYear);
+                        renderAdminBookings();
+
+                    } catch (error) {
+                        console.error("Fehler bei der Blockierung:", error);
+                        showPopupMessage("Es ist ein Fehler beim Blockieren aufgetreten.", "Fehler", 'error');
+                    }
+                });
+            }
+
+            async function handleUnblockSelected() {
+                if (selectedAdminDays.length === 0) {
+                    showPopupMessage("Bitte wählen Sie zuerst Tage im Kalender aus.", "Keine Tage ausgewählt", 'info');
+                    return;
+                }
+                
+                showPopupConfirm(`Sollen die ${selectedAdminDays.length} ausgewählten Tage freigegeben (Blockierungen aufgehoben) werden? Dies betrifft nur Blockierungen, nicht Buchungen.`, async () => {
+                    try {
+                        const blocks = await fetchBlocks();
+                        let blocksToModify = [];
+                        let originalBlockIds = new Set();
+                        
+                        // Find all blocks that contain any selected day
+                        for (let dayStr of selectedAdminDays) {
+                            const day = dateFromStr(dayStr);
+                            // Set end to the following day to represent the booked interval
+                            const dayExclusiveEnd = new Date(day);
+                            dayExclusiveEnd.setDate(dayExclusiveEnd.getDate() + 1); 
+
+                            const overlappingBlocks = blocks.filter(b => {
+                                const bStart = dateFromStr(b.startDate);
+                                const bEnd = dateFromStr(b.endDate);
+
+                                // Block overlaps with selected day
+                                return bStart <= day && bEnd >= dayExclusiveEnd; 
+                            });
+                            
+                            overlappingBlocks.forEach(b => {
+                                if (!originalBlockIds.has(b.id)) {
+                                    blocksToModify.push(b);
+                                    originalBlockIds.add(b.id);
+                                }
+                            });
+                        }
+
+                        if (blocksToModify.length === 0) {
+                            showPopupMessage("Der ausgewählte Zeitraum enthält keine Blockierungen.", "Keine Blockierung gefunden", 'info');
+                            selectedAdminDays = [];
+                            renderYearlyCalendar(currentYear);
+                            return;
+                        }
+
+                        // Process modification/deletion for each affected block
+                        let deletePromises = [];
+                        let newBlockPromises = [];
+                        
+                        blocksToModify.forEach(block => {
+                            const bStart = dateFromStr(block.startDate);
+                            const bEnd = dateFromStr(block.endDate); // Exclusive end (day after last night)
+                            const selectedDaysSet = new Set(selectedAdminDays);
+                            
+                            let segments = [];
+                            let currentSegmentStart = null;
+                            
+                            // Iterate through the days of the original block
+                            let tempDay = new Date(bStart);
+                            while (tempDay < bEnd) {
+                                const dayStr = formatDate(tempDay);
+
+                                if (!selectedDaysSet.has(dayStr)) {
+                                    // Day is NOT selected for unblocking -> part of a new block segment
+                                    if (currentSegmentStart === null) {
+                                        currentSegmentStart = dayStr;
+                                    }
+                                } else {
+                                    // Day IS selected for unblocking -> end of a segment
+                                    if (currentSegmentStart !== null) {
+                                        // The segment ends on the day *before* tempDay
+                                        const segmentEnd = new Date(tempDay);
+                                        segments.push({
+                                            startDate: currentSegmentStart,
+                                            endDate: formatDate(segmentEnd) // exclusive end
+                                        });
+                                        currentSegmentStart = null;
+                                    }
+                                }
+
+                                tempDay.setDate(tempDay.getDate() + 1);
+                            }
+                            
+                            // Handle last segment if it reaches the end of the original block
+                            if (currentSegmentStart !== null) {
+                                segments.push({
+                                    startDate: currentSegmentStart,
+                                    endDate: formatDate(bEnd) // exclusive end
+                                });
+                            }
+                            
+                            // Delete the original block
+                            deletePromises.push(deleteBlock(block.id));
+                            
+                            // Add new segment blocks
+                            segments.forEach(seg => {
+                                // Only add if the start date is before the end date (at least one night)
+                                if (dateFromStr(seg.startDate) < dateFromStr(seg.endDate)) {
+                                    newBlockPromises.push(db.collection('blocks').add({
+                                        startDate: seg.startDate,
+                                        endDate: seg.endDate,
+                                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                                    }));
+                                }
+                            });
+                        });
+                        
+                        await Promise.all(deletePromises);
+                        await Promise.all(newBlockPromises);
+
+                        showPopupMessage(`Die Blockierungen im ausgewählten Zeitraum wurden erfolgreich aufgehoben und die verbleibenden Blöcke neu gespeichert.`, "Freigabe erfolgreich", 'success');
+
+                        selectedAdminDays = [];
+                        renderYearlyCalendar(currentYear);
+                        renderAdminBookings();
+
+                    } catch (error) {
+                        console.error("Fehler bei der Freigabe:", error);
+                        showPopupMessage("Es ist ein Fehler beim Freigeben der Tage aufgetreten.", "Fehler", 'error');
+                    }
+                });
+            }
+
+            // -------------------
+            // Admin Bookings List & Management
+            // -------------------
+
+            async function renderAdminBookings() {
+                const [bookings, blocks] = await Promise.all([fetchBookings(), fetchBlocks()]);
+                const listDiv = document.getElementById('admin-bookings-list');
+                
+                let html = `
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Typ</th>
+                                <th>Name / Grund</th>
+                                <th>Start</th>
+                                <th>Ende</th>
+                                <th>Aktionen</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                // Combine and sort by start date
+                const combined = [
+                    ...bookings.map(b => ({...b, type: 'Buchung'})),
+                    ...blocks.map(b => ({...b, type: 'Blockierung', name: 'Admin Block'}))
+                ].sort((a, b) => dateFromStr(a.startDate) - dateFromStr(b.startDate));
+
+
+                combined.forEach(item => {
+                    const id = item.id;
+                    const isBooking = item.type === 'Buchung';
+                    const name = isBooking ? item.name : item.name;
+                    const start = formatDateDe(item.startDate);
+                    const end = formatDateDe(item.endDate);
+                    
+                    html += `
+                        <tr>
+                            <td>${item.type}</td>
+                            <td>${name}</td>
+                            <td>${start}</td>
+                            <td>${end}</td>
+                            <td>
+                                ${isBooking ? 
+                                    `<button onclick="showEditModal(${JSON.stringify(item).split('"').join("&#34;")}, false)" style="background-color: #3f51b5; margin: 2px;"><i class="fas fa-edit"></i> Bearbeiten</button>` : 
+                                    `<button onclick="showEditModal(${JSON.stringify(item).split('"').join("&#34;")}, true)" style="background-color: #3f51b5; margin: 2px;"><i class="fas fa-edit"></i> Bearbeiten</button>`}
+                                <button onclick="showDeleteConfirm('${id}', '${item.type}', '${name}', '${start}', '${end}')" style="background-color: #f44336; margin: 2px;"><i class="fas fa-trash"></i> Löschen</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                html += `
+                        </tbody>
+                    </table>
+                `;
+                listDiv.innerHTML = html;
+            }
+            
+            function showDeleteConfirm(id, type, name, start, end) {
+                showPopupConfirm(
+                    `Soll die ${type} von ${name} für den Zeitraum ${start} bis ${end} wirklich gelöscht werden?`, 
+                    async () => {
+                        try {
+                            if (type === 'Buchung') {
+                                const booking = await db.collection('bookings').doc(id).get();
+                                if (booking.exists) {
+                                    await deleteBookingWithNotification({id: id, ...booking.data()}, true);
+                                } else {
+                                    await deleteBooking(id); // Fallback if data is missing, just delete.
+                                }
+                                
+                                showPopupMessage("Buchung erfolgreich gelöscht.", "Gelöscht", 'success');
+                            } else {
+                                await deleteBlock(id);
+                                showPopupMessage("Blockierung erfolgreich gelöscht.", "Gelöscht", 'success');
+                            }
+
+                            renderAdminBookings();
+                            renderYearlyCalendar(currentYear);
+                        } catch (error) {
+                            console.error("Fehler beim Löschen:", error);
+                            showPopupMessage("Es ist ein Fehler beim Löschen aufgetreten.", "Fehler", 'error');
+                        }
+                    }
+                );
+            }
+
+            async function deleteBookingWithNotification(booking, notifyAdmin) {
+                 // 1. Send cancellation email to guest
+                const templateParams = {
+                    to_name: booking.name,
+                    to_email: booking.email,
+                    from_name: 'FFM Kalender',
+                    start_date: formatDateDe(booking.startDate),
+                    end_date: formatDateDe(booking.endDate),
+                    persons: booking.persons,
+                    breakfast: booking.breakfast,
+                    cancellation_link: `${window.location.origin}${window.location.pathname}?cancelId=${booking.cancellationId}`,
+                    admin_email: ADMIN_EMAIL
+                };
+
+                // Send a special cancellation template, or reuse friend template with explicit message
+                await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID_CANCEL, templateParams, EMAILJS_PUBLIC_KEY);
+                
+                // 2. Send cancellation notification to admin (if initiated by admin)
+                if (notifyAdmin) {
+                     const adminTemplateParams = {
+                        to_name: 'Admin',
+                        to_email: ADMIN_EMAIL,
+                        from_name: 'FFM Kalender',
+                        start_date: formatDateDe(booking.startDate),
+                        end_date: formatDateDe(booking.endDate),
+                        persons: booking.persons,
+                        breakfast: booking.breakfast,
+                        // Add context that it was deleted by an admin
+                        name: booking.name,
+                        email: booking.email,
+                        message: `Die Buchung von ${booking.name} (${booking.email}) wurde soeben manuell vom Admin gelöscht. Zeitraum: ${formatDateDe(booking.startDate)} - ${formatDateDe(booking.endDate)}.`
+                    };
+                    // Use a simple template for admin notification if needed, or skip. Here, skip for simplicity.
+                }
+
+                // 3. Delete from database
+                await deleteBooking(booking.id);
+            }
+
+            // -------------------
+            // Edit Modal Logic (Admin)
+            // -------------------
+
+            let currentEditId = null;
+            let isBlockEdit = false;
+
+            function showEditModal(item, isBlock) {
+                currentEditId = item.id;
+                isBlockEdit = isBlock;
+                
+                const modal = document.getElementById('edit-modal-box');
+                document.getElementById('edit-booking-form').querySelector('h3').textContent = isBlock ? 'Blockierung bearbeiten' : 'Buchung bearbeiten';
+
+                // Toggle visibility of fields
+                document.getElementById('edit-book-name').closest('div').style.display = isBlock ? 'none' : 'block';
+                document.getElementById('edit-book-email').closest('div').style.display = isBlock ? 'none' : 'block';
+                document.getElementById('edit-book-persons').closest('div').style.display = isBlock ? 'none' : 'block';
+                document.getElementById('edit-book-breakfast').closest('div').style.display = isBlock ? 'none' : 'block';
+                document.getElementById('edit-book-arrival-time').closest('div').style.display = isBlock ? 'none' : 'block';
+                document.getElementById('edit-book-departure-time').closest('div').style.display = isBlock ? 'none' : 'block';
+                
+                // Populate fields
+                if (!isBlock) {
+                    document.getElementById('edit-book-name').value = item.name || '';
+                    document.getElementById('edit-book-email').value = item.email || '';
+                    document.getElementById('edit-book-persons').value = item.persons || 1;
+                    document.getElementById('edit-book-breakfast').value = item.breakfast || 'nein';
+                    document.getElementById('edit-book-arrival-time').value = item.arrivalTime || '';
+                    document.getElementById('edit-book-departure-time').value = item.departureTime || '';
+                }
+                document.getElementById('edit-book-start-date').value = item.startDate || '';
+                document.getElementById('edit-book-end-date').value = item.endDate || '';
+                
+                document.getElementById('edit-booking-error').textContent = '';
+                document.getElementById('edit-modal-overlay').style.display = 'flex';
+                setTimeout(() => document.getElementById('edit-modal-overlay').classList.add('visible'), 10);
+            }
+
+            function closeEditModal() {
+                document.getElementById('edit-modal-overlay').classList.remove('visible');
                 setTimeout(() => {
-                    editModalOverlay.style.display = 'none';
-                    currentBookingIdToEdit = null;
+                    document.getElementById('edit-modal-overlay').style.display = 'none';
+                    currentEditId = null;
                 }, 300);
             }
             
-            document.getElementById('btn-cancel-edit-form').addEventListener('click', closeEditForm);
-            
-            editBookingForm.addEventListener('submit', async (e) => {
+            document.getElementById('btn-cancel-edit-form').addEventListener('click', closeEditModal);
+
+            document.getElementById('edit-booking-form').addEventListener('submit', async (e) => {
                 e.preventDefault();
+                const bookingError = document.getElementById('edit-booking-error');
+                bookingError.textContent = '';
                 
-                const name = document.getElementById("edit-book-name").value.trim();
-                const email = document.getElementById("edit-book-email").value.trim();
-                const persons = parseInt(document.getElementById("edit-book-persons").value);
-                const breakfast = document.getElementById("edit-book-breakfast").value;
-                const arrival = document.getElementById("edit-book-arrival-time").value || null;
-                const departure = document.getElementById("edit-book-departure-time").value || null;
-                const startDate = document.getElementById("edit-book-start-date").value;
-                const endDate = document.getElementById("edit-book-end-date").value;
-
-                editError.textContent = "";
-
-                if(!name || !email || !persons || !startDate || !endDate) {
-                    editError.textContent = "Bitte füllen Sie alle erforderlichen Felder aus.";
+                const startDate = document.getElementById('edit-book-start-date').value;
+                const endDate = document.getElementById('edit-book-end-date').value;
+                
+                const start = dateFromStr(startDate);
+                const end = dateFromStr(endDate);
+                
+                if (start >= end) {
+                    bookingError.textContent = 'Das Enddatum muss nach dem Startdatum liegen.';
                     return;
                 }
                 
-                // NEU: Das Enddatum muss streng größer sein als das Startdatum (Mindestaufenthalt 1 Nacht)
-                if (endDate <= startDate) {
-                    editError.textContent = "Das Enddatum muss mindestens einen Tag nach dem Startdatum liegen (Mindestaufenthalt 1 Nacht).";
-                    return;
-                }
-                if(persons < 1 || persons > 3) {
-                    editError.textContent = "Bitte gültige Anzahl Personen eingeben (max. 3).";
-                    return;
-                }
+                let updateData = {
+                    startDate,
+                    endDate,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                };
 
-                const bookings = (await fetchBookings()).filter(b => b.id !== currentBookingIdToEdit);
-                const blocks = await fetchBlocks();
-                
-                const rangeStart = dateFromStr(startDate);
-                const rangeEnd = dateFromStr(endDate);
-                let day = new Date(rangeStart);
-                
-                // NEU: Enddatum ist exklusiv (Abreisetag wird nicht geprüft)
-                while (day < rangeEnd) {
-                    const dayStr = formatDate(day);
+                if (!isBlockEdit) {
+                    const name = document.getElementById('edit-book-name').value;
+                    const email = document.getElementById('edit-book-email').value;
+                    const persons = parseInt(document.getElementById('edit-book-persons').value);
+                    const breakfast = document.getElementById('edit-book-breakfast').value;
+                    const arrivalTime = document.getElementById('edit-book-arrival-time').value;
+                    const departureTime = document.getElementById('edit-book-departure-time').value;
                     
-                    // Prüfen auf GANZTÄGIGE Blockierung oder Buchung
-                    const isFullyBlockedOrBooked = blocks.some(b => dateFromStr(b.startDate) < day && dateFromStr(b.endDate) > day) ||
-                                                   bookings.some(b => dateFromStr(b.startDate) < day && dateFromStr(b.endDate) > day);
-
-                    if (isFullyBlockedOrBooked) {
-                        editError.textContent = `Der Zeitraum überschneidet sich mit einer bestehenden Belegung/Blockierung.`;
+                    if (persons < 1 || persons > 3) {
+                        bookingError.textContent = 'Die Personenzahl muss zwischen 1 und 3 liegen.';
                         return;
                     }
 
-                    // Speziell für Anreisetag (Startdatum): Darf kein Abreisetag sein (Halbtags belegt AM)
+                    updateData = {
+                        ...updateData,
+                        name,
+                        email,
+                        persons,
+                        breakfast,
+                        arrivalTime,
+                        departureTime,
+                    };
+                }
+                
+                // Re-check overlap before final update (Exclude current document from overlap check)
+                const [bookings, blocks] = await Promise.all([fetchBookings(), fetchBlocks()]);
+                const otherBookings = bookings.filter(b => b.id !== currentEditId);
+                const otherBlocks = blocks.filter(b => b.id !== currentEditId);
+                
+                let day = new Date(start);
+                const rangeEnd = new Date(end);
+                rangeEnd.setDate(rangeEnd.getDate() + 1);
+
+                while (day < rangeEnd) { 
+                    const dayStr = formatDate(day);
+                    
+                    // Prüfen auf GANZTÄGIGE Blockierung oder Buchung 
+                    const isFullyBlockedOrBooked = otherBlocks.some(b => dateFromStr(b.startDate) < day && dateFromStr(b.endDate) > day) ||
+                                                   otherBookings.some(b => dateFromStr(b.startDate) < day && dateFromStr(b.endDate) > day);
+
+                    if (isFullyBlockedOrBooked) {
+                        bookingError.textContent = `Der Zeitraum überschneidet sich mit einer anderen Belegung/Blockierung.`;
+                        return;
+                    }
+
+                    // Prüfen auf Anreisetag (PM belegt) für andere
                     if (dayStr === startDate) {
-                        const isDepartureDay = blocks.some(b => b.endDate === dayStr) || bookings.some(b => b.endDate === dayStr);
-                        if (isDepartureDay) {
-                            editError.textContent = `Der Anreisetag ist bereits Vormittags belegt (Abreise eines anderen Gastes).`;
+                        const isArrivalDayForOther = otherBlocks.some(b => b.startDate === dayStr) || otherBookings.some(b => b.startDate === dayStr);
+                        if (isArrivalDayForOther && dayStr !== endDate) {
+                            bookingError.textContent = `Der Anreisetag (${formatDateDe(dayStr)}) ist bereits für einen anderen Gast reserviert.`;
                             return;
                         }
                     }
+                    
+                    // Der Bugfix vom Frontend muss hier übernommen werden: 
+                    // Expliziten Check auf Abreisetag (AM belegt) am Anreisetag (Startdatum) entfernen, 
+                    // um Turnover zu erlauben. (Dieser Check wurde bereits oben entfernt, muss nur sichergestellt werden, dass er hier nicht existiert)
 
                     day.setDate(day.getDate() + 1);
                 }
-                
-                const updatedBooking = {
-                    name,
-                    email,
-                    persons,
-                    breakfast,
-                    arrivalTime: arrival,
-                    departureTime: departure,
-                    startDate,
-                    endDate
-                };
-                
+
+
+                // Final update
                 try {
-                    await db.collection('bookings').doc(currentBookingIdToEdit).update(updatedBooking);
-                    showPopupMessage("Buchung erfolgreich aktualisiert!", "Erfolgreich", "success");
-                    closeEditForm();
+                    const collectionName = isBlockEdit ? 'blocks' : 'bookings';
+                    await db.collection(collectionName).doc(currentEditId).update(updateData);
+
+                    showPopupMessage(`Die ${isBlockEdit ? 'Blockierung' : 'Buchung'} wurde erfolgreich gespeichert.`, "Gespeichert", 'success');
+
+                    closeEditModal();
                     renderAdminBookings();
                     renderYearlyCalendar(currentYear);
                 } catch (error) {
-                    console.error("Fehler beim Aktualisieren der Buchung:", error);
-                    showPopupMessage("Ein Fehler ist aufgetreten. Die Buchung konnte nicht aktualisiert werden.", "Fehler", "error");
+                    console.error("Fehler beim Speichern:", error);
+                    bookingError.textContent = 'Es ist ein Fehler beim Speichern aufgetreten.';
                 }
             });
 
 
             // -------------------
-            // Blockieren/Freigeben direkt im Kalender (Admin)
+            // Export Logic (Admin)
             // -------------------
-            document.getElementById("btn-block-selected").addEventListener('click', async () => {
-                if (!selectedStartDate || !selectedEndDate) {
-                    showPopupMessage("Bitte wähle zuerst einen Zeitraum im Kalender aus.", "Kein Zeitraum ausgewählt");
-                    return;
-                }
-                
-                const startDate = formatDate(selectedStartDate <= selectedEndDate ? selectedStartDate : selectedEndDate);
-                const endDate = formatDate(selectedStartDate <= selectedEndDate ? selectedEndDate : selectedStartDate);
 
-                if (endDate <= startDate) {
-                    showPopupMessage("Der Endtag muss nach dem Starttag liegen, um einen Zeitraum zu blockieren.", "Ungültiger Zeitraum", "error");
-                    return;
-                }
-
+            document.getElementById('btn-export-csv').addEventListener('click', async () => {
                 const bookings = await fetchBookings();
                 
-                const rangeStart = dateFromStr(startDate);
-                const rangeEnd = dateFromStr(endDate);
-                let day = new Date(rangeStart);
-                
-                // NEU: Enddatum ist exklusiv (Abreisetag wird nicht geprüft)
-                while (day < rangeEnd) {
-                    const dayStr = formatDate(day);
-                    
-                    // Prüfen auf GANZTÄGIGE Buchung
-                    const isFullyBooked = bookings.some(b => dateFromStr(b.startDate) < day && dateFromStr(b.endDate) > day);
+                let csvContent = "data:text/csv;charset=utf-8,";
+                csvContent += "ID,Name,Email,Startdatum,Enddatum,Personen,Frühstück,Anreisezeit,Abreisezeit\n";
 
-                    if (isFullyBooked) {
-                        showPopupMessage("Der ausgewählte Zeitraum überschneidet sich mit einer bestehenden Buchung.", "Fehler", "error");
-                        return;
-                    }
-
-                    // Speziell für Anreisetag (Startdatum): Darf kein Abreisetag sein (Halbtags belegt AM)
-                    if (dayStr === startDate) {
-                        const isDepartureDay = bookings.some(b => b.endDate === dayStr);
-                        if (isDepartureDay) {
-                            showPopupMessage(`Der Anreisetag ist bereits Vormittags belegt (Abreise eines Gastes).`, "Fehler", "error");
-                            return;
-                        }
-                    }
-                    
-                    day.setDate(day.getDate() + 1);
-                }
-
-                await db.collection('blocks').add({startDate, endDate});
-                showPopupMessage(`Zeitraum von ${formatDateDe(startDate)} bis ${formatDateDe(endDate)} erfolgreich blockiert.`, "Zeitraum blockiert", "success");
-                selectedStartDate = null;
-                selectedEndDate = null;
-                renderAdminBookings();
-                renderYearlyCalendar(currentYear);
-            });
-            
-            document.getElementById("btn-unblock-selected").addEventListener('click', async () => {
-                if (!selectedStartDate || !selectedEndDate) {
-                    showPopupMessage("Bitte wähle zuerst einen Zeitraum im Kalender aus.", "Kein Zeitraum ausgewählt");
-                    return;
-                }
-                
-                const startDate = formatDate(selectedStartDate <= selectedEndDate ? selectedStartDate : selectedEndDate);
-                const endDate = formatDate(selectedStartDate <= selectedEndDate ? selectedEndDate : selectedStartDate);
-
-                if (endDate <= startDate) {
-                    showPopupMessage("Der Endtag muss nach dem Starttag liegen.", "Ungültiger Zeitraum", "error");
-                    return;
-                }
-
-                showPopupConfirm(`Sollen die Tage von ${formatDateDe(startDate)} bis ${formatDateDe(endDate)} wirklich freigegeben werden?`, async () => {
-                    const blocks = await fetchBlocks();
-                    
-                    // Bei der Freigabe wird die Logik verwendet, die prüft, ob Blockierungen
-                    // den ausgewählten Zeitraum ÜBERSCHNEIDEN (alte Logik)
-                    let blocksToRemove = blocks.filter(block => {
-                        return checkOverlap(block.startDate, block.endDate, startDate, endDate);
-                    });
-                    
-                    if (blocksToRemove.length > 0) {
-                        const batch = db.batch();
-                        blocksToRemove.forEach(block => {
-                            const docRef = db.collection('blocks').doc(block.id);
-                            batch.delete(docRef);
-                        });
-                        await batch.commit();
-                        showPopupMessage("Tage erfolgreich freigegeben!", "Erfolgreich", "success");
-                    } else {
-                        showPopupMessage("Keine Blockierung im ausgewählten Zeitraum gefunden.", "Keine Blockierung", "info");
-                    }
-
-                    selectedStartDate = null;
-                    selectedEndDate = null;
-                    renderAdminBookings();
-                    renderYearlyCalendar(currentYear);
+                bookings.forEach(b => {
+                    const row = [
+                        b.cancellationId,
+                        b.name,
+                        b.email,
+                        formatDateDe(b.startDate),
+                        formatDateDe(b.endDate),
+                        b.persons,
+                        b.breakfast,
+                        b.arrivalTime || '',
+                        b.departureTime || ''
+                    ].map(field => `"${field}"`).join(",");
+                    csvContent += row + "\n";
                 });
+
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", `buchungen_${currentYear}.csv`);
+                document.body.appendChild(link); 
+                link.click(); 
+                document.body.removeChild(link);
             });
 
-            // -------------------
-            // iCal-Export Funktionen
-            // -------------------
-            function generateIcsFile(title, startDate, endDate, description, filename) {
-                const start = new Date(startDate);
-                const end = new Date(endDate);
+            document.getElementById('btn-export-ical').addEventListener('click', async () => {
+                const [bookings, blocks] = await Promise.all([fetchBookings(), fetchBlocks()]);
                 
-                const icsContent = `BEGIN:VCALENDAR
-VERSION:2.0
-PRODID:-//Gast Kalender FFM//NONSGML v1.0//EN
-BEGIN:VEVENT
-UID:${new Date().getTime()}@deine-domain.com
-DTSTAMP:${formatIcsDate(new Date())}
-DTSTART;VALUE=DATE:${formatIcsDate(start)}
-DTEND;VALUE=DATE:${formatIcsDate(end)}
-SUMMARY:${title}
-DESCRIPTION:${description}
-END:VEVENT
-END:VCALENDAR`;
-
-                const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8;' });
-                const link = document.createElement("a");
-                link.href = URL.createObjectURL(blob);
-                link.download = `${filename}.ics`;
-                link.click();
-            }
-
-            document.getElementById("btn-export-ical").addEventListener('click', async () => {
-                const bookings = await fetchBookings();
-                const blocks = await fetchBlocks();
-
                 let icsContent = `BEGIN:VCALENDAR
 VERSION:2.0
-PRODID:-//Gast Kalender FFM//NONSGML v1.0//EN\n`;
+PRODID:-//FFM Kalender//NONSGML v1.0//DE
+CALSCALE:GREGORIAN
+`;
 
-                bookings.forEach(bk => {
-                    const start = new Date(bk.startDate);
-                    const end = new Date(bk.endDate);
-                    
-                    const description = `Name: ${bk.name}\\nE-Mail: ${bk.email}\\nPersonen: ${bk.persons}\\nFrühstück: ${bk.breakfast}\\nAnreise: ${bk.arrivalTime || 'Nicht angegeben'}\\nAbreise: ${bk.departureTime || 'Nicht angegeben'}`;
-
-                    icsContent += `BEGIN:VEVENT
-UID:${bk.id}@deine-domain.com
-DTSTAMP:${formatIcsDate(new Date())}
-DTSTART;VALUE=DATE:${formatIcsDate(start)}
-DTEND;VALUE=DATE:${formatIcsDate(end)}
-SUMMARY:Übernachtung bei Paul
-DESCRIPTION:${description}
-END:VEVENT\n`;
-                });
+                const events = [
+                    ...bookings.map(b => ({...b, summary: `Buchung: ${b.name} (${b.persons}P)`, uid: `booking-${b.id}`})),
+                    ...blocks.map(b => ({...b, summary: `Blockierung`, uid: `block-${b.id}`}))
+                ];
                 
-                blocks.forEach(bl => {
-                    const start = new Date(bl.startDate);
-                    const end = new Date(bl.endDate);
+                events.forEach(event => {
+                    // iCal DTSTART and DTEND define the time interval, exclusive end date logic
+                    const startDay = event.startDate;
+                    const endDay = event.endDate;
                     
+                    // DTSTART: Set to start date, using arrival time or default 16:00
+                    const dtStart = formatIcsDate(startDay, event.arrivalTime || '16:00');
+                    
+                    // DTEND: Set to end date, using departure time or default 10:00
+                    // Since the endDate is the departure day, we use that date.
+                    const dtEnd = formatIcsDate(endDay, event.departureTime || '10:00');
+
                     icsContent += `BEGIN:VEVENT
-UID:${bl.id}@deine-domain.com
+UID:${event.uid}@ffm-kalender.de
 DTSTAMP:${formatIcsDate(new Date())}
-DTSTART;VALUE=DATE:${formatIcsDate(start)}
-DTEND;VALUE=DATE:${formatIcsDate(end)}
-SUMMARY:Blockierter Zeitraum
-END:VEVENT\n`;
+DTSTART:${dtStart}
+DTEND:${dtEnd}
+SUMMARY:${event.summary}
+DESCRIPTION:Start: ${formatDateDe(event.startDate)}\\nEnde: ${formatDateDe(event.endDate)}\\nPersonen: ${event.persons || 'N/A'}\\nFrühstück: ${event.breakfast || 'N/A'}\\nEmail: ${event.email || 'N/A'}
+END:VEVENT
+`;
                 });
 
-                icsContent += "END:VCALENDAR";
+                icsContent += `END:VCALENDAR`;
 
-                const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8;' });
-                const link = document.createElement("a");
-                link.href = URL.createObjectURL(blob);
-                link.download = `Kalender_Export_${new Date().toISOString().slice(0, 10)}.ics`;
+                const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `kalender_${currentYear}.ics`;
+                document.body.appendChild(link);
                 link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
             });
-
-            // CSV-Export-Funktion
-            async function exportBookingsToCsv() {
-                const bookings = await fetchBookings();
-                if (bookings.length === 0) {
-                    showPopupMessage("Keine Buchungen zum Exportieren vorhanden.", "Keine Daten", "info");
-                    return;
-                }
-
-                const csvRows = [];
-                const headers = ["Name", "E-Mail", "Personen", "Frühstück", "Anreisezeit", "Abreisezeit", "Startdatum", "Enddatum"];
-                csvRows.push(headers.join(';')); 
-
-                for (const booking of bookings) {
-                    const row = [
-                        booking.name,
-                        booking.email,
-                        booking.persons,
-                        booking.breakfast,
-                        booking.arrivalTime || "",
-                        booking.departureTime || "",
-                        formatDateDe(booking.startDate),
-                        formatDateDe(booking.endDate)
-                    ];
-                    csvRows.push(row.join(';'));
-                }
-
-                const csvString = csvRows.join('\n');
-                const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement("a");
-                link.href = URL.createObjectURL(blob);
-                link.download = `Freunde_Buchungen_${new Date().toISOString().slice(0, 10)}.csv`;
-                link.click();
-            }
             
-            document.getElementById("btn-export-csv").addEventListener('click', exportBookingsToCsv);
+            // -------------------
+            // Cancellation Link Logic
+            // -------------------
 
-            // -------------------
-            // Stornierungslogik (Buchender)
-            // -------------------
             async function handleCancellationLink(cancellationId) {
-                showSection('cancel');
+                showSection("cancel");
                 const statusText = document.getElementById('cancel-status-text');
                 const detailsDiv = document.getElementById('cancel-details');
                 const buttonsDiv = document.getElementById('cancel-buttons');
-
                 buttonsDiv.style.display = 'none';
-                detailsDiv.innerHTML = '';
-                
-                const bookingsRef = db.collection('bookings').where('cancellationId', '==', cancellationId);
-                const querySnapshot = await bookingsRef.get();
 
-                if (querySnapshot.empty) {
-                    statusText.textContent = "Ungültiger oder bereits stornierter Buchungslink.";
-                    return;
+                statusText.textContent = "Suche nach Buchung...";
+
+                try {
+                    const snapshot = await db.collection('bookings').where('cancellationId', '==', cancellationId).limit(1).get();
+                    
+                    if (snapshot.empty) {
+                        statusText.textContent = "Fehler: Der Stornierungslink ist ungültig oder die Buchung wurde bereits gelöscht.";
+                        document.getElementById('btn-return-home').style.display = 'block';
+                        return;
+                    }
+
+                    const bookingDoc = snapshot.docs[0];
+                    const booking = { id: bookingDoc.id, ...bookingDoc.data() };
+                    const bookingId = booking.id;
+
+                    statusText.textContent = "Buchung gefunden. Bitte bestätigen Sie die Stornierung.";
+                    
+                    detailsDiv.innerHTML = `
+                        <p><strong>Name:</strong> ${booking.name}</p>
+                        <p><strong>E-Mail:</strong> ${booking.email}</p>
+                        <p><strong>Zeitraum:</strong> ${formatDateDe(booking.startDate)} - ${formatDateDe(booking.endDate)}</p>
+                        <p><strong>Personen:</strong> ${booking.persons}</p>
+                    `;
+                    buttonsDiv.style.display = 'block';
+                    document.getElementById('btn-return-home').style.display = 'none';
+
+                    document.getElementById('btn-confirm-cancellation').onclick = () => {
+                        showPopupConfirm(`Soll die Buchung von ${booking.name} wirklich storniert werden?`, async () => {
+                            await deleteBookingWithNotification({id: bookingId, ...booking}, false);
+                            statusText.textContent = "Ihre Buchung wurde erfolgreich storniert.";
+                            detailsDiv.style.display = 'none';
+                            buttonsDiv.style.display = 'none';
+                            document.getElementById('btn-return-home').style.display = 'block';
+                        });
+                    };
+                    
+                    document.getElementById('btn-return-home').onclick = () => {
+                        window.location.href = window.location.origin + window.location.pathname;
+                    };
+
+
+                } catch (error) {
+                    console.error("Fehler bei der Stornierung:", error);
+                    statusText.textContent = "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut oder kontaktieren Sie den Administrator.";
+                    document.getElementById('btn-return-home').style.display = 'block';
                 }
-
-                const doc = querySnapshot.docs[0];
-                const booking = doc.data();
-                const bookingId = doc.id;
-
-                statusText.textContent = "Buchungsdetails:";
-                detailsDiv.innerHTML = `
-                    <p><strong>Name:</strong> ${booking.name}</p>
-                    <p><strong>E-Mail:</strong> ${booking.email}</p>
-                    <p><strong>Zeitraum:</strong> ${formatDateDe(booking.startDate)} bis ${formatDateDe(booking.endDate)}</p>
-                    <p><strong>Personen:</strong> ${booking.persons}</p>
-                `;
-                buttonsDiv.style.display = 'block';
-
-                document.getElementById('btn-confirm-cancellation').onclick = () => {
-                    showPopupConfirm(`Soll die Buchung von ${booking.name} wirklich storniert werden?`, async () => {
-                        await deleteBookingWithNotification({id: bookingId, ...booking}, false);
-                        statusText.textContent = "Ihre Buchung wurde erfolgreich storniert.";
-                        buttonsDiv.style.display = 'none';
-                    });
-                };
-                document.getElementById('btn-return-home').onclick = () => {
-                    window.location.href = window.location.origin + window.location.pathname;
-                };
             }
+
 
             // Initialanzeige
             function initialize() {
