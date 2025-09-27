@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Gast Kalender Offenbach</title>
+    <title>Gast Kalender FFM</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
@@ -359,7 +359,7 @@
     <main>
         <section id="start-page" style="display:none;">
             <div class="container">
-                <h1>Willkommen in Offenbach!</h1>
+                <h1>Willkommen in FFM!</h1>
                 <p style="text-align:center;">
                     Ich freue mich auf deinen Besuch! Über den Kalender kannst du als Gast bequem eine Übernachtung buchen. Oder du meldest dich als Admin an, um den Kalender zu verwalten.
                 </p>
@@ -641,7 +641,10 @@
                 return new Date(year, month - 1, day);
             }
             function checkOverlap(startA, endA, startB, endB) {
-                return !(endA < startB || startA > endB);
+                // NEU: Logik für exklusives Enddatum: [Start, Ende)
+                // Die Belegung A und B überschneiden sich, wenn A vor dem Ende von B startet
+                // UND A nach dem Start von B endet.
+                return (startA < endB) && (endA > startB);
             }
             function generateCancellationId() {
                 return 'cancel_' + Math.random().toString(36).substr(2, 9);
@@ -869,6 +872,7 @@
                         let classes = "";
                         let tooltip = "";
 
+                        // Belegung prüfen, wobei Enddatum exklusiv ist
                         const bookedEntry = bookings.find(bk => checkOverlap(dateStr, dateStr, bk.startDate, bk.endDate));
                         const blockedEntry = blocks.find(bl => checkOverlap(dateStr, dateStr, bl.startDate, bl.endDate));
 
@@ -928,7 +932,9 @@
                 Promise.all([bookings, blocks]).then(([bks, blks]) => {
                     let isSelectionValid = true;
                     let tempDate = new Date(start);
-                    while (tempDate <= end) {
+                    
+                    // NEU: Nur bis zum Tag vor dem Enddatum prüfen (Enddatum ist Check-out Tag)
+                    while (tempDate < end) {
                         const dateStr = formatDate(tempDate);
                         if(bks.some(b => checkOverlap(dateStr, dateStr, b.startDate, b.endDate)) || 
                            (currentView === 'friend' && blks.some(b => checkOverlap(dateStr, dateStr, b.startDate, b.endDate)))) {
@@ -948,21 +954,30 @@
                         return;
                     }
                 
+                    // Hervorheben der belegten Tage (Start bis Tag vor Ende)
                     currentDate = new Date(start);
-                    while (currentDate <= end) {
+                    // NEU: Nur bis zum Tag vor dem Enddatum hervorheben
+                    while (currentDate < end) { 
                         const dateStr = formatDate(currentDate);
                         const cell = calendarSection.querySelector(`td[data-date="${dateStr}"]`);
                         if (cell) {
                             cell.style.backgroundColor = '#81c784';
                             if (formatDate(currentDate) === formatDate(start)) {
                                 cell.classList.add('selected-start');
-                            } else if (formatDate(currentDate) === formatDate(end)) {
-                                cell.classList.add('selected-end');
                             } else {
                                 cell.classList.add('selected-range');
                             }
                         }
                         currentDate.setDate(currentDate.getDate() + 1);
+                    }
+                    
+                    // Besonderer Fall: Enddatum (Abreisetag)
+                    if (start.getTime() !== end.getTime()) {
+                        const endCell = calendarSection.querySelector(`td[data-date="${formatDate(end)}"]`);
+                        if(endCell) {
+                             endCell.classList.add('selected-end');
+                             endCell.style.backgroundColor = '#81c784';
+                        }
                     }
                 
                     if (currentView === 'friend') {
@@ -1078,8 +1093,10 @@
                     bookingError.textContent = "Bitte gültige Start- und Enddaten eingeben.";
                     return;
                 }
-                if(endDate < startDate) {
-                    bookingError.textContent = "Enddatum darf nicht vor Startdatum liegen.";
+                
+                // NEU: Das Enddatum muss streng größer sein als das Startdatum (Mindestaufenthalt 1 Nacht)
+                if (endDate <= startDate) {
+                    bookingError.textContent = "Das Enddatum muss mindestens einen Tag nach dem Startdatum liegen (Mindestaufenthalt 1 Nacht).";
                     return;
                 }
 
@@ -1089,7 +1106,9 @@
                 const rangeStart = dateFromStr(startDate);
                 const rangeEnd = dateFromStr(endDate);
                 let day = new Date(rangeStart);
-                while (day <= rangeEnd) {
+                
+                // NEU: Enddatum ist exklusiv (Abreisetag wird nicht geprüft)
+                while (day < rangeEnd) { 
                     const dayStr = formatDate(day);
                     if (blocks.some(b => checkOverlap(dayStr, dayStr, b.startDate, b.endDate))) {
                         bookingError.textContent = `Der Zeitraum überschneidet sich mit einem blockierten Zeitraum.`;
@@ -1299,8 +1318,10 @@
                     editError.textContent = "Bitte füllen Sie alle erforderlichen Felder aus.";
                     return;
                 }
-                if(endDate < startDate) {
-                    editError.textContent = "Enddatum darf nicht vor Startdatum liegen.";
+                
+                // NEU: Das Enddatum muss streng größer sein als das Startdatum (Mindestaufenthalt 1 Nacht)
+                if (endDate <= startDate) {
+                    editError.textContent = "Das Enddatum muss mindestens einen Tag nach dem Startdatum liegen (Mindestaufenthalt 1 Nacht).";
                     return;
                 }
                 if(persons < 1 || persons > 3) {
@@ -1314,7 +1335,9 @@
                 const rangeStart = dateFromStr(startDate);
                 const rangeEnd = dateFromStr(endDate);
                 let day = new Date(rangeStart);
-                while (day <= rangeEnd) {
+                
+                // NEU: Enddatum ist exklusiv (Abreisetag wird nicht geprüft)
+                while (day < rangeEnd) {
                     const dayStr = formatDate(day);
                     if (blocks.some(b => checkOverlap(dayStr, dayStr, b.startDate, b.endDate))) {
                         editError.textContent = `Der Zeitraum überschneidet sich mit einem blockierten Zeitraum.`;
@@ -1359,16 +1382,23 @@
                     showPopupMessage("Bitte wähle zuerst einen Zeitraum im Kalender aus.", "Kein Zeitraum ausgewählt");
                     return;
                 }
-
+                
                 const startDate = formatDate(selectedStartDate <= selectedEndDate ? selectedStartDate : selectedEndDate);
                 const endDate = formatDate(selectedStartDate <= selectedEndDate ? selectedEndDate : selectedStartDate);
+
+                if (endDate <= startDate) {
+                    showPopupMessage("Der Endtag muss nach dem Starttag liegen, um einen Zeitraum zu blockieren.", "Ungültiger Zeitraum", "error");
+                    return;
+                }
 
                 const bookings = await fetchBookings();
                 
                 const rangeStart = dateFromStr(startDate);
                 const rangeEnd = dateFromStr(endDate);
                 let day = new Date(rangeStart);
-                while (day <= rangeEnd) {
+                
+                // NEU: Enddatum ist exklusiv (Abreisetag wird nicht geprüft)
+                while (day < rangeEnd) {
                     const dayStr = formatDate(day);
                     if (bookings.some(b => checkOverlap(dayStr, dayStr, b.startDate, b.endDate))) {
                         showPopupMessage("Der ausgewählte Zeitraum überschneidet sich mit einer bestehenden Buchung.", "Fehler", "error");
@@ -1394,9 +1424,20 @@
                 const startDate = formatDate(selectedStartDate <= selectedEndDate ? selectedStartDate : selectedEndDate);
                 const endDate = formatDate(selectedStartDate <= selectedEndDate ? selectedEndDate : selectedStartDate);
 
+                if (endDate <= startDate) {
+                    showPopupMessage("Der Endtag muss nach dem Starttag liegen.", "Ungültiger Zeitraum", "error");
+                    return;
+                }
+
                 showPopupConfirm(`Sollen die Tage von ${formatDateDe(startDate)} bis ${formatDateDe(endDate)} wirklich freigegeben werden?`, async () => {
                     const blocks = await fetchBlocks();
-                    let blocksToRemove = blocks.filter(block => checkOverlap(block.startDate, block.endDate, startDate, endDate));
+                    
+                    // Bei der Freigabe wird die alte, inklusive Logik benötigt, um Blöcke zu finden, die den ausgewählten Zeitraum ABDECKEN
+                    let blocksToRemove = blocks.filter(block => {
+                        // Hilfsfunktion: checkOverlapInclusive (alte Logik)
+                        const checkOverlapInclusive = (startA, endA, startB, endB) => !(endA < startB || startA > endB);
+                        return checkOverlapInclusive(block.startDate, block.endDate, startDate, endDate);
+                    });
                     
                     if (blocksToRemove.length > 0) {
                         const batch = db.batch();
@@ -1423,11 +1464,12 @@
             function generateIcsFile(title, startDate, endDate, description, filename) {
                 const start = new Date(startDate);
                 const end = new Date(endDate);
-                end.setDate(end.getDate() + 1); // iCal end date is exclusive
+                // iCal end date is exclusive: KEINE Änderung notwendig, da das Enddatum
+                // bereits der Check-out Tag ist und von iCal automatisch als exklusives Enddatum interpretiert wird.
                 
                 const icsContent = `BEGIN:VCALENDAR
 VERSION:2.0
-PRODID:-//Gast Kalender Offenbach//NONSGML v1.0//EN
+PRODID:-//Gast Kalender FFM//NONSGML v1.0//EN
 BEGIN:VEVENT
 UID:${new Date().getTime()}@deine-domain.com
 DTSTAMP:${formatIcsDate(new Date())}
@@ -1451,12 +1493,12 @@ END:VCALENDAR`;
 
                 let icsContent = `BEGIN:VCALENDAR
 VERSION:2.0
-PRODID:-//Gast Kalender Offenbach//NONSGML v1.0//EN\n`;
+PRODID:-//Gast Kalender FFM//NONSGML v1.0//EN\n`;
 
                 bookings.forEach(bk => {
                     const start = new Date(bk.startDate);
                     const end = new Date(bk.endDate);
-                    end.setDate(end.getDate() + 1); // iCal end date is exclusive
+                    // Enddatum ist bereits der Check-out Tag (exklusiv)
                     
                     const description = `Name: ${bk.name}\\nE-Mail: ${bk.email}\\nPersonen: ${bk.persons}\\nFrühstück: ${bk.breakfast}\\nAnreise: ${bk.arrivalTime || 'Nicht angegeben'}\\nAbreise: ${bk.departureTime || 'Nicht angegeben'}`;
 
@@ -1473,7 +1515,7 @@ END:VEVENT\n`;
                 blocks.forEach(bl => {
                     const start = new Date(bl.startDate);
                     const end = new Date(bl.endDate);
-                    end.setDate(end.getDate() + 1);
+                    // Enddatum ist bereits der Check-out Tag (exklusiv)
                     
                     icsContent += `BEGIN:VEVENT
 UID:${bl.id}@deine-domain.com
